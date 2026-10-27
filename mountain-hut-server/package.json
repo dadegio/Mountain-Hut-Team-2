@@ -1,0 +1,27 @@
+{
+  "name": "mountain-hut-server",
+  "version": "0.0.0",
+  "description": "Software system capable of supporting the activities of a mountain hut",
+  "license": "EUPL-1.2",
+  "author": "group-02",
+  "type": "module",
+  "main": "index.ts",
+  "imports": {
+    "#src/*": "./src/*"
+  },
+  "scripts": {
+    "start": "node src/server.ts",
+    "dev": "nodemon"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "http-status-codes": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
