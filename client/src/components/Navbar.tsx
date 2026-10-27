@@ -15,12 +15,12 @@ export default function Navbar() {
         <NavLink to="/booking" className={linkClass}>
           Book a table
         </NavLink>
-        <NavLink to="/login" className={linkClass}>
-          Login
-        </NavLink>
         <NavLink to="/my-bookings" className={linkClass}>
           My bookings
-        </NavLink>      
+        </NavLink>    
+        <NavLink to="/login" className={linkClass}>
+          Login
+        </NavLink>  
         </div>
     </nav>
   );
