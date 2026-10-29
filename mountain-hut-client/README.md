@@ -69,10 +69,11 @@ The backend is not available yet, so the frontend uses **mock data by default**.
 
 ```
 VITE_USE_MOCKS=true
+VITE_MAIL_SERVICE_URL=http://localhost:8025
 ```
 
-- `true` — API functions in `src/api/` return mock data (with a short simulated delay).
-- `false` — requests go to the backend via `/api/...`.
+- `VITE_USE_MOCKS=true` — API functions in `src/api/` return mock data (with a short simulated delay). Set to `false` when the backend is ready.
+- `VITE_MAIL_SERVICE_URL` — URL of the hut's email service. In development points to [Mailpit](https://mailpit.axllent.org/) (`http://localhost:8025`). In production, set it to the real webmail URL.
 
 When using the real backend, the Vite dev server proxies `/api` to the backend (see `vite.config.ts`, default `http://localhost:3001` — **port to be confirmed with the backend team**).
 

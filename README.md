@@ -6,13 +6,15 @@ A web app for managing meal reservations at a mountain hut. Hikers can book tabl
 | Layer    | Tech |
 |----------|------|
 | Frontend | React · TypeScript · Vite · Tailwind CSS |
-| Backend  | Node.js · TypeScript · better-sqlite3 |
+| Backend  | Node.js · TypeScript · Fastify · better-sqlite3 |
+| Email    | Nodemailer · Mailpit (dev) |
 | Testing  | Vitest · Playwright |
 
 ## Prerequisites
-- [Node.js](https://nodejs.org/) (LTS recommended)
+- [Node.js](https://nodejs.org/) >= 18 (LTS recommended — tested on v24)
 - npm
-> SQLite is file-based — no database server to install.
+- [Docker](https://www.docker.com/) — only to run Mailpit for local email testing
+SQLite is file-based — no database server to install.
 
 ## Project Structure
 ```
@@ -31,17 +33,23 @@ npm run dev          # starts on http://localhost:3001
 ```
 **Frontend**
 ```bash
-cd client
+cd mountain-hut-client
 npm install
 npm run dev          # starts on http://localhost:5173
+```
+**Email (local dev)**
+```bash
+docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit
+# open http://localhost:8025 to see captured emails
 ```
 The frontend proxies `/api` calls to the backend automatically.
 
 ### Mock Mode
 By default the frontend runs with **mock data** so you can work without the backend:
 ```
-# client/.env.development
-VITE_USE_MOCKS=true     # set to false when the backend is ready
+# mountain-hut-client/.env.development
+VITE_USE_MOCKS=true          # set to false when the backend is ready
+VITE_MAIL_SERVICE_URL=http://localhost:8025   # Mailpit in dev; real webmail in production
 ```
 
 ## Running Tests
