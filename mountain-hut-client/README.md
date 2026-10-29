@@ -10,7 +10,6 @@ React + TypeScript frontend for the Mountain Hut system, built with Vite and sty
 ## Getting started
 
 ```bash
-cd client
 npm install
 npm run dev
 ```
@@ -36,7 +35,7 @@ The app runs at http://localhost:5173.
 ## Project structure
 
 ```
-client/src/
+mountain-hut-client/src/
 ├── api/          # Functions that call the backend (client.ts = fetch helper)
 ├── components/   # Reusable UI: Layout, Navbar, ...
 ├── pages/        # One component per route
@@ -54,19 +53,19 @@ client/src/
 
 ## Routes
 
-| Path           | Page             |
-| -------------- | ---------------- |
-| `/`            | Home             |
-| `/booking`     | Book a table     |
-| `/my-bookings` | My bookings      |
-| `/login`       | Login            |
-| `*`            | Not found        |
+| Path           | Page         |
+| -------------- | ------------ |
+| `/`            | Home         |
+| `/booking`     | Book a table |
+| `/my-bookings` | My bookings  |
+| `/login`       | Login        |
+| `*`            | Not found    |
 
 ## Mock data vs. real backend
 
 The backend is not available yet, so the frontend uses **mock data by default**.
 
-`client/.env.development`:
+`mountain-hut-client/.env.development`:
 
 ```
 VITE_USE_MOCKS=true
