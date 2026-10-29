@@ -140,5 +140,6 @@ tools/gotestsum.exe.hash
 !tsc/testdata/submoduleAccepted.txt
 !tsc/testdata/submoduleTriaged.txt
 
-# drawio
+# misc
 *.bkp
+*.db
