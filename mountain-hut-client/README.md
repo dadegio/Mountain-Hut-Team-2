@@ -18,12 +18,15 @@ The app runs at http://localhost:5173.
 
 ## Scripts
 
-| Command           | Description                                   |
-| ----------------- | --------------------------------------------- |
-| `npm run dev`     | Start the dev server with hot reload          |
-| `npm run build`   | Type-check and build for production (`dist/`) |
-| `npm run preview` | Serve the production build locally            |
-| `npm run lint`    | Run ESLint                                    |
+| Command                | Description                                   |
+| ---------------------- | --------------------------------------------- |
+| `npm run dev`          | Start the dev server with hot reload          |
+| `npm run build`        | Type-check and build for production (`dist/`) |
+| `npm run preview`      | Serve the production build locally            |
+| `npm run lint`         | Run ESLint                                    |
+| `npm test`             | Run Vitest test suite                         |
+| `npm run test:watch`   | Run Vitest in watch mode                      |
+| `npm run test:coverage`| Generate code coverage report                 |
 
 ## Tech stack
 
