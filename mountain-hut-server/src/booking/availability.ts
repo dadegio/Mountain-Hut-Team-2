@@ -1,5 +1,6 @@
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
+
 import { db } from "../db/database.ts";
 import {
   reservationsTable,
@@ -7,6 +8,7 @@ import {
   tablesTable,
   timeSlotTable,
 } from "../db/schema.ts";
+
 import {
   allocateTables,
   type FreeTable,
@@ -16,60 +18,73 @@ export async function getAvailability(
   date: string,
   partySize: number
 ) {
-  // Read the database information
-  const [slots, tables, configured, reservations] =
-    await Promise.all([
-      db.select().from(timeSlotTable),
+  // Find slots belonging to the requested date
+  const slots = await db
+    .select()
+    .from(timeSlotTable)
+    .where(eq(timeSlotTable.date, date));
 
+  if (slots.length === 0) {
+    return { date, partySize, slots: [] };
+  }
+
+  const slotIds = slots.map(slot => slot.id);
+
+  // Load tables, configurations and active reservations
+  const [tables, configuredTables, reservations] =
+    await Promise.all([
       db.select().from(tablesTable),
 
-      db.select().from(tableAvailabilityTable)
-        .where(eq(tableAvailabilityTable.date, date)),
+      db.select()
+        .from(tableAvailabilityTable)
+        .where(
+          inArray(tableAvailabilityTable.slotId, slotIds)
+        ),
 
-      db.select().from(reservationsTable)
-        .where(and(
-          eq(reservationsTable.scheduleDate, date),
-          ne(reservationsTable.type, "CANCELED")
-        )),
+      db.select()
+        .from(reservationsTable)
+        .where(
+          and(
+            inArray(reservationsTable.slotId, slotIds),
+            ne(reservationsTable.status, "CANCELED")
+          )
+        ),
     ]);
 
   const tablesById = new Map(
     tables.map(table => [table.id, table])
   );
 
-  // Count occupied seats for each table and slot
+  // Calculate occupied seats per slot and table
   const occupied = new Map<string, number>();
 
-  for (const booking of reservations) {
-    const key = `${booking.slotId}:${booking.tableId}`;
+  for (const reservation of reservations) {
+    const key =
+      `${reservation.slotId}:${reservation.tableId}`;
 
     occupied.set(
       key,
-      (occupied.get(key) ?? 0) + booking.partySize
+      (occupied.get(key) ?? 0) + reservation.partySize
     );
   }
 
-  const configuredBySlot = new Map<number, FreeTable[]>();
-  const seen = new Set<string>();
+  const availableBySlot = new Map<number, FreeTable[]>();
 
-  // Calculate free seats only for configured tables
-  for (const entry of configured) {
-    const key = `${entry.slotId}:${entry.tableId}`;
-
-    if (seen.has(key)) continue;
-    seen.add(key);
-
+  // Calculate remaining seats for configured tables
+  for (const entry of configuredTables) {
     const table = tablesById.get(entry.tableId);
     if (!table) continue;
 
+    const key = `${entry.slotId}:${entry.tableId}`;
     const reservedSeats = occupied.get(key) ?? 0;
+
     const freeSeats = Math.max(
       0,
       table.seats - reservedSeats
     );
 
     const slotTables =
-      configuredBySlot.get(entry.slotId) ?? [];
+      availableBySlot.get(entry.slotId) ?? [];
 
     slotTables.push({
       tableId: table.id,
@@ -77,23 +92,23 @@ export async function getAvailability(
       freeSeats,
     });
 
-    configuredBySlot.set(entry.slotId, slotTables);
+    availableBySlot.set(entry.slotId, slotTables);
   }
 
-  // Return availability for every configured slot
+  // Include slots with no tables (zero available seats)
   return {
     date,
     partySize,
 
     slots: slots
-      .filter(slot => configuredBySlot.has(slot.id))
       .sort(
         (a, b) =>
-          a.from.localeCompare(b.from) || a.id - b.id
+          a.from.localeCompare(b.from) ||
+          a.id - b.id
       )
       .map(slot => {
         const slotTables =
-          configuredBySlot.get(slot.id) ?? [];
+          availableBySlot.get(slot.id) ?? [];
 
         const availableSeats = slotTables.reduce(
           (sum, table) => sum + table.freeSeats,
