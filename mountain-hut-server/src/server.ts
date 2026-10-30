@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import { env } from "./config.ts";
+import { availabilityRoutes } from "./booking/availability-routes.ts";
 
 const fastify = Fastify({
   logger: true,
@@ -8,6 +9,8 @@ const fastify = Fastify({
 fastify.get("/", function (_request, reply) {
   reply.send({ hello: "world" });
 });
+
+fastify.register(availabilityRoutes);
 
 fastify.listen({ port: env.PORT }, function (err, _address) {
   if (err) {
