@@ -5,8 +5,8 @@ const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === "true";
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const mockSlots: Slot[] = [
-  { id: 1, label: "Lunch 12:00–14:00", available: true },
-  { id: 2, label: "Dinner 19:00–21:00", available: false },
+  { id: 1, label: "Lunch 12:00-14:00", available: true },
+  { id: 2, label: "Dinner 19:00-21:00", available: false },
 ];
 
 const mockBookings: Booking[] = [
