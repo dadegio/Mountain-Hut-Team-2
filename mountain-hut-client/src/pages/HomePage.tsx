@@ -21,7 +21,7 @@ const carouselSlides = [
     badge: "Hours & Services",
     title: "Meal Services & Flexible Slots",
     description:
-      "We serve hearty lunches (12:00–14:00) and cozy alpine dinners (19:00–21:00). Reservations are accepted online up to 2 hours before the scheduled time slot.",
+      "We serve hearty lunches (12:00-14:00) and cozy alpine dinners (19:00-21:00). Reservations are accepted online up to 2 hours before the scheduled time slot.",
     note: "* Public availability check requires no login",
   },
   {
@@ -90,8 +90,8 @@ export default function HomePage() {
       <section className="relative z-10 w-full min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-16">
         <div className="max-w-4xl mx-auto text-center space-y-6 text-white">
           <div>
-            <span className="inline-block px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-green-300 bg-black/40 backdrop-blur-xs rounded-full border border-green-500/50">
-              High Altitude Refuge • 2,350 m
+            <span className="inline-block px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-stone-200 bg-white/20 backdrop-blur-xs rounded-full border border-white/30 shadow-sm">
+              High Altitude Hut • 2,354 m
             </span>
           </div>
 
@@ -225,13 +225,12 @@ export default function HomePage() {
                 </div>
 
                 {/* Information associated with the current slide */}
-                <div className="p-8 md:p-12 flex flex-col justify-between min-h-[360px] md:min-h-[460px] space-y-6">
+                <div className="p-8 md:p-12 flex flex-col justify-center min-h-[360px] md:min-h-[460px] space-y-6">
                   <div className="space-y-4">
-                    <div className="text-3xl">{slide.icon}</div>
                     <h3 className="text-2xl sm:text-3xl font-extrabold text-stone-900 leading-snug min-h-[4rem] sm:min-h-[4.5rem] flex items-center">
                       {slide.title}
                     </h3>
-                    <p className="text-base text-stone-600 leading-relaxed min-h-[4.5rem]">
+                    <p className="text-base text-stone-600 leading-relaxed min-h-[4.5rem] flex items-center">
                       {slide.description}
                     </p>
                   </div>

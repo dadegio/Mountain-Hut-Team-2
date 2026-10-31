@@ -1,7 +1,7 @@
 // DRAFT: to be aligned with backend API contract
 export interface Slot {
   id: number;
-  label: string; // e.g. "Lunch 12:00–14:00"
+  label: string; // e.g. "Lunch 12:00-14:00"
   available: boolean;
 }
 
