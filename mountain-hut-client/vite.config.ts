@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      "/api": "http://localhost:3001", // TODO: confirm backend port
+      "/api": "http://localhost:3000", // backend default PORT (.env.template)
     },
   },
 });
