@@ -17,7 +17,11 @@ export default function Navbar() {
         </NavLink>
         <NavLink to="/my-bookings" className={linkClass}>
           My bookings
-        </NavLink>    
+        </NavLink>
+        {/* TODO(MH-7): show only to EMPLOYEE and MANAGER */}
+        <NavLink to="/employee/slots" className={linkClass}>
+          Manage slots
+        </NavLink>
         <NavLink to="/login" className={linkClass}>
           Login
         </NavLink>  

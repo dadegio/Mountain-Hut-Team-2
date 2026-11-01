@@ -43,6 +43,7 @@ mountain-hut-client/src/
 ├── components/   # Reusable UI: Layout, Navbar, ...
 ├── pages/        # One component per route
 ├── types/        # Shared TypeScript types (Booking, Slot, ...)
+├── utils/        # Small helpers shared by pages and api (dates, ...)
 ├── App.tsx       # Route definitions
 ├── main.tsx      # Entry point
 └── index.css     # Tailwind import
@@ -62,6 +63,7 @@ mountain-hut-client/src/
 | `/booking`     | Book a table |
 | `/my-bookings` | My bookings  |
 | `/login`       | Login        |
+| `/employee/slots` | Slots and tables (employee) |
 | `*`            | Not found    |
 
 ## Mock data vs. real backend
@@ -77,7 +79,7 @@ VITE_USE_MOCKS=true
 - `true` — API functions in `src/api/` return mock data (with a short simulated delay).
 - `false` — requests go to the backend via `/api/...`.
 
-When using the real backend, the Vite dev server proxies `/api` to the backend (see `vite.config.ts`, default `http://localhost:3001` — **port to be confirmed with the backend team**).
+When using the real backend, the Vite dev server proxies `/api` to the backend (see `vite.config.ts`, default `http://localhost:3000`, the backend's default `PORT`).
 
 To point at a different backend URL, set `VITE_API_URL` in an `.env` file.
 
