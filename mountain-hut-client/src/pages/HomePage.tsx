@@ -4,6 +4,7 @@ import backgroundImage from "./images/BackgroundMountainHut.jpeg";
 import foto1 from "./images/Foto1MountainHut.jpeg";
 import foto2 from "./images/Foto2MountainHut.jpeg";
 import foto3 from "./images/Foto3MountainHut.jpeg";
+import videoHut from "./images/VideoMountainHut.mp4";
 
 // Placeholder role simulation until authentication is implemented
 // Role types matching backend: 'GUEST' | 'HIKER' | 'EMPLOYEE' | 'MANAGER'
@@ -14,18 +15,30 @@ const CURRENT_USER_ROLE: UserRole = "GUEST"; // Toggle here to test views: "GUES
 const MAIL_SERVICE_URL =
   import.meta.env.VITE_MAIL_SERVICE_URL || "http://localhost:8025";
 
-const carouselSlides = [
+type CarouselSlide = {
+  type: "image" | "video";
+  src: string;
+  icon: string;
+  badge: string;
+  title?: string;
+  description?: string;
+  note?: string;
+};
+
+const carouselSlides: CarouselSlide[] = [
   {
-    image: foto1,
+    type: "image",
+    src: foto1,
     icon: "🍽️",
     badge: "Hours & Services",
     title: "Meal Services & Flexible Slots",
     description:
-      "We serve hearty lunches (12:00-14:00) and cozy alpine dinners (19:00-21:00). Reservations are accepted online up to 2 hours before the scheduled time slot.",
+      "We serve hearty lunches (12:00–14:00) and cozy alpine dinners (19:00–21:00). Reservations are accepted online up to 2 hours before the scheduled time slot.",
     note: "* Public availability check requires no login",
   },
   {
-    image: foto2,
+    type: "image",
+    src: foto2,
     icon: "🪵",
     badge: "Atmosphere",
     title: "Convivial Shared Tables",
@@ -34,13 +47,20 @@ const carouselSlides = [
     note: "* Modifications allowed up to 48 hours in advance",
   },
   {
-    image: foto3,
+    type: "image",
+    src: foto3,
     icon: "🛡️",
     badge: "Health & Safety",
     title: "Dietary Needs & Allergy Care",
     description:
       "Safety at high altitude is paramount. Specify allergies and dietary preferences (vegetarian, vegan, celiac) directly in your booking for dedicated kitchen preparation.",
     note: "* Instant confirmation email sent with your full requirements",
+  },
+  {
+    type: "video",
+    src: videoHut,
+    icon: "🎥",
+    badge: "Hut's Life",
   },
 ];
 
@@ -203,62 +223,102 @@ export default function HomePage() {
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 shadow-md">
-              <div className="grid grid-cols-1 md:grid-cols-2 items-stretch md:min-h-[460px]">
-                {/* Carousel Image container */}
-                <div className="relative min-h-[300px] sm:min-h-[360px] md:min-h-full h-full w-full overflow-hidden bg-stone-900">
-                  {carouselSlides.map((item, idx) => (
-                    <img
-                      key={idx}
-                      src={item.image}
-                      alt={item.title}
-                      className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-700 ease-in-out ${
-                        idx === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
-                      }`}
-                    />
-                  ))}
+              {slide.type === "video" ? (
+                /* Full-width Video Card (No description panel) */
+                <div className="relative w-full h-[360px] sm:h-[420px] md:h-[480px] overflow-hidden bg-black flex items-center justify-center">
+                  <video
+                    src={slide.src}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
                   <div className="absolute top-4 left-4 z-20">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white bg-black/50 backdrop-blur-xs rounded-full border border-white/20">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white bg-black/60 backdrop-blur-xs rounded-full border border-white/20">
                       <span>{slide.icon}</span>
                       <span>{slide.badge}</span>
                     </span>
                   </div>
-                </div>
 
-                {/* Information associated with the current slide */}
-                <div className="p-8 md:p-12 flex flex-col justify-center min-h-[360px] md:min-h-[460px] space-y-6">
-                  <div className="space-y-4">
-                    <h3 className="text-2xl sm:text-3xl font-extrabold text-stone-900 leading-snug min-h-[4rem] sm:min-h-[4.5rem] flex items-center">
-                      {slide.title}
-                    </h3>
-                    <p className="text-base text-stone-600 leading-relaxed min-h-[4.5rem] flex items-center">
-                      {slide.description}
-                    </p>
+                  {/* Slide Indicators on Video */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-black/40 backdrop-blur-xs px-3 py-1.5 rounded-full border border-white/10">
+                    {carouselSlides.map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setCurrentSlide(idx)}
+                        aria-label={`Go to slide ${idx + 1}`}
+                        className={`h-2.5 rounded-full transition-all cursor-pointer ${
+                          idx === currentSlide
+                            ? "w-8 bg-green-500"
+                            : "w-2.5 bg-white/40 hover:bg-white/70"
+                        }`}
+                      />
+                    ))}
                   </div>
-
-                  <div className="space-y-4 pt-4 border-t border-stone-200">
-                    <div className="text-xs font-medium text-stone-500">
-                      {slide.note}
-                    </div>
-
-                    {/* Slide Indicators */}
-                    <div className="flex items-center gap-2">
-                      {carouselSlides.map((_, idx) => (
-                        <button
+                </div>
+              ) : (
+                /* Standard Split Card with Image + Description */
+                <div className="grid grid-cols-1 md:grid-cols-2 items-stretch md:min-h-[460px]">
+                  {/* Carousel Image container */}
+                  <div className="relative min-h-[300px] sm:min-h-[360px] md:min-h-full h-full w-full overflow-hidden bg-stone-900">
+                    {carouselSlides.map((item, idx) =>
+                      item.type === "image" ? (
+                        <img
                           key={idx}
-                          type="button"
-                          onClick={() => setCurrentSlide(idx)}
-                          aria-label={`Go to slide ${idx + 1}`}
-                          className={`h-2.5 rounded-full transition-all cursor-pointer ${
-                            idx === currentSlide
-                              ? "w-8 bg-green-700"
-                              : "w-2.5 bg-stone-300 hover:bg-stone-400"
+                          src={item.src}
+                          alt={item.title || ""}
+                          className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-700 ease-in-out ${
+                            idx === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
                           }`}
                         />
-                      ))}
+                      ) : null
+                    )}
+                    <div className="absolute top-4 left-4 z-20">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white bg-black/50 backdrop-blur-xs rounded-full border border-white/20">
+                        <span>{slide.icon}</span>
+                        <span>{slide.badge}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Information associated with the current slide */}
+                  <div className="p-8 md:p-12 flex flex-col justify-center min-h-[360px] md:min-h-[460px] space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-2xl sm:text-3xl font-extrabold text-stone-900 leading-snug min-h-[4rem] sm:min-h-[4.5rem] flex items-center">
+                        {slide.title}
+                      </h3>
+                      <p className="text-base text-stone-600 leading-relaxed min-h-[4.5rem] flex items-center">
+                        {slide.description}
+                      </p>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-stone-200">
+                      <div className="text-xs font-medium text-stone-500">
+                        {slide.note}
+                      </div>
+
+                      {/* Slide Indicators */}
+                      <div className="flex items-center gap-2">
+                        {carouselSlides.map((_, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setCurrentSlide(idx)}
+                            aria-label={`Go to slide ${idx + 1}`}
+                            className={`h-2.5 rounded-full transition-all cursor-pointer ${
+                              idx === currentSlide
+                                ? "w-8 bg-green-700"
+                                : "w-2.5 bg-stone-300 hover:bg-stone-400"
+                            }`}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 
