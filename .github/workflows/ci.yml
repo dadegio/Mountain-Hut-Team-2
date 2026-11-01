@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev, 'feature/**']
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  client-checks:
+    name: Frontend Lint, Typecheck & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mountain-hut-client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: mountain-hut-client/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+
+  server-checks:
+    name: Backend Typecheck & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mountain-hut-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: mountain-hut-server/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test

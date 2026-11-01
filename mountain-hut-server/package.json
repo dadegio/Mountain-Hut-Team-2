@@ -13,7 +13,10 @@
     "start": "node src/server.ts",
     "dev": "nodemon",
     "db:seed": "tsx src/db/seed.ts",
-    "db:init": "npx drizzle-kit push"
+    "db:init": "npx drizzle-kit push",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
@@ -27,9 +30,11 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "^5.0.5",
     "drizzle-kit": "^1.0.0-rc.5",
     "nodemon": "^3.1.14",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   }
 }
