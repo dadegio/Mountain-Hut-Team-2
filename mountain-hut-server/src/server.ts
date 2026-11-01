@@ -1,20 +1,34 @@
-import Fastify from "fastify";
+import Fastify, { type FastifyServerOptions } from "fastify";
 import { env } from "./config.ts";
+import { slotRoutes } from "./slots/slot-routes.ts";
 import { availabilityRoutes } from "./booking/availability-routes.ts";
 
-const fastify = Fastify({
-  logger: true,
-});
+export function buildApp(opts: FastifyServerOptions = {}) {
+  const fastify = Fastify({
+    logger: true,
+    ...opts,
+  });
 
-fastify.get("/", function (_request, reply) {
-  reply.send({ hello: "world" });
-});
+  fastify.get("/", function (_request, reply) {
+    reply.send({ hello: "world" });
+  });
 
-fastify.register(availabilityRoutes);
+  fastify.register(slotRoutes);
+  fastify.register(availabilityRoutes);
 
-fastify.listen({ port: env.PORT }, function (err, _address) {
-  if (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-});
+  return fastify;
+}
+
+const isMain =
+  process.argv[1] &&
+  (process.argv[1].endsWith("server.ts") || process.argv[1].endsWith("server.js"));
+
+if (isMain) {
+  const fastify = buildApp();
+  fastify.listen({ port: env.PORT }, function (err, _address) {
+    if (err) {
+      fastify.log.error(err);
+      process.exit(1);
+    }
+  });
+}
