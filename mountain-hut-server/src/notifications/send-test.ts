@@ -5,13 +5,13 @@ async function main() {
   await sender.send({
     to: "hiker@example.com",
     subject: "Test Mountain Hut",
-    text: "If u read this, the SMPT service is working properly.",
-    html: "<p>If u read this, the SMPT service is working properly.</p>",
+    text: "If you read this, the SMTP service is working properly.",
+    html: "<p>If you read this, the SMTP service is working properly.</p>",
   });
-  console.log("Email inviata a Mailpit");
+  console.log("Email sent to Mailpit");
 }
 
 main().catch((err) => {
-  console.error("Invio fallito:", err);
+  console.error("Sending failed:", err);
   process.exit(1);
 });
