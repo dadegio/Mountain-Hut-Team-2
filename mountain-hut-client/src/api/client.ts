@@ -19,9 +19,9 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
     let message = res.statusText;
     try {
       const body = await res.json();
-      message = body.message ?? body.error ?? message;
+      message = body.error ?? message; // backend format: { error, details? }
     } catch {
-      // response had no JSON body, keep statusText
+      // no JSON body, keep statusText
     }
     throw new ApiError(res.status, message);
   }
