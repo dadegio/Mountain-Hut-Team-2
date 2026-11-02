@@ -6,7 +6,7 @@ import foto2 from "./images/Foto2MountainHut.jpeg";
 import foto3 from "./images/Foto3MountainHut.jpeg";
 import videoHut from "./images/VideoMountainHut.mp4";
 
-// Placeholder role simulation until authentication is implemented
+// TODO(MH-7): replace hard-coded role simulation with actual authentication state
 // Role types matching backend: 'GUEST' | 'HIKER' | 'EMPLOYEE' | 'MANAGER'
 type UserRole = "GUEST" | "HIKER" | "EMPLOYEE" | "MANAGER";
 
@@ -67,15 +67,18 @@ const carouselSlides: CarouselSlide[] = [
 export default function HomePage() {
   const isStaff = CURRENT_USER_ROLE === "EMPLOYEE" || CURRENT_USER_ROLE === "MANAGER";
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Auto-scroll every 10 seconds, resets whenever currentSlide changes (manual or automatic)
+  // Auto-scroll every 10 seconds, resets whenever currentSlide changes (manual or automatic), paused on hover or user toggle
   useEffect(() => {
+    if (isPaused) return;
+
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev === carouselSlides.length - 1 ? 0 : prev + 1));
     }, 10000);
 
     return () => clearInterval(timer);
-  }, [currentSlide]);
+  }, [currentSlide, isPaused]);
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev === 0 ? carouselSlides.length - 1 : prev - 1));
@@ -88,8 +91,7 @@ export default function HomePage() {
   const slide = carouselSlides[currentSlide];
 
   return (
-    <div className="-mx-4 -mt-8 -mb-8 flex flex-col">
-
+    <div className="flex flex-col">
       {/* Fixed Background Image with Parallax Effect */}
       <div
         className="fixed inset-0 top-14 w-full h-[calc(100vh-3.5rem)] pointer-events-none z-0"
@@ -142,7 +144,7 @@ export default function HomePage() {
       </section>
 
       {/* Subsequent Sections (Solid Opaque White Background that slides over the fixed hero) */}
-      <div className="relative z-10 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-white shadow-2xl pt-16 pb-20 px-4 min-h-[calc(100vh-3.5rem)]">
+      <div className="relative z-10 w-full bg-white shadow-2xl pt-16 pb-20 px-4 min-h-[calc(100vh-3.5rem)]">
         <div className="max-w-5xl mx-auto space-y-16">
           {/* Staff Management Panel (Only visible to EMPLOYEE or MANAGER) */}
           {isStaff && (
@@ -151,7 +153,7 @@ export default function HomePage() {
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🛠️</span>
                   <h2 className="text-lg font-bold text-amber-900">
-                    Staff Quick Portal ({CURRENT_USER_ROLE})
+                    Staff Quick Portal
                   </h2>
                 </div>
                 <a
@@ -169,20 +171,26 @@ export default function HomePage() {
                 Quick operations for dining service and room management:
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-white p-3.5 rounded-lg border border-amber-200 shadow-sm">
-                  <div className="font-semibold text-stone-800 text-sm">MH-02 • Slot Capacity</div>
+                <Link
+                  to="/employee/slots"
+                  className="block bg-white p-3.5 rounded-lg border border-amber-200 shadow-sm hover:border-amber-400 hover:shadow-md transition"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-stone-800 text-sm">Slot Capacity</span>
+                    <span className="text-xs text-green-700 font-medium">Manage &rarr;</span>
+                  </div>
                   <p className="text-xs text-stone-600 mt-1">
                     Configure table sets and seat capacity for upcoming lunch and dinner slots.
                   </p>
-                </div>
+                </Link>
                 <div className="bg-white p-3.5 rounded-lg border border-amber-200 shadow-sm">
-                  <div className="font-semibold text-stone-800 text-sm">MH-07 • Walk-in & Phone Booking</div>
+                  <div className="font-semibold text-stone-800 text-sm">Walk-in & Phone Booking</div>
                   <p className="text-xs text-stone-600 mt-1">
                     Directly enter reservations on behalf of hikers arriving in person or calling.
                   </p>
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-amber-200 shadow-sm">
-                  <div className="font-semibold text-stone-800 text-sm">MH-03 • Email Dispatch</div>
+                  <div className="font-semibold text-stone-800 text-sm">Email Dispatch</div>
                   <p className="text-xs text-stone-600 mt-1">
                     Monitor automatic email confirmations and deliverability status.
                   </p>
@@ -205,6 +213,15 @@ export default function HomePage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => setIsPaused((prev) => !prev)}
+                  aria-label={isPaused ? "Play carousel auto-advance" : "Pause carousel auto-advance"}
+                  title={isPaused ? "Resume auto-advance" : "Pause auto-advance"}
+                  className="w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-200 border border-stone-300 flex items-center justify-center text-stone-700 transition-colors shadow-xs cursor-pointer text-sm"
+                >
+                  {isPaused ? "▶" : "⏸"}
+                </button>
+                <button
+                  type="button"
                   onClick={prevSlide}
                   aria-label="Previous slide"
                   className="w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-200 border border-stone-300 flex items-center justify-center text-stone-700 transition-colors shadow-xs cursor-pointer"
@@ -222,7 +239,11 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 shadow-md">
+            <div
+              className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 shadow-md"
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+            >
               {slide.type === "video" ? (
                 /* Full-width Video Card (No description panel) */
                 <div className="relative w-full h-[360px] sm:h-[420px] md:h-[480px] overflow-hidden bg-black flex items-center justify-center">
@@ -374,4 +395,3 @@ export default function HomePage() {
     </div>
   );
 }
-
