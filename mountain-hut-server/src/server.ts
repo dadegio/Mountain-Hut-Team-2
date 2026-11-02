@@ -3,6 +3,7 @@ import { env } from "./config.ts";
 import { slotRoutes } from "./slots/slot-routes.ts";
 import { availabilityRoutes } from "./booking/availability-routes.ts";
 import { bookingRoutes } from "./booking/booking-routes.ts";
+import { changeBookingRoutes } from "./booking/change-booking-routes.ts";
 
 export function buildApp(opts: FastifyServerOptions = {}) {
   const fastify = Fastify({
@@ -17,6 +18,7 @@ export function buildApp(opts: FastifyServerOptions = {}) {
   fastify.register(slotRoutes);
   fastify.register(availabilityRoutes);
   fastify.register(bookingRoutes);
+  fastify.register(changeBookingRoutes);
 
   return fastify;
 }
