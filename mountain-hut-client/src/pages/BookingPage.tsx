@@ -53,39 +53,41 @@ function bookingErrorMessage(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+// Result of one availability request, tagged with the inputs it was loaded for
+interface LoadedAvailability {
+  key: string;
+  slots: SlotAvailability[];
+  error: string | null;
+}
+
 export default function BookingPage() {
   const [date, setDate] = useState("");
   const [partySize, setPartySize] = useState(2);
   const [slotId, setSlotId] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [slots, setSlots] = useState<SlotAvailability[]>([]);
-  const [slotsLoading, setSlotsLoading] = useState(false);
-  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<LoadedAvailability | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<BookingResult | null>(null);
 
-  // reload availability whenever date or party size changes
-  useEffect(() => {
-    setSlotId(""); // previous choice may no longer be valid
-    setSlots([]);
-    setSlotsError(null);
+  const validParty = partySize >= 1 && partySize <= MAX_PARTY_SIZE;
+  const key = date && validParty ? `${date}|${partySize}` : null;
 
+  // fetch availability when date or party size changes;
+  // state is only set in async callbacks, never synchronously in the effect body
+  useEffect(() => {
     if (!date || partySize < 1 || partySize > MAX_PARTY_SIZE) return;
 
+    const requestKey = `${date}|${partySize}`;
     let ignore = false;
-    setSlotsLoading(true);
 
     getAvailability(date, partySize)
       .then((data) => {
-        if (!ignore) setSlots(data.slots);
+        if (!ignore) setLoaded({ key: requestKey, slots: data.slots, error: null });
       })
       .catch((err: Error) => {
-        if (!ignore) setSlotsError(err.message);
-      })
-      .finally(() => {
-        if (!ignore) setSlotsLoading(false);
+        if (!ignore) setLoaded({ key: requestKey, slots: [], error: err.message });
       });
 
     return () => {
@@ -93,14 +95,28 @@ export default function BookingPage() {
     };
   }, [date, partySize]);
 
+  // derived from state: no extra useState needed
+  const current = loaded && loaded.key === key ? loaded : null;
+  const slotsLoading = key !== null && current === null;
+  const slots = current?.slots ?? [];
+  const slotsError = current?.error ?? null;
   const bookableSlots = slots.filter((s) => s.available && !isTooLate(date, s.from));
+
+  function handleDateChange(d: Date | undefined) {
+    setDate(d ? toDateString(d) : "");
+    setSlotId(""); // previous choice may no longer be valid
+  }
+
+  function handlePartySizeChange(value: number) {
+    setPartySize(value);
+    setSlotId("");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!date || date < today()) return setFormError("Please choose today or a future date.");
-    if (partySize < 1 || partySize > MAX_PARTY_SIZE)
-      return setFormError(`Party size must be between 1 and ${MAX_PARTY_SIZE}.`);
+    if (!validParty) return setFormError(`Party size must be between 1 and ${MAX_PARTY_SIZE}.`);
     if (!slotId) return setFormError("Please choose a time slot.");
 
     setFormError(null);
@@ -152,45 +168,45 @@ export default function BookingPage() {
       >
         <div className="grid gap-6 md:grid-cols-2">
           <div>
-            <p className="text-sm font-medium mb-1">Date</p>
+            <p className="text-sm font-medium mb-2">Date</p>
             <DayPicker
               mode="single"
               selected={date ? fromDateString(date) : undefined}
-              onSelect={(d) => setDate(d ? toDateString(d) : "")}
+              onSelect={handleDateChange}
               disabled={{ before: new Date() }}
               weekStartsOn={1}
             />
           </div>
 
-        <div>
-          <label htmlFor="partySize" className="block text-sm font-medium mb-2">
-            Party size
-          </label>
-          <div className="relative">
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-500 pointer-events-none"
-            >
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
-            </svg>
-            <input
-              id="partySize"
-              type="number"
-              min={1}
-              max={MAX_PARTY_SIZE}
-              value={partySize}
-              onChange={(e) => setPartySize(Number(e.target.value))}
-              className="w-full border border-stone-300 rounded pl-10 pr-3 py-2"
-            />
+          <div>
+            <label htmlFor="partySize" className="block text-sm font-medium mb-2">
+              Party size
+            </label>
+            <div className="relative">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-500 pointer-events-none"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+              </svg>
+              <input
+                id="partySize"
+                type="number"
+                min={1}
+                max={MAX_PARTY_SIZE}
+                value={partySize}
+                onChange={(e) => handlePartySizeChange(Number(e.target.value))}
+                className="w-full border border-stone-300 rounded pl-10 pr-3 py-2"
+              />
+            </div>
           </div>
-        </div>
         </div>
 
         <div>
