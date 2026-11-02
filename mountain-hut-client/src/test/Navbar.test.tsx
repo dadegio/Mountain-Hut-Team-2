@@ -15,30 +15,46 @@ describe('Navbar', () => {
     expect(brand.closest('a')).toHaveAttribute('href', '/')
   })
 
-  it('renders all navigation links including Manage slots', () => {
+  it('renders all navigation links including Home and Manage slots', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <Navbar />
       </MemoryRouter>
     )
+    expect(screen.getByText('Home')).toBeInTheDocument()
     expect(screen.getByText('Book a table')).toBeInTheDocument()
     expect(screen.getByText('My bookings')).toBeInTheDocument()
     expect(screen.getByText('Manage slots')).toBeInTheDocument()
     expect(screen.getByText('Login')).toBeInTheDocument()
   })
 
-  it('highlights the active link based on current route', () => {
+  it('highlights Home when on home route and inactive when on another page', () => {
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/']}>
+        <Navbar />
+      </MemoryRouter>
+    )
+    const homeLink = screen.getByText('Home')
+    expect(homeLink.className).toContain('text-green-700')
+    expect(homeLink.className).toContain('font-semibold')
+
+    const bookingLink = screen.getByText('Book a table')
+    expect(bookingLink.className).not.toContain('font-semibold')
+
+    unmount()
+
+    // Test on another page
     render(
       <MemoryRouter initialEntries={['/booking']}>
         <Navbar />
       </MemoryRouter>
     )
-    const bookingLink = screen.getByText('Book a table')
-    expect(bookingLink.className).toContain('text-green-700')
-    expect(bookingLink.className).toContain('font-semibold')
+    const homeLinkOnBooking = screen.getByText('Home')
+    expect(homeLinkOnBooking.className).not.toContain('font-semibold')
 
-    const myBookingsLink = screen.getByText('My bookings')
-    expect(myBookingsLink.className).not.toContain('font-semibold')
+    const bookingLinkActive = screen.getByText('Book a table')
+    expect(bookingLinkActive.className).toContain('text-green-700')
+    expect(bookingLinkActive.className).toContain('font-semibold')
   })
 
   it('toggles mobile menu when clicking the menu button', () => {
@@ -53,8 +69,8 @@ describe('Navbar', () => {
     fireEvent.click(toggleButton)
     expect(toggleButton).toHaveAttribute('aria-expanded', 'true')
 
-    const bookingLinks = screen.getAllByText('Book a table')
-    expect(bookingLinks.length).toBeGreaterThanOrEqual(2)
+    const homeLinks = screen.getAllByText('Home')
+    expect(homeLinks.length).toBeGreaterThanOrEqual(2)
 
     fireEvent.click(toggleButton)
     expect(toggleButton).toHaveAttribute('aria-expanded', 'false')

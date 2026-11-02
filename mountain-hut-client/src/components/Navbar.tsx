@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink } from "react-router";
 
 const navItems = [
+  { path: "/", label: "Home", end: true },
   { path: "/booking", label: "Book a table" },
   { path: "/my-bookings", label: "My bookings" },
   { path: "/employee/slots", label: "Manage slots" },
@@ -33,7 +34,12 @@ export default function Navbar() {
         {/* Desktop navigation */}
         <div className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
-            <NavLink key={item.path} to={item.path} className={linkClass}>
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.end}
+              className={linkClass}
+            >
               {item.label}
             </NavLink>
           ))}
@@ -75,6 +81,7 @@ export default function Navbar() {
             <NavLink
               key={item.path}
               to={item.path}
+              end={item.end}
               onClick={() => setIsOpen(false)}
               className={mobileLinkClass}
             >
