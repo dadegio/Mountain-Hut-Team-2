@@ -14,6 +14,7 @@ export default function Layout() {
       </main>
 
       <footer className="relative z-10 bg-white text-center text-sm text-stone-500 py-6">
+        Mountain Hut
       </footer>
     </div>
   );
