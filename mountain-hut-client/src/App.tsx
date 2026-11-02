@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage";
 import BookingPage from "./pages/BookingPage";
 import MyBookingsPage from "./pages/MyBookingsPage";
 import LoginPage from "./pages/LoginPage";
+import EmployeeSlotsPage from "./pages/EmployeeSlotsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="booking" element={<BookingPage />}/>
         <Route path="my-bookings" element={<MyBookingsPage />}/>
         <Route path="login" element={<LoginPage />}/>
+        <Route path="employee/slots" element={<EmployeeSlotsPage />}/>
         <Route path="*" element={<NotFoundPage />}/>
         </Route>
       </Routes>
