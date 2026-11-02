@@ -94,7 +94,8 @@ async function resetFixture() {
       (1, 'hiker1@example.com', 'Hiker', 'One', 'HIKER'),
       (2, 'hiker2@example.com', 'Hiker', 'Two', 'HIKER'),
       (3, 'staff@example.com', 'Employee', 'Three', 'EMPLOYEE'),
-      (4, 'hiker4@example.com', 'Hiker', 'Four', 'HIKER');
+      (4, 'hiker4@example.com', 'Hiker', 'Four', 'HIKER'),
+      (5, 'manager@example.com', 'Manager', 'Five', 'MANAGER');
 
     INSERT INTO tables(id, code, seats) VALUES
       (1, 'T1', 2),
@@ -181,6 +182,9 @@ describe("POST /api/bookings — MH-18 integration", () => {
     ["negative people", { userId: 1, slotId: 1, partySize: -1 }],
     ["missing partySize", { userId: 1, slotId: 1 }],
     ["non-integer partySize", { userId: 1, slotId: 1, partySize: 2.5 }],
+    ["exceeds maximum partySize", { userId: 1, slotId: 1, partySize: 1001 }],
+    ["invalid userId (negative)", { userId: -1, slotId: 1, partySize: 2 }],
+    ["invalid slotId (zero)", { userId: 1, slotId: 0, partySize: 2 }],
     ["unexpected property", { userId: 1, slotId: 1, partySize: 2, extra: true }],
   ])("400: rejects %s", async (_name, body) => {
     const response = await postBooking(body);
@@ -190,6 +194,12 @@ describe("POST /api/bookings — MH-18 integration", () => {
 
   it("403: rejects an EMPLOYEE", async () => {
     const response = await postBooking({ userId: 3, slotId: 1, partySize: 2 });
+    expect(response.statusCode).toBe(403);
+    expect((await reservationRows())).toHaveLength(0);
+  });
+
+  it("403: rejects a MANAGER", async () => {
+    const response = await postBooking({ userId: 5, slotId: 1, partySize: 2 });
     expect(response.statusCode).toBe(403);
     expect((await reservationRows())).toHaveLength(0);
   });
@@ -242,6 +252,21 @@ describe("POST /api/bookings — MH-18 integration", () => {
     expect(rows.filter((r) => r.status === "PLACED")).toHaveLength(1);
   });
 
+  it("allows the same hiker to book two different time slots on the same date", async () => {
+    const first = await postBooking({ userId: 1, slotId: 1, partySize: 2 });
+    expect(first.statusCode).toBe(201);
+    const second = await postBooking({ userId: 1, slotId: 2, partySize: 2 });
+    expect(second.statusCode).toBe(201);
+    const rows = await reservationRows();
+    expect(rows.filter((r) => Number(r.user_id) === 1)).toHaveLength(2);
+  });
+
+  it("chooses the smallest single table available (minimizes unused capacity)", async () => {
+    const response = await postBooking({ userId: 1, slotId: 1, partySize: 3 });
+    expect(response.statusCode).toBe(201);
+    expect(response.json().reservations).toMatchObject([{ tableId: 2, seats: 3 }]);
+  });
+
   it("respects seats already occupied by other hikers", async () => {
     await client.execute(`INSERT INTO reservations(user_id, slot_id, table_id, party_size, status)
       VALUES (2, 1, 2, 3, 'PLACED')`);
@@ -251,7 +276,6 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 
   it("never overbooks when two hikers request the last two seats simultaneously", async () => {
-    // This is an integration race test; a 500 or overbooking is a real issue to investigate.
     const requests = [
       postBooking({ userId: 1, slotId: 3, partySize: 2 }),
       postBooking({ userId: 2, slotId: 3, partySize: 2 }),
@@ -261,5 +285,16 @@ describe("POST /api/bookings — MH-18 integration", () => {
     const rows = await reservationRows();
     expect(rows).toHaveLength(1);
     expect(rows.reduce((sum, r) => sum + Number(r.party_size), 0)).toBe(2);
+  });
+
+  it("500: returns internal server error on unexpected database failure", async () => {
+    const bookingModule = await import("./booking.ts");
+    const spy = vi.spyOn(bookingModule, "createBooking").mockRejectedValueOnce(new Error("Database disconnected"));
+
+    const response = await postBooking({ userId: 1, slotId: 1, partySize: 2 });
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toEqual({ error: "Internal server error" });
+
+    spy.mockRestore();
   });
 });
