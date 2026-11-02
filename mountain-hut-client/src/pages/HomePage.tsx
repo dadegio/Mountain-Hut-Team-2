@@ -213,15 +213,6 @@ export default function HomePage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsPaused((prev) => !prev)}
-                  aria-label={isPaused ? "Play carousel auto-advance" : "Pause carousel auto-advance"}
-                  title={isPaused ? "Resume auto-advance" : "Pause auto-advance"}
-                  className="w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-200 border border-stone-300 flex items-center justify-center text-stone-700 transition-colors shadow-xs cursor-pointer text-sm"
-                >
-                  {isPaused ? "▶" : "⏸"}
-                </button>
-                <button
-                  type="button"
                   onClick={prevSlide}
                   aria-label="Previous slide"
                   className="w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-200 border border-stone-300 flex items-center justify-center text-stone-700 transition-colors shadow-xs cursor-pointer"
