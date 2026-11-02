@@ -4,3 +4,7 @@
   --rdp-accent-color: #15803d;            /* green-700 */
   --rdp-accent-background-color: #dcfce7; /* green-100 */
 }
+:root {
+  --hero-overlay-color: rgba(0, 0, 0, 0.60);
+}
+

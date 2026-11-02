@@ -1,31 +1,95 @@
+import { useState } from "react";
 import { NavLink } from "react-router";
+
+const navItems = [
+  { path: "/", label: "Home", end: true },
+  { path: "/booking", label: "Book a table" },
+  { path: "/my-bookings", label: "My bookings" },
+  { path: "/employee/slots", label: "Manage slots" },
+  { path: "/login", label: "Login" },
+];
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive
     ? "font-semibold text-green-700"
     : "text-stone-600 hover:text-green-700";
 
+const mobileLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `block px-3 py-2 rounded-md text-base ${
+    isActive
+      ? "font-semibold text-green-700 bg-green-50"
+      : "text-stone-600 hover:text-green-700 hover:bg-stone-50"
+  }`;
+
 export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <nav className="bg-white border-b border-stone-200">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-6">
-        <NavLink to="/" className="text-lg font-bold text-green-800 mr-auto">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xs border-b border-stone-200">
+      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+        <NavLink to="/" className="text-lg font-bold text-green-800">
           Mountain Hut
         </NavLink>
-        <NavLink to="/booking" className={linkClass}>
-          Book a table
-        </NavLink>
-        <NavLink to="/my-bookings" className={linkClass}>
-          My bookings
-        </NavLink>
-        {/* TODO(MH-7): show only to EMPLOYEE and MANAGER */}
-        <NavLink to="/employee/slots" className={linkClass}>
-          Manage slots
-        </NavLink>
-        <NavLink to="/login" className={linkClass}>
-          Login
-        </NavLink>  
+
+        {/* Desktop navigation */}
+        <div className="hidden md:flex items-center gap-6">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.end}
+              className={linkClass}
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </div>
+
+        {/* Mobile menu toggle */}
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-stone-600 hover:text-stone-900 hover:bg-stone-100 focus:outline-hidden focus:ring-2 focus:ring-green-700 cursor-pointer"
+          aria-expanded={isOpen}
+          aria-label="Toggle navigation menu"
+        >
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="1.5"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            {isOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+              />
+            )}
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile navigation panel */}
+      {isOpen && (
+        <div className="md:hidden border-t border-stone-200 bg-white px-4 pt-2 pb-3 space-y-1 shadow-lg">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.end}
+              onClick={() => setIsOpen(false)}
+              className={mobileLinkClass}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }
