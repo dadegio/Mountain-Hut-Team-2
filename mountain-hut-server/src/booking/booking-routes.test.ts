@@ -44,13 +44,14 @@ const pastDate = romeDate(-3);
 const createTestSchema = `
   PRAGMA foreign_keys = ON;
   CREATE TABLE "users" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-    "email" TEXT NOT NULL UNIQUE,
-    "name" TEXT NOT NULL,
-    "surname" TEXT NOT NULL,
-    "phoneNumber" INTEGER,
-    "type" TEXT NOT NULL
-  );
+  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+  "email" TEXT NOT NULL UNIQUE,
+  "password_hash" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "surname" TEXT NOT NULL,
+  "phone_number" TEXT,
+  "type" TEXT NOT NULL DEFAULT 'HIKER'
+);
   CREATE TABLE "time_slots" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT,
     "date" TEXT NOT NULL,
@@ -90,12 +91,13 @@ async function resetFixture() {
   `);
 
   await client.executeMultiple(`
-    INSERT INTO users(id, email, name, surname, type) VALUES
-      (1, 'hiker1@example.com', 'Hiker', 'One', 'HIKER'),
-      (2, 'hiker2@example.com', 'Hiker', 'Two', 'HIKER'),
-      (3, 'staff@example.com', 'Employee', 'Three', 'EMPLOYEE'),
-      (4, 'hiker4@example.com', 'Hiker', 'Four', 'HIKER'),
-      (5, 'manager@example.com', 'Manager', 'Five', 'MANAGER');
+    INSERT INTO users(
+      id, email, password_hash, name, surname, type) VALUES
+      (1, 'hiker1@example.com', 'test-hash', 'Hiker', 'One', 'HIKER'),
+      (2, 'hiker2@example.com', 'test-hash', 'Hiker', 'Two', 'HIKER'),
+      (3, 'staff@example.com', 'test-hash', 'Employee', 'Three', 'EMPLOYEE'),
+      (4, 'hiker4@example.com', 'test-hash', 'Hiker', 'Four', 'HIKER'),
+      (5, 'manager@example.com', 'test-hash', 'Manager', 'Five', 'MANAGER');
 
     INSERT INTO tables(id, code, seats) VALUES
       (1, 'T1', 2),
