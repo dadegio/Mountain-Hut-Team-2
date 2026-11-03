@@ -2,15 +2,18 @@ import { sql } from "drizzle-orm";
 import { sqliteTable, int, text, unique } from "drizzle-orm/sqlite-core";
 
 export const USER_TYPES = ["HIKER", "EMPLOYEE", "MANAGER"] as const;
+export type UserType = (typeof USER_TYPES)[number];
+
 export const RESERVATION_STATUS = ["PLACED", "FULFILLED", "CANCELED"] as const;
 
 export const usersTable = sqliteTable("users", {
   id: int().primaryKey({ autoIncrement: true }),
   email: text().notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
   name: text().notNull(),
   surname: text().notNull(),
-  phoneNumber: int(),
-  type: text().notNull().$type<(typeof USER_TYPES)[number]>(),
+  phoneNumber: text("phone_number"),
+  type: text().notNull().$type<UserType>().default("HIKER"),
 });
 
 // One row per slot on a given day: date is "YYYY-MM-DD", from/to are "HH:MM"

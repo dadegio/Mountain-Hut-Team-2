@@ -9,6 +9,12 @@ const envSchema = z.object({
     .transform((val) => Number(val))
     .default(3000),
   DB_FILE_NAME: z.url().default("file:local.db"),
+  SESSION_SECRET: z
+    .string()
+    .min(32, "SESSION_SECRET must be at least 32 characters long"),
+  SESSION_SALT: z
+    .string()
+    .length(16, "SESSION_SALT must be exactly 16 characters (16 bytes) long"),
 });
 
 const _env = envSchema.safeParse(process.env);
