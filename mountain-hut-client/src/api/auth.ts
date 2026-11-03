@@ -26,9 +26,11 @@ export function login(email: string, password: string) {
 }
 
 export function logout() {
-  return apiFetch<{ message: string }>('/v1/auth/logout', { method: 'POST' })
+  return apiFetch<{ message: string }>('/v1/auth/logout', {
+    method: 'POST',
+    body: JSON.stringify({}), 
+  })
 }
-
 export function getMe() {
   return apiFetch<User>('/v1/auth/me')
 }
