@@ -5,16 +5,19 @@ import {
   validatorCompiler,
 } from "fastify-type-provider-zod";
 
+import { bookingRoutes } from "./booking/booking-routes.ts";
 import { env } from "./config.ts";
 import { slotRoutes } from "./slots/slot-routes.ts";
 import { availabilityRoutes } from "./booking/availability-routes.ts";
 import authRoutes from "./auth/auth.route.ts";
 import AuthRepository from "./auth/auth.repository.ts";
-import * as fastify from "fastify";
 
 // ------- server setup
 export function buildApp(opts: FastifyServerOptions = {}) {
-  const server = Fastify({ logger: true });
+const server = Fastify({
+  logger: true,
+  ...opts,
+});
 
   server.setValidatorCompiler(validatorCompiler);
   server.setSerializerCompiler(serializerCompiler);
@@ -44,9 +47,9 @@ export function buildApp(opts: FastifyServerOptions = {}) {
 
   server.register(slotRoutes);
   server.register(availabilityRoutes);
-  // ------- routes
-  const BASE_URL = "/api/v1";
+  server.register(bookingRoutes);
 
+  const BASE_URL = "/api/v1";
   server.register(authRoutes, { prefix: `${BASE_URL}/auth` });
 
   return server;
