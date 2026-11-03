@@ -346,3 +346,149 @@ describe("POST /api/bookings — MH-18 integration", () => {
     spy.mockRestore();
   });
 });
+
+// MH-07: on-behalf-of booking for an existing HIKER, using the same real
+// Fastify server, in-memory DB and login fixtures as the MH-18 tests above.
+async function postStaffBooking(body: Record<string, unknown>, actingUserId: number | null = 3) {
+  let cookie = "";
+  if (actingUserId !== null) {
+    const login = await app.inject({
+      method: "POST",
+      url: "/api/v1/auth/login",
+      payload: { email: emails[actingUserId], password: TEST_PASSWORD },
+    });
+    expect(login.statusCode).toBe(200);
+    const setCookie = login.headers["set-cookie"];
+    cookie = (Array.isArray(setCookie) ? setCookie : [setCookie])
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    expect(cookie).not.toBe("");
+  }
+
+  return app.inject({
+    method: "POST",
+    url: "/api/staff/bookings",
+    headers: {
+      "content-type": "application/json",
+      ...(cookie ? { cookie } : {}),
+    },
+    payload: body,
+  });
+}
+
+describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
+  it("201: EMPLOYEE books for another registered HIKER", async () => {
+    const response = await postStaffBooking({ hikerId: 1, slotId: 1, partySize: 3 });
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({
+      status: "PLACED",
+      userId: 1,
+      slotId: 1,
+      partySize: 3,
+      reservations: [{ tableId: 2, seats: 3 }],
+    });
+    const rows = await reservationRows();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ user_id: 1, slot_id: 1, party_size: 3 });
+  });
+
+  it("201: MANAGER can book for a registered HIKER", async () => {
+    const response = await postStaffBooking({ hikerId: 2, slotId: 1, partySize: 2 }, 5);
+    expect(response.statusCode).toBe(201);
+    expect(response.json().userId).toBe(2);
+    expect((await reservationRows())[0].user_id).toBe(2);
+  });
+
+  it("201: reuses multi-table allocation and persists every assignment", async () => {
+    const response = await postStaffBooking({ hikerId: 2, slotId: 2, partySize: 10 });
+    expect(response.statusCode).toBe(201);
+    expect(response.json().reservations).toHaveLength(2);
+    const rows = await reservationRows();
+    expect(rows).toHaveLength(2);
+    expect(rows.reduce((total, row) => total + Number(row.party_size), 0)).toBe(10);
+    expect(rows.every((row) => Number(row.user_id) === 2)).toBe(true);
+  });
+
+  it("401: requires an authenticated staff session", async () => {
+    const response = await postStaffBooking({ hikerId: 1, slotId: 1, partySize: 2 }, null);
+    expect(response.statusCode).toBe(401);
+    expect(await reservationRows()).toHaveLength(0);
+  });
+
+  it("403: a HIKER cannot use the staff endpoint", async () => {
+    const response = await postStaffBooking({ hikerId: 2, slotId: 1, partySize: 2 }, 1);
+    expect(response.statusCode).toBe(403);
+    expect(await reservationRows()).toHaveLength(0);
+  });
+
+  it.each([
+    ["missing hikerId", { slotId: 1, partySize: 2 }],
+    ["zero hikerId", { hikerId: 0, slotId: 1, partySize: 2 }],
+    ["noninteger hikerId", { hikerId: 1.5, slotId: 1, partySize: 2 }],
+    ["string hikerId", { hikerId: "1", slotId: 1, partySize: 2 }],
+    ["invalid slotId", { hikerId: 1, slotId: 0, partySize: 2 }],
+    ["invalid partySize", { hikerId: 1, slotId: 1, partySize: -1 }],
+    ["additional userId", { hikerId: 1, userId: 2, slotId: 1, partySize: 2 }],
+    ["additional role", { hikerId: 1, role: "MANAGER", slotId: 1, partySize: 2 }],
+  ])("400: rejects %s", async (_description, body) => {
+    const response = await postStaffBooking(body);
+    expect(response.statusCode).toBe(400);
+    expect(await reservationRows()).toHaveLength(0);
+  });
+
+  it("404: rejects a target hiker that does not exist", async () => {
+    const response = await postStaffBooking({ hikerId: 999, slotId: 1, partySize: 2 });
+    expect(response.statusCode).toBe(404);
+    expect(await reservationRows()).toHaveLength(0);
+  });
+
+  it.each([3, 5])("403: target user %i is not a HIKER", async (hikerId) => {
+    const response = await postStaffBooking({ hikerId, slotId: 1, partySize: 2 });
+    expect(response.statusCode).toBe(403);
+    expect(await reservationRows()).toHaveLength(0);
+  });
+
+  it("409: rejects duplicate active bookings for the target hiker", async () => {
+    const body = { hikerId: 1, slotId: 1, partySize: 2 };
+    expect((await postStaffBooking(body)).statusCode).toBe(201);
+    const duplicate = await postStaffBooking(body);
+    expect(duplicate.statusCode).toBe(409);
+    expect(await reservationRows()).toHaveLength(1);
+  });
+
+  it("409: rejects insufficient capacity without partial writes", async () => {
+    const response = await postStaffBooking({ hikerId: 1, slotId: 2, partySize: 11 });
+    expect(response.statusCode).toBe(409);
+    expect(await reservationRows()).toHaveLength(0);
+  });
+
+  it("409: respects the booking deadline", async () => {
+    const response = await postStaffBooking({ hikerId: 1, slotId: 4, partySize: 1 });
+    expect(response.statusCode).toBe(409);
+    expect(await reservationRows()).toHaveLength(0);
+  });
+
+  it("does not overbook during concurrent staff and hiker requests", async () => {
+    const responses = await Promise.all([
+      postStaffBooking({ hikerId: 1, slotId: 3, partySize: 2 }),
+      postBooking({ slotId: 3, partySize: 2 }, 2),
+    ]);
+    expect(responses.map((response) => response.statusCode).sort()).toEqual([201, 409]);
+    const rows = await reservationRows();
+    expect(rows).toHaveLength(1);
+    expect(rows.reduce((total, row) => total + Number(row.party_size), 0)).toBe(2);
+  });
+
+  it("500: does not expose unexpected server errors", async () => {
+    const bookingModule = await import("./booking.ts");
+    const spy = vi.spyOn(bookingModule, "createBooking").mockRejectedValueOnce(new Error("DB unavailable"));
+    try {
+      const response = await postStaffBooking({ hikerId: 1, slotId: 1, partySize: 2 });
+      expect(response.statusCode).toBe(500);
+      expect(response.json()).toEqual({ error: "Internal server error" });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
