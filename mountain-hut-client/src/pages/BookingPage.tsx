@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import { getAvailability } from "../api/availability";
 import { createBooking } from "../api/bookings";
 import { ApiError } from "../api/client";
+import { useAuth } from "../hooks/useAuth";
 import type { SlotAvailability } from "../types/availability";
 import type { BookingResult } from "../types/booking";
 
@@ -61,6 +63,8 @@ interface LoadedAvailability {
 }
 
 export default function BookingPage() {
+  const { user, loading: authLoading } = useAuth();
+
   const [date, setDate] = useState("");
   const [partySize, setPartySize] = useState(2);
   const [slotId, setSlotId] = useState("");
@@ -251,13 +255,27 @@ export default function BookingPage() {
 
         {formError && <p className="text-sm text-red-600">{formError}</p>}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-green-700 text-white rounded py-2 font-medium hover:bg-green-800 disabled:opacity-50"
-        >
-          {submitting ? "Booking…" : "Book"}
-        </button>
+        {/* guests can browse availability but must log in to book */}
+        {!authLoading && !user ? (
+          <p className="text-sm text-stone-700">
+            <Link
+              to="/login"
+              state={{ from: "/booking" }}
+              className="text-green-700 underline font-medium"
+            >
+              Log in
+            </Link>{" "}
+            to book a table.
+          </p>
+        ) : (
+          <button
+            type="submit"
+            disabled={submitting || authLoading}
+            className="w-full bg-green-700 text-white rounded py-2 font-medium hover:bg-green-800 disabled:opacity-50"
+          >
+            {submitting ? "Booking…" : "Book"}
+          </button>
+        )}
       </form>
     </div>
   );

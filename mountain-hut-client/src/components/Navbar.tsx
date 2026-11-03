@@ -1,12 +1,17 @@
 import { useState } from "react";
-import { NavLink } from "react-router";
+import { NavLink, useNavigate } from "react-router";
+import { useAuth } from "../hooks/useAuth";
 
-const navItems = [
-  { path: "/", label: "Home", end: true },
-  { path: "/booking", label: "Book a table" },
-  { path: "/my-bookings", label: "My bookings" },
-  { path: "/employee/slots", label: "Manage slots" },
-  { path: "/login", label: "Login" },
+type Role = string | null; // null = guest
+
+const STAFF = ["EMPLOYEE", "MANAGER"];
+
+const navItems: { path: string; label: string; end?: boolean; show: (role: Role) => boolean }[] = [
+  { path: "/", label: "Home", end: true, show: () => true },
+  { path: "/booking", label: "Book a table", show: (role) => role === null || role === "HIKER" },
+  { path: "/my-bookings", label: "My bookings", show: (role) => role === "HIKER" },
+  { path: "/employee/slots", label: "Manage slots", show: (role) => role !== null && STAFF.includes(role) },
+  { path: "/login", label: "Login", show: (role) => role === null },
 ];
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -23,6 +28,17 @@ const mobileLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const role: Role = user?.type ?? null;
+  const visibleItems = navItems.filter((item) => item.show(role));
+
+  async function handleLogout() {
+    setIsOpen(false);
+    await logout();
+    navigate("/");
+  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xs border-b border-stone-200">
@@ -33,16 +49,24 @@ export default function Navbar() {
 
         {/* Desktop navigation */}
         <div className="hidden md:flex items-center gap-6">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.end}
-              className={linkClass}
-            >
+          {visibleItems.map((item) => (
+            <NavLink key={item.path} to={item.path} end={item.end} className={linkClass}>
               {item.label}
             </NavLink>
           ))}
+
+          {user && (
+            <>
+              <span className="text-stone-500">{user.name}</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-stone-600 hover:text-green-700 cursor-pointer"
+              >
+                Logout
+              </button>
+            </>
+          )}
         </div>
 
         {/* Mobile menu toggle */}
@@ -77,7 +101,7 @@ export default function Navbar() {
       {/* Mobile navigation panel */}
       {isOpen && (
         <div className="md:hidden border-t border-stone-200 bg-white px-4 pt-2 pb-3 space-y-1 shadow-lg">
-          {navItems.map((item) => (
+          {visibleItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -88,6 +112,19 @@ export default function Navbar() {
               {item.label}
             </NavLink>
           ))}
+
+          {user && (
+            <div className="border-t border-stone-200 mt-2 pt-2">
+              <p className="px-3 py-1 text-sm text-stone-500">Logged in as {user.name}</p>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="block w-full text-left px-3 py-2 rounded-md text-base text-stone-600 hover:text-green-700 hover:bg-stone-50 cursor-pointer"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       )}
     </nav>

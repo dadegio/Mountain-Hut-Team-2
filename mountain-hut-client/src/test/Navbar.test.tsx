@@ -1,78 +1,120 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
-import { describe, it, expect } from 'vitest'
-import Navbar from '../components/Navbar'
+import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
+import { describe, it, expect } from "vitest";
+import Navbar from "../components/Navbar";
+import { AuthContext, type AuthContextValue } from "../context/auth-context";
+import type { User } from "../api/auth";
 
-describe('Navbar', () => {
-  it('renders the brand name linking to home', () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
+function renderNavbarAs(user: User | null) {
+  const auth: AuthContextValue = {
+    user,
+    loading: false,
+    login: async () => {
+      throw new Error("not used");
+    },
+    logout: async () => {},
+  };
+  return render(
+    <AuthContext.Provider value={auth}>
+      <MemoryRouter>
         <Navbar />
       </MemoryRouter>
-    )
-    const brand = screen.getByText('Mountain Hut')
-    expect(brand).toBeInTheDocument()
-    expect(brand.closest('a')).toHaveAttribute('href', '/')
-  })
+    </AuthContext.Provider>,
+  );
+}
 
-  it('renders all navigation links including Home and Manage slots', () => {
+const fakeUser = (type: string): User => ({
+  id: 1,
+  email: "test@example.com",
+  name: "Test",
+  surname: "User",
+  phone_number: "+390000000000",
+  type,
+});
+
+describe("Navbar", () => {
+  it("renders the brand name linking to home", () => {
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={["/"]}>
         <Navbar />
-      </MemoryRouter>
-    )
-    expect(screen.getByText('Home')).toBeInTheDocument()
-    expect(screen.getByText('Book a table')).toBeInTheDocument()
-    expect(screen.getByText('My bookings')).toBeInTheDocument()
-    expect(screen.getByText('Manage slots')).toBeInTheDocument()
-    expect(screen.getByText('Login')).toBeInTheDocument()
-  })
+      </MemoryRouter>,
+    );
+    const brand = screen.getByText("Mountain Hut");
+    expect(brand).toBeInTheDocument();
+    expect(brand.closest("a")).toHaveAttribute("href", "/");
+  });
 
-  it('highlights Home when on home route and inactive when on another page', () => {
+  it("shows Home, Book a table and Login to guests", () => {
+    renderNavbarAs(null);
+    expect(screen.getByText("Home")).toBeInTheDocument();
+    expect(screen.getByText("Book a table")).toBeInTheDocument();
+    expect(screen.getByText("Login")).toBeInTheDocument();
+    expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
+    expect(screen.queryByText("Manage slots")).not.toBeInTheDocument();
+  });
+
+  it("shows booking links and Logout to hikers, but not Manage slots", () => {
+    renderNavbarAs(fakeUser("HIKER"));
+    expect(screen.getByText("Book a table")).toBeInTheDocument();
+    expect(screen.getByText("My bookings")).toBeInTheDocument();
+    expect(screen.getByText("Logout")).toBeInTheDocument();
+    expect(screen.queryByText("Manage slots")).not.toBeInTheDocument();
+    expect(screen.queryByText("Login")).not.toBeInTheDocument();
+  });
+
+  it("shows Manage slots to employees, but not booking links", () => {
+    renderNavbarAs(fakeUser("EMPLOYEE"));
+    expect(screen.getByText("Manage slots")).toBeInTheDocument();
+    expect(screen.getByText("Logout")).toBeInTheDocument();
+    expect(screen.queryByText("Book a table")).not.toBeInTheDocument();
+    expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
+  });
+
+  it("highlights Home when on home route and inactive when on another page", () => {
     const { unmount } = render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={["/"]}>
         <Navbar />
-      </MemoryRouter>
-    )
-    const homeLink = screen.getByText('Home')
-    expect(homeLink.className).toContain('text-green-700')
-    expect(homeLink.className).toContain('font-semibold')
+      </MemoryRouter>,
+    );
+    const homeLink = screen.getByText("Home");
+    expect(homeLink.className).toContain("text-green-700");
+    expect(homeLink.className).toContain("font-semibold");
 
-    const bookingLink = screen.getByText('Book a table')
-    expect(bookingLink.className).not.toContain('font-semibold')
+    const bookingLink = screen.getByText("Book a table");
+    expect(bookingLink.className).not.toContain("font-semibold");
 
-    unmount()
+    unmount();
 
     // Test on another page
     render(
-      <MemoryRouter initialEntries={['/booking']}>
+      <MemoryRouter initialEntries={["/booking"]}>
         <Navbar />
-      </MemoryRouter>
-    )
-    const homeLinkOnBooking = screen.getByText('Home')
-    expect(homeLinkOnBooking.className).not.toContain('font-semibold')
+      </MemoryRouter>,
+    );
+    const homeLinkOnBooking = screen.getByText("Home");
+    expect(homeLinkOnBooking.className).not.toContain("font-semibold");
 
-    const bookingLinkActive = screen.getByText('Book a table')
-    expect(bookingLinkActive.className).toContain('text-green-700')
-    expect(bookingLinkActive.className).toContain('font-semibold')
-  })
+    const bookingLinkActive = screen.getByText("Book a table");
+    expect(bookingLinkActive.className).toContain("text-green-700");
+    expect(bookingLinkActive.className).toContain("font-semibold");
+  });
 
-  it('toggles mobile menu when clicking the menu button', () => {
+  it("toggles mobile menu when clicking the menu button", () => {
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={["/"]}>
         <Navbar />
-      </MemoryRouter>
-    )
-    const toggleButton = screen.getByLabelText('Toggle navigation menu')
-    expect(toggleButton).toHaveAttribute('aria-expanded', 'false')
+      </MemoryRouter>,
+    );
+    const toggleButton = screen.getByLabelText("Toggle navigation menu");
+    expect(toggleButton).toHaveAttribute("aria-expanded", "false");
 
-    fireEvent.click(toggleButton)
-    expect(toggleButton).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(toggleButton);
+    expect(toggleButton).toHaveAttribute("aria-expanded", "true");
 
-    const homeLinks = screen.getAllByText('Home')
-    expect(homeLinks.length).toBeGreaterThanOrEqual(2)
+    const homeLinks = screen.getAllByText("Home");
+    expect(homeLinks.length).toBeGreaterThanOrEqual(2);
 
-    fireEvent.click(toggleButton)
-    expect(toggleButton).toHaveAttribute('aria-expanded', 'false')
-  })
-})
+    fireEvent.click(toggleButton);
+    expect(toggleButton).toHaveAttribute("aria-expanded", "false");
+  });
+});
