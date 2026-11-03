@@ -31,24 +31,28 @@ async function main() {
     .values([
       {
         email: "mario.rossi@example.com",
+        passwordHash:
+          "$argon2id$v=19$m=65536,p=4,t=3$IBNUxTebRIza6FaSgh9hAg$/f0tf4M/7dGqBiPeW2kHbl8HjxZaoC7vEnog03X2ZdM",
         name: "Mario",
         surname: "Rossi",
-        phoneNumber: 3331234567,
-        type: "HIKER",
-        // createdAt: new Date(),
+        phoneNumber: "+393331234567",
       },
       {
         email: "giulia.verdi@example.com",
+        passwordHash:
+          "$argon2id$v=19$m=65536,p=4,t=3$XkzEBkjCbMbjvjZ/5o8x3Q$+LsVAXAz2h/rUqAHOg2xJtZCgOnJJIpFRiH8gVscCVw",
         name: "Giulia",
         surname: "Verdi",
-        phoneNumber: 3339876543,
+        phoneNumber: "+393339876543",
         type: "HIKER",
       },
       {
         email: "luca.neri@example.com",
+        passwordHash:
+          "$argon2id$v=19$m=65536,p=4,t=3$2eIkRe17LgnjfnIsFU9Dpw$e+yhlsOoFJyIg15S9P8/lWzvkuxnrzbqnk7It4iRcXk",
         name: "Luca",
         surname: "Neri",
-        phoneNumber: 3335554433,
+        phoneNumber: "+393335554433",
         type: "EMPLOYEE",
       },
     ])
@@ -93,7 +97,10 @@ async function main() {
   ];
   await db.insert(tableAvailabilityTable).values(
     insertedSlots.flatMap((slot, i) =>
-      slotTables[i].map((code) => ({ slotId: slot.id, tableId: tableId(code) })),
+      slotTables[i].map((code) => ({
+        slotId: slot.id,
+        tableId: tableId(code),
+      })),
     ),
   );
 

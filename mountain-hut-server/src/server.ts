@@ -1,29 +1,65 @@
 import Fastify, { type FastifyServerOptions } from "fastify";
+import secureSession from "@fastify/secure-session";
+import {
+  serializerCompiler,
+  validatorCompiler,
+} from "fastify-type-provider-zod";
+
+import { bookingRoutes } from "./booking/booking-routes.ts";
 import { env } from "./config.ts";
 import { slotRoutes } from "./slots/slot-routes.ts";
 import { availabilityRoutes } from "./booking/availability-routes.ts";
-import { bookingRoutes } from "./booking/booking-routes.ts";
+import authRoutes from "./auth/auth.route.ts";
+import AuthRepository from "./auth/auth.repository.ts";
 
+// ------- server setup
 export function buildApp(opts: FastifyServerOptions = {}) {
-  const fastify = Fastify({
-    logger: true,
-    ...opts,
+const server = Fastify({
+  logger: true,
+  ...opts,
+});
+
+  server.setValidatorCompiler(validatorCompiler);
+  server.setSerializerCompiler(serializerCompiler);
+
+  server.register(secureSession, {
+    secret: env.SESSION_SECRET,
+    salt: env.SESSION_SALT,
+    cookie: {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+    },
   });
 
-  fastify.get("/", function (_request, reply) {
-    reply.send({ hello: "world" });
+  // (runs on every incoming request, checks the session cookie, and attaches request.user)
+  server.addHook("preHandler", async (request) => {
+    const userId = request.session.get("userId");
+    if (userId) {
+      const user = await AuthRepository.getUserById(userId);
+      request.user = user ?? null;
+    } else {
+      request.user = null;
+    }
   });
 
-  fastify.register(slotRoutes);
-  fastify.register(availabilityRoutes);
-  fastify.register(bookingRoutes);
+  server.register(slotRoutes);
+  server.register(availabilityRoutes);
+  server.register(bookingRoutes);
 
-  return fastify;
+  const BASE_URL = "/api/v1";
+  server.register(authRoutes, { prefix: `${BASE_URL}/auth` });
+
+  return server;
 }
 
+// ------- start server
 const isMain =
   process.argv[1] &&
-  (process.argv[1].endsWith("server.ts") || process.argv[1].endsWith("server.js"));
+  (process.argv[1].endsWith("server.ts") ||
+    process.argv[1].endsWith("server.js"));
 
 if (isMain) {
   const fastify = buildApp();

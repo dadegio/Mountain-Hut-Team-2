@@ -1,6 +1,7 @@
-
 import type { FastifyInstance } from "fastify";
+import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
+
 import { getAvailability } from "./availability.ts";
 
 const realDate = (value: string): boolean => {
@@ -19,41 +20,32 @@ const realDate = (value: string): boolean => {
 
 const querySchema = z.object({
   date: z.string().refine(realDate),
-  partySize: z.coerce.number()
-    .int().positive().max(1000).default(1),
-  slotId: z.coerce.number()
-    .int().positive().optional(),
+  partySize: z.coerce.number().int().positive().max(1000).default(1),
+  slotId: z.coerce.number().int().positive().optional(),
 });
 
-export async function availabilityRoutes(
-  app: FastifyInstance
-) {
+export async function availabilityRoutes(app: FastifyInstance) {
   app.get("/api/availability", async (request, reply) => {
     const parsed = querySchema.safeParse(request.query);
 
     if (!parsed.success) {
-      return reply.status(400).send({
+      return reply.status(StatusCodes.BAD_REQUEST).send({
         error: "Invalid query parameters",
         details: parsed.error.issues,
       });
     }
 
     const { date, partySize, slotId } = parsed.data;
-    const availability = await getAvailability(
-      date,
-      partySize
-    );
+    const availability = await getAvailability(date, partySize);
 
     if (slotId === undefined) {
       return availability;
     }
 
-    const slot = availability.slots.find(
-      item => item.slotId === slotId
-    );
+    const slot = availability.slots.find((item) => item.slotId === slotId);
 
     if (!slot) {
-      return reply.status(404).send({
+      return reply.status(StatusCodes.NOT_FOUND).send({
         error: "Slot not configured for date",
       });
     }
