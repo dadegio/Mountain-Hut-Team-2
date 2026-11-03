@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import BookingPage from "./pages/BookingPage";
 import MyBookingsPage from "./pages/MyBookingsPage";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import EmployeeSlotsPage from "./pages/EmployeeSlotsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AuthProvider from "./context/AuthProvider";
@@ -19,7 +20,7 @@ function App() {
           <Route element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path="login" element={<LoginPage />} />
-
+            <Route path="register" element={<RegisterPage />} />
             {/* guests can browse availability, hikers can book, staff can't */}
             <Route element={<RequireRole allow={["HIKER"]} guestAllowed />}>
               <Route path="booking" element={<BookingPage />} />
