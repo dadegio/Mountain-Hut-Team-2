@@ -17,13 +17,13 @@ const navItems: { path: string; label: string; end?: boolean; show: (role: Role)
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive
     ? "font-semibold text-green-700"
-    : "text-stone-600 hover:text-green-700";
+    : "text-stone-700 hover:text-green-700 transition-colors";
 
 const mobileLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `block px-3 py-2 rounded-md text-base ${
+  `block px-3 py-2 rounded-md text-base transition-colors ${
     isActive
-      ? "font-semibold text-green-700 bg-green-50"
-      : "text-stone-600 hover:text-green-700 hover:bg-stone-50"
+      ? "font-semibold text-green-700 bg-green-50/80"
+      : "text-stone-700 hover:text-green-700 hover:bg-white/60"
   }`;
 
 export default function Navbar() {
@@ -41,8 +41,7 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xs border-b border-stone-200">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-lg backdrop-saturate-150 border-b border-white/50 shadow-sm">      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <NavLink to="/" className="text-lg font-bold text-green-800">
           Mountain Hut
         </NavLink>
@@ -57,11 +56,11 @@ export default function Navbar() {
 
           {user && (
             <>
-              <span className="text-stone-500">{user.name}</span>
+              <span className="text-stone-600">{user.name}</span>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="text-stone-600 hover:text-green-700 cursor-pointer"
+                className="text-stone-700 hover:text-green-700 transition-colors cursor-pointer"
               >
                 Logout
               </button>
@@ -73,7 +72,7 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-stone-600 hover:text-stone-900 hover:bg-stone-100 focus:outline-hidden focus:ring-2 focus:ring-green-700 cursor-pointer"
+          className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-stone-700 hover:text-stone-900 hover:bg-white/60 focus:outline-hidden focus:ring-2 focus:ring-green-700 cursor-pointer"
           aria-expanded={isOpen}
           aria-label="Toggle navigation menu"
         >
@@ -100,7 +99,7 @@ export default function Navbar() {
 
       {/* Mobile navigation panel */}
       {isOpen && (
-        <div className="md:hidden border-t border-stone-200 bg-white px-4 pt-2 pb-3 space-y-1 shadow-lg">
+        <div className="md:hidden border-t border-white/40 bg-white/80 backdrop-blur-md px-4 pt-2 pb-3 space-y-1 shadow-lg">
           {visibleItems.map((item) => (
             <NavLink
               key={item.path}
@@ -114,12 +113,12 @@ export default function Navbar() {
           ))}
 
           {user && (
-            <div className="border-t border-stone-200 mt-2 pt-2">
-              <p className="px-3 py-1 text-sm text-stone-500">Logged in as {user.name}</p>
+            <div className="border-t border-white/50 mt-2 pt-2">
+              <p className="px-3 py-1 text-sm text-stone-600">Logged in as {user.name}</p>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="block w-full text-left px-3 py-2 rounded-md text-base text-stone-600 hover:text-green-700 hover:bg-stone-50 cursor-pointer"
+                className="block w-full text-left px-3 py-2 rounded-md text-base text-stone-700 hover:text-green-700 hover:bg-white/60 transition-colors cursor-pointer"
               >
                 Logout
               </button>

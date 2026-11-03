@@ -9,6 +9,15 @@ export interface User {
   type: string // e.g. "HIKER", "EMPLOYEE" (see auth.schema.ts on the server)
 }
 
+export interface RegisterRequest {
+  email: string
+  password: string
+  name: string
+  surname: string
+  phone_number: string
+  type: 'HIKER'
+}
+
 export function login(email: string, password: string) {
   return apiFetch<User>('/v1/auth/login', {
     method: 'POST',
@@ -22,4 +31,11 @@ export function logout() {
 
 export function getMe() {
   return apiFetch<User>('/v1/auth/me')
+}
+
+export function register(data: RegisterRequest) {
+  return apiFetch<User>('/v1/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
 }
