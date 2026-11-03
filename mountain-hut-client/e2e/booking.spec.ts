@@ -43,7 +43,7 @@ test('hiker logs in and books a table', async ({ page }) => {
   }
   await page.locator(`[data-day="${toDateString(tomorrow)}"] button`).click()
 
-  await page.getByLabel('Party size').fill('2')
+  await page.getByRole('spinbutton', { name: 'Party size' }).fill('2')
 
   // slot buttons come from the availability API
   await page.getByRole('button', { name: /19:00/ }).click()
