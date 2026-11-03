@@ -14,7 +14,7 @@ import { isBookingChangeAllowed } from "./change-rules.ts";
 
 export interface ChangeBookingInput {
   bookingId: number;
-  /** Temporary contract until MH-7 authenticated session is integrated. */
+  /** Trusted identity supplied by the authenticated HTTP route. */
   userId: number;
   /** Select another already-configured date/time by its slot ID. */
   slotId?: number;

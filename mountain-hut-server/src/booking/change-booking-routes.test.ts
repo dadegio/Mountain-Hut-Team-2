@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "@libsql/client";
+import argon2 from "argon2";
 
 // Exercise the real PATCH HTTP route and service against an isolated SQLite DB.
 // Never touch local.db or the development seed database.
@@ -25,6 +26,9 @@ function romeDate(daysFromToday: number): string {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+const TEST_PASSWORD = "mh46-test-password";
+let passwordHash = "";
+
 const futureDate = romeDate(5);
 const pastDate = romeDate(-5);
 
@@ -32,8 +36,8 @@ const schemaSql = `
   PRAGMA foreign_keys = ON;
   CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE,
-    name TEXT NOT NULL, surname TEXT NOT NULL, phoneNumber INTEGER,
-    type TEXT NOT NULL
+    password_hash TEXT NOT NULL, name TEXT NOT NULL, surname TEXT NOT NULL,
+    phone_number TEXT, type TEXT NOT NULL DEFAULT 'HIKER'
   );
   CREATE TABLE time_slots (
     id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL,
@@ -70,10 +74,10 @@ async function resetFixture() {
     DELETE FROM users;
   `);
   await client.executeMultiple(`
-    INSERT INTO users(id, email, name, surname, type) VALUES
-      (1, 'first@example.test', 'First', 'Hiker', 'HIKER'),
-      (2, 'second@example.test', 'Second', 'Hiker', 'HIKER'),
-      (3, 'staff@example.test', 'Staff', 'Member', 'EMPLOYEE');
+    INSERT INTO users(id, email, password_hash, name, surname, type) VALUES
+      (1, 'first@example.test', '${passwordHash}', 'First', 'Hiker', 'HIKER'),
+      (2, 'second@example.test', '${passwordHash}', 'Second', 'Hiker', 'HIKER'),
+      (3, 'staff@example.test', '${passwordHash}', 'Staff', 'Member', 'EMPLOYEE');
     INSERT INTO tables(id, code, seats) VALUES
       (1, 'T1', 2), (2, 'T2', 4), (3, 'T3', 6);
     INSERT INTO time_slots(id, date, "from", "to") VALUES
@@ -89,16 +93,45 @@ async function resetFixture() {
   `);
 }
 
-function postBooking(userId: number, slotId: number, partySize: number) {
+const emails: Record<number, string> = {
+  1: "first@example.test",
+  2: "second@example.test",
+  3: "staff@example.test",
+};
+
+async function sessionCookie(userId: number): Promise<string> {
+  const login = await app.inject({
+    method: "POST", url: "/api/v1/auth/login",
+    payload: { email: emails[userId], password: TEST_PASSWORD },
+  });
+  expect(login.statusCode).toBe(200);
+  const header = login.headers["set-cookie"];
+  const cookie = (Array.isArray(header) ? header : [header])
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.split(";")[0])
+    .join("; ");
+  expect(cookie).not.toBe("");
+  return cookie;
+}
+
+async function postBooking(userId: number, slotId: number, partySize: number) {
   return app.inject({
     method: "POST", url: "/api/bookings",
-    payload: { userId, slotId, partySize },
+    headers: { cookie: await sessionCookie(userId) },
+    payload: { slotId, partySize },
   });
 }
 
-function patchBooking(bookingId: number | string, payload: Record<string, unknown>) {
+async function patchBooking(
+  bookingId: number | string,
+  payload: Record<string, unknown>,
+  actingUserId: number | null = 1,
+) {
+  const cookie = actingUserId === null ? null : await sessionCookie(actingUserId);
   return app.inject({
-    method: "PATCH", url: `/api/bookings/${bookingId}`, payload,
+    method: "PATCH", url: `/api/bookings/${bookingId}`,
+    ...(cookie ? { headers: { cookie } } : {}),
+    payload,
   });
 }
 
@@ -110,6 +143,7 @@ async function reservations() {
 }
 
 beforeAll(async () => {
+  passwordHash = await argon2.hash(TEST_PASSWORD);
   await client.executeMultiple(schemaSql);
   await app.ready();
 });
@@ -122,13 +156,29 @@ afterAll(async () => {
 });
 
 describe("MH-46: PATCH /api/bookings/:bookingId", () => {
+  it("401: unauthenticated users cannot change a booking", async () => {
+    const created = await postBooking(1, 1, 2);
+    const id = created.json().reservations[0].reservationId;
+    const before = await reservations();
+    expect((await patchBooking(id, { partySize: 3 }, null)).statusCode).toBe(401);
+    expect(await reservations()).toEqual(before);
+  });
+
+  it("400: rejects userId spoofing in PATCH body", async () => {
+    const created = await postBooking(1, 1, 2);
+    const id = created.json().reservations[0].reservationId;
+    const before = await reservations();
+    expect((await patchBooking(id, { userId: 2, partySize: 3 })).statusCode).toBe(400);
+    expect(await reservations()).toEqual(before);
+  });
+
   it("200: moves a booking to another slot and changes its party size", async () => {
     const created = await postBooking(1, 1, 2);
     expect(created.statusCode).toBe(201);
     const id = created.json().reservations[0].reservationId;
     const before = (await reservations()).find((row) => row.id === id)!;
 
-    const changed = await patchBooking(id, { userId: 1, slotId: 2, partySize: 5 });
+    const changed = await patchBooking(id, { slotId: 2, partySize: 5 });
     expect(changed.statusCode).toBe(200);
     expect(changed.json()).toMatchObject({
       bookingId: id, userId: 1, slotId: 2, partySize: 5,
@@ -143,7 +193,7 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
     const id = created.json().reservations[0].reservationId;
     const initialTimestamp = (await reservations())[0].created_at;
 
-    const changed = await patchBooking(id, { userId: 1, partySize: 9 });
+    const changed = await patchBooking(id, { partySize: 9 });
     expect(changed.statusCode).toBe(200);
     expect(changed.json().reservations).toHaveLength(2);
     const rows = await reservations();
@@ -158,7 +208,7 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
     const id = created.json().reservations[1].reservationId;
     expect((await reservations())).toHaveLength(2);
 
-    const changed = await patchBooking(id, { userId: 1, slotId: 1, partySize: 2 });
+    const changed = await patchBooking(id, { slotId: 1, partySize: 2 });
     expect(changed.statusCode).toBe(200);
     expect(changed.json().reservations).toMatchObject([{ reservationId: id, tableId: 1, seats: 2 }]);
     const rows = await reservations();
@@ -171,7 +221,7 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
     const id = created.json().reservations[0].reservationId;
     const before = await reservations();
 
-    const changed = await patchBooking(id, { userId: 1, slotId: 3, partySize: 5 });
+    const changed = await patchBooking(id, { slotId: 3, partySize: 5 });
     expect(changed.statusCode).toBe(409);
     expect(await reservations()).toEqual(before);
   });
@@ -182,7 +232,7 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
     const id = first.json().reservations[0].reservationId;
     const before = await reservations();
 
-    expect((await patchBooking(id, { userId: 1, slotId: 2 })).statusCode).toBe(409);
+    expect((await patchBooking(id, { slotId: 2 })).statusCode).toBe(409);
     expect(await reservations()).toEqual(before);
   });
 
@@ -194,7 +244,7 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
       args: [id],
     });
     const before = await reservations();
-    const changed = await patchBooking(id, { userId: 1, partySize: 3 });
+    const changed = await patchBooking(id, { partySize: 3 });
     expect(changed.statusCode).toBe(409);
     expect(changed.json().error).toMatch(/48 hours/);
     expect(await reservations()).toEqual(before);
@@ -203,21 +253,21 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
   it("409: rejects a slot that has passed the MH-01 cutoff", async () => {
     const created = await postBooking(1, 1, 2);
     const id = created.json().reservations[0].reservationId;
-    expect((await patchBooking(id, { userId: 1, slotId: 4 })).statusCode).toBe(409);
+    expect((await patchBooking(id, { slotId: 4 })).statusCode).toBe(409);
   });
 
   it("404: does not let one hiker modify another hiker's booking", async () => {
     const created = await postBooking(1, 1, 2);
     const id = created.json().reservations[0].reservationId;
     const before = await reservations();
-    expect((await patchBooking(id, { userId: 2, partySize: 3 })).statusCode).toBe(404);
+    expect((await patchBooking(id, { partySize: 3 }, 2)).statusCode).toBe(404);
     expect(await reservations()).toEqual(before);
   });
 
   it("403: employees cannot change a booking", async () => {
     const created = await postBooking(1, 1, 2);
     const id = created.json().reservations[0].reservationId;
-    expect((await patchBooking(id, { userId: 3, partySize: 3 })).statusCode).toBe(403);
+    expect((await patchBooking(id, { partySize: 3 }, 3)).statusCode).toBe(403);
   });
 
   it("409: completed and canceled reservations cannot be changed", async () => {
@@ -225,7 +275,7 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
     const id = created.json().reservations[0].reservationId;
     for (const status of ["FULFILLED", "CANCELED"]) {
       await client.execute({ sql: "UPDATE reservations SET status = ? WHERE id = ?", args: [status, id] });
-      expect((await patchBooking(id, { userId: 1, partySize: 3 })).statusCode).toBe(409);
+      expect((await patchBooking(id, { partySize: 3 })).statusCode).toBe(409);
     }
   });
 
@@ -233,11 +283,12 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
     const created = await postBooking(1, 1, 2);
     const id = created.json().reservations[0].reservationId;
     const invalid = [
-      ["abc", { userId: 1, partySize: 3 }],
-      [id, { userId: 1 }],
-      [id, { userId: 1, partySize: 0 }],
-      [id, { userId: 1, slotId: -1 }],
-      [id, { userId: 1, partySize: 3, unexpected: true }],
+      ["abc", { partySize: 3 }],
+      [id, {}],
+      [id, { userId: 2, partySize: 3 }],
+      [id, { partySize: 0 }],
+      [id, { slotId: -1 }],
+      [id, { partySize: 3, unexpected: true }],
     ] as const;
     for (const [bookingId, payload] of invalid) {
       expect((await patchBooking(bookingId, payload)).statusCode).toBe(400);
@@ -249,7 +300,7 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
     expect((await postBooking(2, 1, 4)).statusCode).toBe(201);
     const id = created.json().reservations[0].reservationId;
 
-    const changed = await patchBooking(id, { userId: 1, partySize: 6 });
+    const changed = await patchBooking(id, { partySize: 6 });
     expect(changed.statusCode).toBe(200);
     const rows = await reservations();
     expect(rows.filter((row) => row.user_id === 1).reduce((sum, row) => sum + Number(row.party_size), 0)).toBe(6);

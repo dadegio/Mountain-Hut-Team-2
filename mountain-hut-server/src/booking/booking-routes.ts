@@ -4,13 +4,19 @@ import { z } from "zod";
 import { BookingError, createBooking } from "./booking.ts";
 
 const bookingSchema = z.object({
-  userId: z.number().int().positive(),
   slotId: z.number().int().positive(),
   partySize: z.number().int().positive().max(1000),
 }).strict();
 
 export async function bookingRoutes(app: FastifyInstance) {
   app.post("/api/bookings", async (request, reply) => {
+    if (!request.user) {
+      return reply.status(401).send({ error: "Authentication required" });
+    }
+    if (request.user.type !== "HIKER") {
+      return reply.status(403).send({ error: "Only hikers can book tables" });
+    }
+
     const parsed = bookingSchema.safeParse(request.body);
 
     if (!parsed.success) {
@@ -21,7 +27,7 @@ export async function bookingRoutes(app: FastifyInstance) {
     }
 
     try {
-      const booking = await createBooking(parsed.data);
+      const booking = await createBooking({ ...parsed.data, userId: request.user.id });
       return reply.status(201).send(booking);
     } catch (error) {
       if (error instanceof BookingError) {

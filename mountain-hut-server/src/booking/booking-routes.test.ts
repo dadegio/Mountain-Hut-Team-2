@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "@libsql/client";
+import argon2 from "argon2";
 
 /**
  * Real HTTP integration tests for MH-18.
@@ -36,6 +37,9 @@ function romeDate(daysFromToday: number): string {
   return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
+let passwordHash = "";
+const TEST_PASSWORD = "test-password-for-booking";
+
 const futureDate = romeDate(3);
 const pastDate = romeDate(-3);
 
@@ -44,13 +48,14 @@ const pastDate = romeDate(-3);
 const createTestSchema = `
   PRAGMA foreign_keys = ON;
   CREATE TABLE "users" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-    "email" TEXT NOT NULL UNIQUE,
-    "name" TEXT NOT NULL,
-    "surname" TEXT NOT NULL,
-    "phoneNumber" INTEGER,
-    "type" TEXT NOT NULL
-  );
+  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+  "email" TEXT NOT NULL UNIQUE,
+  "password_hash" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "surname" TEXT NOT NULL,
+  "phone_number" TEXT,
+  "type" TEXT NOT NULL DEFAULT 'HIKER'
+);
   CREATE TABLE "time_slots" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT,
     "date" TEXT NOT NULL,
@@ -90,12 +95,13 @@ async function resetFixture() {
   `);
 
   await client.executeMultiple(`
-    INSERT INTO users(id, email, name, surname, type) VALUES
-      (1, 'hiker1@example.com', 'Hiker', 'One', 'HIKER'),
-      (2, 'hiker2@example.com', 'Hiker', 'Two', 'HIKER'),
-      (3, 'staff@example.com', 'Employee', 'Three', 'EMPLOYEE'),
-      (4, 'hiker4@example.com', 'Hiker', 'Four', 'HIKER'),
-      (5, 'manager@example.com', 'Manager', 'Five', 'MANAGER');
+    INSERT INTO users(
+      id, email, password_hash, name, surname, type) VALUES
+      (1, 'hiker1@example.com', '${passwordHash}', 'Hiker', 'One', 'HIKER'),
+      (2, 'hiker2@example.com', '${passwordHash}', 'Hiker', 'Two', 'HIKER'),
+      (3, 'staff@example.com', '${passwordHash}', 'Employee', 'Three', 'EMPLOYEE'),
+      (4, 'hiker4@example.com', '${passwordHash}', 'Hiker', 'Four', 'HIKER'),
+      (5, 'manager@example.com', '${passwordHash}', 'Manager', 'Five', 'MANAGER');
 
     INSERT INTO tables(id, code, seats) VALUES
       (1, 'T1', 2),
@@ -118,11 +124,38 @@ async function resetFixture() {
   `);
 }
 
-async function postBooking(body: Record<string, unknown>) {
+const emails: Record<number, string> = {
+  1: "hiker1@example.com",
+  2: "hiker2@example.com",
+  3: "staff@example.com",
+  4: "hiker4@example.com",
+  5: "manager@example.com",
+};
+
+async function postBooking(body: Record<string, unknown>, actingUserId: number | null = 1) {
+  let cookie = "";
+  if (actingUserId !== null) {
+    const login = await app.inject({
+      method: "POST",
+      url: "/api/v1/auth/login",
+      payload: { email: emails[actingUserId], password: TEST_PASSWORD },
+    });
+    expect(login.statusCode).toBe(200);
+    const setCookie = login.headers["set-cookie"];
+    cookie = (Array.isArray(setCookie) ? setCookie : [setCookie])
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    expect(cookie).not.toBe("");
+  }
+
   return app.inject({
     method: "POST",
     url: "/api/bookings",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(cookie ? { cookie } : {}),
+    },
     payload: body,
   });
 }
@@ -136,6 +169,7 @@ async function reservationRows() {
 }
 
 beforeAll(async () => {
+  passwordHash = await argon2.hash(TEST_PASSWORD);
   await client.executeMultiple(createTestSchema);
   await app.ready();
 });
@@ -150,8 +184,21 @@ afterAll(async () => {
 });
 
 describe("POST /api/bookings — MH-18 integration", () => {
+  it("400: rejects attempts to impersonate another user through the body", async () => {
+    const response = await postBooking({ userId: 2, slotId: 1, partySize: 2 }, 1);
+    expect(response.statusCode).toBe(400);
+    expect((await reservationRows())).toHaveLength(0);
+  });
+
+  it("201: attributes the booking to the logged-in hiker", async () => {
+    const response = await postBooking({ slotId: 1, partySize: 2 }, 2);
+    expect(response.statusCode).toBe(201);
+    expect(response.json().userId).toBe(2);
+    expect((await reservationRows())[0].user_id).toBe(2);
+  });
+
   it("201: stores a successful booking at a single table", async () => {
-    const response = await postBooking({ userId: 1, slotId: 1, partySize: 5 });
+    const response = await postBooking({ slotId: 1, partySize: 5 });
     expect(response.statusCode).toBe(201);
     expect(response.json()).toMatchObject({
       status: "PLACED",
@@ -166,7 +213,7 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 
   it("201: saves a 10-person group across two tables", async () => {
-    const response = await postBooking({ userId: 2, slotId: 2, partySize: 10 });
+    const response = await postBooking({ slotId: 2, partySize: 10 }, 2);
     expect(response.statusCode).toBe(201);
     const booking = response.json();
     expect(booking.reservations).toHaveLength(2);
@@ -178,14 +225,14 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 
   it.each([
-    ["zero people", { userId: 1, slotId: 1, partySize: 0 }],
-    ["negative people", { userId: 1, slotId: 1, partySize: -1 }],
-    ["missing partySize", { userId: 1, slotId: 1 }],
-    ["non-integer partySize", { userId: 1, slotId: 1, partySize: 2.5 }],
-    ["exceeds maximum partySize", { userId: 1, slotId: 1, partySize: 1001 }],
+    ["zero people", { slotId: 1, partySize: 0 }],
+    ["negative people", { slotId: 1, partySize: -1 }],
+    ["missing partySize", { slotId: 1 }],
+    ["non-integer partySize", { slotId: 1, partySize: 2.5 }],
+    ["exceeds maximum partySize", { slotId: 1, partySize: 1001 }],
     ["invalid userId (negative)", { userId: -1, slotId: 1, partySize: 2 }],
-    ["invalid slotId (zero)", { userId: 1, slotId: 0, partySize: 2 }],
-    ["unexpected property", { userId: 1, slotId: 1, partySize: 2, extra: true }],
+    ["invalid slotId (zero)", { slotId: 0, partySize: 2 }],
+    ["unexpected property", { slotId: 1, partySize: 2, extra: true }],
   ])("400: rejects %s", async (_name, body) => {
     const response = await postBooking(body);
     expect(response.statusCode).toBe(400);
@@ -193,29 +240,30 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 
   it("403: rejects an EMPLOYEE", async () => {
-    const response = await postBooking({ userId: 3, slotId: 1, partySize: 2 });
+    const response = await postBooking({ slotId: 1, partySize: 2 }, 3);
     expect(response.statusCode).toBe(403);
     expect((await reservationRows())).toHaveLength(0);
   });
 
   it("403: rejects a MANAGER", async () => {
-    const response = await postBooking({ userId: 5, slotId: 1, partySize: 2 });
+    const response = await postBooking({ slotId: 1, partySize: 2 }, 5);
     expect(response.statusCode).toBe(403);
     expect((await reservationRows())).toHaveLength(0);
   });
 
-  it("404: rejects an unknown user", async () => {
-    const response = await postBooking({ userId: 999, slotId: 1, partySize: 2 });
-    expect(response.statusCode).toBe(404);
+  it("401: rejects requests without a session", async () => {
+    const response = await postBooking({ slotId: 1, partySize: 2 }, null);
+    expect(response.statusCode).toBe(401);
+    expect((await reservationRows())).toHaveLength(0);
   });
 
   it("404: rejects an unknown slot", async () => {
-    const response = await postBooking({ userId: 1, slotId: 999, partySize: 2 });
+    const response = await postBooking({ slotId: 999, partySize: 2 });
     expect(response.statusCode).toBe(404);
   });
 
   it("409: rejects a duplicate active booking in the same slot", async () => {
-    const request = { userId: 1, slotId: 1, partySize: 2 };
+    const request = { slotId: 1, partySize: 2 };
     expect((await postBooking(request)).statusCode).toBe(201);
     const duplicate = await postBooking(request);
     expect(duplicate.statusCode).toBe(409);
@@ -224,19 +272,19 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 
   it("409: rejects insufficient capacity without inserting partial rows", async () => {
-    const response = await postBooking({ userId: 1, slotId: 2, partySize: 11 });
+    const response = await postBooking({ slotId: 2, partySize: 11 });
     expect(response.statusCode).toBe(409);
     expect((await reservationRows())).toHaveLength(0);
   });
 
   it("409: rejects a time slot in the past", async () => {
-    const response = await postBooking({ userId: 1, slotId: 4, partySize: 1 });
+    const response = await postBooking({ slotId: 4, partySize: 1 });
     expect(response.statusCode).toBe(409);
     expect((await reservationRows())).toHaveLength(0);
   });
 
   it("409: rejects a time slot with no tables", async () => {
-    const response = await postBooking({ userId: 1, slotId: 5, partySize: 1 });
+    const response = await postBooking({ slotId: 5, partySize: 1 });
     expect(response.statusCode).toBe(409);
     expect((await reservationRows())).toHaveLength(0);
   });
@@ -244,7 +292,7 @@ describe("POST /api/bookings — MH-18 integration", () => {
   it("ignores canceled bookings for the same hiker and for table capacity", async () => {
     await client.execute(`INSERT INTO reservations(user_id, slot_id, table_id, party_size, status)
       VALUES (1, 1, 2, 4, 'CANCELED')`);
-    const response = await postBooking({ userId: 1, slotId: 1, partySize: 4 });
+    const response = await postBooking({ slotId: 1, partySize: 4 });
     expect(response.statusCode).toBe(201);
     expect(response.json().reservations).toMatchObject([{ tableId: 2, seats: 4 }]);
     const rows = await reservationRows();
@@ -253,16 +301,16 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 
   it("allows the same hiker to book two different time slots on the same date", async () => {
-    const first = await postBooking({ userId: 1, slotId: 1, partySize: 2 });
+    const first = await postBooking({ slotId: 1, partySize: 2 });
     expect(first.statusCode).toBe(201);
-    const second = await postBooking({ userId: 1, slotId: 2, partySize: 2 });
+    const second = await postBooking({ slotId: 2, partySize: 2 });
     expect(second.statusCode).toBe(201);
     const rows = await reservationRows();
     expect(rows.filter((r) => Number(r.user_id) === 1)).toHaveLength(2);
   });
 
   it("chooses the smallest single table available (minimizes unused capacity)", async () => {
-    const response = await postBooking({ userId: 1, slotId: 1, partySize: 3 });
+    const response = await postBooking({ slotId: 1, partySize: 3 });
     expect(response.statusCode).toBe(201);
     expect(response.json().reservations).toMatchObject([{ tableId: 2, seats: 3 }]);
   });
@@ -270,15 +318,15 @@ describe("POST /api/bookings — MH-18 integration", () => {
   it("respects seats already occupied by other hikers", async () => {
     await client.execute(`INSERT INTO reservations(user_id, slot_id, table_id, party_size, status)
       VALUES (2, 1, 2, 3, 'PLACED')`);
-    const response = await postBooking({ userId: 1, slotId: 1, partySize: 4 });
+    const response = await postBooking({ slotId: 1, partySize: 4 });
     expect(response.statusCode).toBe(201);
     expect(response.json().reservations).toMatchObject([{ tableId: 3, seats: 4 }]);
   });
 
   it("never overbooks when two hikers request the last two seats simultaneously", async () => {
     const requests = [
-      postBooking({ userId: 1, slotId: 3, partySize: 2 }),
-      postBooking({ userId: 2, slotId: 3, partySize: 2 }),
+      postBooking({ slotId: 3, partySize: 2 }, 1),
+      postBooking({ slotId: 3, partySize: 2 }, 2),
     ];
     const responses = await Promise.all(requests);
     expect(responses.map((r) => r.statusCode).sort()).toEqual([201, 409]);
@@ -291,7 +339,7 @@ describe("POST /api/bookings — MH-18 integration", () => {
     const bookingModule = await import("./booking.ts");
     const spy = vi.spyOn(bookingModule, "createBooking").mockRejectedValueOnce(new Error("Database disconnected"));
 
-    const response = await postBooking({ userId: 1, slotId: 1, partySize: 2 });
+    const response = await postBooking({ slotId: 1, partySize: 2 });
     expect(response.statusCode).toBe(500);
     expect(response.json()).toEqual({ error: "Internal server error" });
 
