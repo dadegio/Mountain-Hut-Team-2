@@ -97,7 +97,7 @@ describe("allocateTables - Single table allocation", () => {
     });
 });
 
-// MINIMIZING THE WASTE 
+// MINIMIZING THE WASTE
 describe("allocateTables - Choosing the smallest table to fit in the party", () => {
     const dummyTables: FreeTable[] = [
         { tableId: 1, code: "T1", freeSeats: 6 },
@@ -164,7 +164,7 @@ describe("allocateTables - Choosing fewer tables rather than a larger combinatio
     });
 });
 
-// MINIMIZE THE NUMBER OF UNUSED SEATS IF THE TABLE NUMBER IS THE SAME 
+// MINIMIZE THE NUMBER OF UNUSED SEATS IF THE TABLE NUMBER IS THE SAME
 describe("allocateTables - Choosing, for the same amount of tables, the combination that has less waste", () => {
     const dummyTables: FreeTable[] = [
         { tableId: 1, code: "T1", freeSeats: 4 },
