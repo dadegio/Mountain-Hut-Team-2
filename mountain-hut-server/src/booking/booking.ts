@@ -11,7 +11,7 @@ import { allocateTables, type FreeTable } from "./allocation.ts";
 import { isSlotBookable } from "./booking-rules.ts";
 
 export interface CreateBookingInput {
-  /** Provisional only: replace with authenticated session user in MH-7 integration. */
+  /** Trusted user ID, supplied by the authenticated HTTP route. */
   userId: number;
   slotId: number;
   partySize: number;
