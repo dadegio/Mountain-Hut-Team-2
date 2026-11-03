@@ -14,6 +14,7 @@ function fakeResponse(status: number, body: unknown) {
     status,
     statusText: '',
     json: async () => body,
+    text: async () => JSON.stringify(body),
   } as unknown as Response
 }
 
@@ -36,7 +37,7 @@ describe('bookings API', () => {
     expect(bookings[1].status).toBe('cancelled')
   })
 
-  it('createBooking sends POST /api/bookings with userId, slotId and partySize', async () => {
+  it('createBooking sends POST /api/bookings with slotId and partySize', async () => {
     const result = {
       status: 'PLACED',
       userId: 2,
@@ -53,7 +54,7 @@ describe('bookings API', () => {
     const [url, options] = fetchMock.mock.calls[0]
     expect(url).toBe('/api/bookings')
     expect(options.method).toBe('POST')
-    expect(JSON.parse(options.body)).toEqual({ userId: expect.any(Number), slotId: 3, partySize: 4 })
+    expect(JSON.parse(options.body)).toEqual({ slotId: 3, partySize: 4 })
     expect(booking).toEqual(result)
   })
 

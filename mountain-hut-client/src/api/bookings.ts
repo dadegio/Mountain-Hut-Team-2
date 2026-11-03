@@ -1,11 +1,8 @@
 import { apiFetch } from "./client";
 import type { Booking, BookingResult, CreateBookingRequest } from "../types/booking";
 
-// TODO(MH-7): remove when the backend reads the user from the session
-const DEV_HIKER_ID = 1; // Giulia (HIKER) from seed
-
 export function createBooking(slotId: number, partySize: number) {
-  const body: CreateBookingRequest = { userId: DEV_HIKER_ID, slotId, partySize };
+  const body: CreateBookingRequest = { slotId, partySize };
   return apiFetch<BookingResult>("/bookings", {
     method: "POST",
     body: JSON.stringify(body),

@@ -1,7 +1,4 @@
-// --- Used by POST /api/bookings (MH-18, provisional) ---
-
 export interface CreateBookingRequest {
-  userId: number; // TODO(MH-7): removed once session auth is merged
   slotId: number;
   partySize: number;
 }

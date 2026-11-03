@@ -9,6 +9,7 @@ function fakeResponse(status: number, body: unknown) {
     status,
     statusText: '',
     json: async () => body,
+    text: async () => JSON.stringify(body),
   } as unknown as Response
 }
 
