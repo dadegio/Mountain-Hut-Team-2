@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "@libsql/client";
+import argon2 from "argon2";
 import { todayString } from "./slot-rules.ts";
 
 /**
@@ -26,6 +27,15 @@ const app = buildApp({ logger: false });
 // Mirrors src/db/schema.ts, for the tables these routes use
 const createTestSchema = `
   PRAGMA foreign_keys = ON;
+  CREATE TABLE "users" (
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "email" TEXT NOT NULL UNIQUE,
+    "password_hash" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "surname" TEXT NOT NULL,
+    "phone_number" TEXT,
+    "type" TEXT NOT NULL DEFAULT 'HIKER'
+  );
   CREATE TABLE "time_slots" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT,
     "date" TEXT NOT NULL,
@@ -73,18 +83,63 @@ function get(url: string) {
   return app.inject({ method: "GET", url });
 }
 
-function post(url: string, payload: Record<string, unknown>) {
-  return app.inject({ method: "POST", url, payload });
+const TEST_PASSWORD = "test-password-for-slots";
+
+async function insertUser(email: string, type: string) {
+  const passwordHash = await argon2.hash(TEST_PASSWORD);
+  await client.execute({
+    sql: `INSERT INTO users(email, password_hash, name, surname, type)
+          VALUES (?, ?, 'Test', 'User', ?)`,
+    args: [email, passwordHash, type],
+  });
 }
 
-function createSlot(overrides: Record<string, unknown> = {}) {
-  return post("/api/slots", {
-    date: DAY,
-    from: "12:00",
-    to: "13:00",
-    tableIds: [1, 2],
-    ...overrides,
+// The session cookie to send in order to act as this user
+async function login(email: string): Promise<string> {
+  const res = await app.inject({
+    method: "POST",
+    url: "/api/v1/auth/login",
+    payload: { email, password: TEST_PASSWORD },
   });
+  expect(res.statusCode).toBe(200);
+  const setCookie = res.headers["set-cookie"];
+  return [setCookie]
+    .flat()
+    .filter((value) => typeof value === "string")
+    .map((value) => value.split(";")[0])
+    .join("; ");
+}
+
+let employeeCookie = "";
+let managerCookie = "";
+let hikerCookie = "";
+
+// Sent as an employee unless another cookie is given; "" means not logged in
+function post(
+  url: string,
+  payload: Record<string, unknown>,
+  cookie: string = employeeCookie,
+) {
+  return app.inject({
+    method: "POST",
+    url,
+    payload,
+    headers: cookie ? { cookie } : {},
+  });
+}
+
+function createSlot(overrides: Record<string, unknown> = {}, cookie?: string) {
+  return post(
+    "/api/slots",
+    {
+      date: DAY,
+      from: "12:00",
+      to: "13:00",
+      tableIds: [1, 2],
+      ...overrides,
+    },
+    cookie,
+  );
 }
 
 async function countRows(table: "tables" | "time_slots" | "table_availability") {
@@ -95,6 +150,13 @@ async function countRows(table: "tables" | "time_slots" | "table_availability") 
 beforeAll(async () => {
   await client.executeMultiple(createTestSchema);
   await app.ready();
+
+  await insertUser("employee@example.com", "EMPLOYEE");
+  await insertUser("manager@example.com", "MANAGER");
+  await insertUser("hiker@example.com", "HIKER");
+  employeeCookie = await login("employee@example.com");
+  managerCookie = await login("manager@example.com");
+  hikerCookie = await login("hiker@example.com");
 });
 
 beforeEach(async () => {
@@ -429,8 +491,78 @@ describe("POST /api/slots", () => {
       expect(await countRows("time_slots")).toBe(2);
     });
   });
+});
 
-  it.todo("lets only EMPLOYEE and MANAGER create tables and slots (needs the login page)");
+describe("who can create tables and slots", () => {
+  const newTable = { code: "T9", seats: 4 };
+
+  describe.each([
+    ["an employee", () => employeeCookie],
+    ["a manager", () => managerCookie],
+  ])("%s", (_who, cookie) => {
+    it("can create a table", async () => {
+      const res = await post("/api/tables", newTable, cookie());
+
+      expect(res.statusCode).toBe(201);
+    });
+
+    it("can create a slot", async () => {
+      const res = await createSlot({}, cookie());
+
+      expect(res.statusCode).toBe(201);
+    });
+  });
+
+  describe.each([
+    ["a hiker", () => hikerCookie, 403, "Only employees and managers can create tables and slots"],
+    ["someone not logged in", () => "", 401, "Authentication required"],
+    ["someone with an invalid session", () => "session=not-a-real-session", 401, "Authentication required"],
+  ])("%s", (_who, cookie, status, error) => {
+    it("cannot create a table", async () => {
+      const res = await post("/api/tables", newTable, cookie());
+
+      expect(res.statusCode).toBe(status);
+      expect(res.json()).toEqual({ error });
+      expect(await countRows("tables")).toBe(3);
+    });
+
+    it("cannot create a slot", async () => {
+      const res = await createSlot({}, cookie());
+
+      expect(res.statusCode).toBe(status);
+      expect(res.json()).toEqual({ error });
+      expect(await countRows("time_slots")).toBe(0);
+      expect(await countRows("table_availability")).toBe(0);
+    });
+
+    it("gets the same answer for an invalid request, without validation details", async () => {
+      const res = await createSlot({ date: "not-a-date" }, cookie());
+
+      expect(res.statusCode).toBe(status);
+      expect(res.json()).toEqual({ error });
+    });
+
+    it("can still read tables and slots", async () => {
+      const headers = cookie() ? { cookie: cookie() } : {};
+      const created = (await createSlot()).json();
+
+      for (const url of ["/api/tables", `/api/slots?date=${DAY}`, `/api/slots/${created.id}`]) {
+        const res = await app.inject({ method: "GET", url, headers });
+        expect(res.statusCode).toBe(200);
+      }
+    });
+  });
+
+  it("refuses a user that no longer exists, even with a valid session", async () => {
+    await insertUser("former@example.com", "EMPLOYEE");
+    const cookie = await login("former@example.com");
+    await client.execute("DELETE FROM users WHERE email = 'former@example.com'");
+
+    const res = await createSlot({}, cookie);
+
+    expect(res.statusCode).toBe(401);
+    expect(await countRows("time_slots")).toBe(0);
+  });
 });
 
 describe("GET /api/slots", () => {
