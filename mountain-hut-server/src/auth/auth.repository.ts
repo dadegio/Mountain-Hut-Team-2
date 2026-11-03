@@ -1,8 +1,6 @@
 import { db } from "../db/database.ts";
 import { eq } from "drizzle-orm";
-import { usersTable, type USER_TYPES } from "../db/schema.ts";
-
-type UserType = (typeof USER_TYPES)[number];
+import { usersTable, type UserType } from "../db/schema.ts";
 
 export interface CreateUserData {
   email: string;
