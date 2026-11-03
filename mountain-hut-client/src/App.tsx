@@ -6,20 +6,23 @@ import MyBookingsPage from "./pages/MyBookingsPage";
 import LoginPage from "./pages/LoginPage";
 import EmployeeSlotsPage from "./pages/EmployeeSlotsPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import AuthProvider from './context/AuthProvider'
 
 function App() {
   return(
     <BrowserRouter>
-      <Routes>
-        <Route element={<Layout/>}>
-        <Route index element={<HomePage />}/>
-        <Route path="booking" element={<BookingPage />}/>
-        <Route path="my-bookings" element={<MyBookingsPage />}/>
-        <Route path="login" element={<LoginPage />}/>
-        <Route path="employee/slots" element={<EmployeeSlotsPage />}/>
-        <Route path="*" element={<NotFoundPage />}/>
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route element={<Layout/>}>
+          <Route index element={<HomePage />}/>
+          <Route path="booking" element={<BookingPage />}/>
+          <Route path="my-bookings" element={<MyBookingsPage />}/>
+          <Route path="login" element={<LoginPage />}/>
+          <Route path="employee/slots" element={<EmployeeSlotsPage />}/>
+          <Route path="*" element={<NotFoundPage />}/>
+          </Route>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
 
   );
