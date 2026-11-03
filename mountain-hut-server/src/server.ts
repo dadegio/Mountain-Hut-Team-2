@@ -6,8 +6,11 @@ import {
 } from "fastify-type-provider-zod";
 
 import { env } from "./config.ts";
+import { slotRoutes } from "./slots/slot-routes.ts";
+import { availabilityRoutes } from "./booking/availability-routes.ts";
 import authRoutes from "./auth/auth.route.ts";
 import AuthRepository from "./auth/auth.repository.ts";
+import * as fastify from "fastify";
 
 // ------- server setup
 export function buildApp(opts: FastifyServerOptions = {}) {
@@ -39,6 +42,8 @@ export function buildApp(opts: FastifyServerOptions = {}) {
     }
   });
 
+  server.register(slotRoutes);
+  server.register(availabilityRoutes);
   // ------- routes
   const BASE_URL = "/api/v1";
 
