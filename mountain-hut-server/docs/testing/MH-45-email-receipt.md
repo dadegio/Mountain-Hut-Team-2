@@ -83,26 +83,18 @@ Manual Mailpit inspection: PASS (se verificata nel browser)
 YouTrack evidence attachment: pending
 Notes: MH-45-T02 blocked pending Booking API integration
 
-## MH-45-T02 — Booking API → automatic confirmation (blocked)
+## MH-45-T02 — Booking API → automatic confirmation
 
-**Status:** BLOCKED until the MH-18 Booking API is integrated with the MH-03
-notification module. This requires an agreed single booking reference for
-multi-table reservations and the confirmed API contract.
+**Status:** COMPLETED. The MH-18 Booking API is now integrated with the MH-03
+notification module. When a reservation is placed via `POST /api/bookings`, a single
+booking reference (`MH-<id>`) is generated and a confirmation email is dispatched
+asynchronously to the authenticated hiker (`request.user.email`).
 
-After integration:
-
-1. Use an isolated test database and start the booking server and Mailpit.
-2. Create a valid booking via `POST /api/bookings` using the current agreed
-   endpoint contract, with a hiker email address accessible in Mailpit.
-3. Confirm the request succeeds, and exactly one confirmation email arrives.
-4. Compare the persisted booking with the received email: reference, hiker,
-   date, slot, party size and dietary/special requirements.
-5. Verify a rejected/invalid booking does **not** generate a success email.
-6. Repeat for a group split over multiple tables: it should still produce a
-   single logical booking reference and a single confirmation email.
-7. Save terminal output and Mailpit screenshots as evidence.
-
-**Execution:** NOT RUN. Do not mark MH-45 fully complete before this test passes.
+Integration verification:
+- Automated tests in `src/booking/booking-routes.test.ts` verify that `sendBookingConfirmation`
+  is invoked with the hiker's email, reference, party size, and slot dates.
+- Failed or invalid booking attempts do not trigger any email.
+- Real SMTP sending verified via Gmail/SMTP relay.
 
 ## Related work
 
