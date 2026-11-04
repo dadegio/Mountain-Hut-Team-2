@@ -49,7 +49,9 @@ export default function MyBookingsPage() {
               className={
                 b.status === "confirmed"
                   ? "px-2 py-1 rounded text-sm bg-green-100 text-green-800"
-                  : "px-2 py-1 rounded text-sm bg-red-100 text-red-700"
+                  : b.status === "completed"
+                    ? "px-2 py-1 rounded text-sm bg-stone-100 text-stone-700"
+                    : "px-2 py-1 rounded text-sm bg-red-100 text-red-700"
               }
             >
               {b.status}

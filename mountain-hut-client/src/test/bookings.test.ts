@@ -1,23 +1,31 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // Mock import.meta.env so VITE_USE_MOCKS=true
 vi.stubEnv('VITE_USE_MOCKS', 'true')
 
 // Dynamic import so the stub is in place before the module loads
-const { getSlots, getMyBookings, createBooking } = await import('../api/bookings')
+const { getMyBookings, createBooking } = await import('../api/bookings')
+const { ApiError } = await import('../api/client')
 
-describe('bookings API (mock mode)', () => {
+// Minimal fake of a fetch Response
+function fakeResponse(status: number, body: unknown) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: '',
+    json: async () => body,
+    text: async () => JSON.stringify(body),
+  } as unknown as Response
+}
+
+describe('bookings API', () => {
   beforeEach(() => {
     vi.useFakeTimers()
   })
 
-  it('getSlots returns mock slots', async () => {
-    const promise = getSlots('2026-12-15')
-    vi.runAllTimersAsync()
-    const slots = await promise
-    expect(slots).toHaveLength(2)
-    expect(slots[0]).toMatchObject({ id: 1, available: true })
-    expect(slots[1]).toMatchObject({ id: 2, available: false })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
   })
 
   it('getMyBookings returns mock bookings', async () => {
@@ -29,13 +37,37 @@ describe('bookings API (mock mode)', () => {
     expect(bookings[1].status).toBe('cancelled')
   })
 
-  it('createBooking returns a confirmed booking with the given data', async () => {
-    const req = { date: '2026-12-25', slotId: 1, partySize: 3 }
-    const promise = createBooking(req)
-    vi.runAllTimersAsync()
-    const booking = await promise
-    expect(booking.status).toBe('confirmed')
-    expect(booking.date).toBe('2026-12-25')
-    expect(booking.partySize).toBe(3)
+  it('createBooking sends POST /api/bookings with slotId and partySize', async () => {
+    const result = {
+      status: 'PLACED',
+      userId: 2,
+      slotId: 3,
+      partySize: 4,
+      reservations: [{ reservationId: 1, tableId: 3, seats: 4 }],
+    }
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(201, result))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const booking = await createBooking(3, 4)
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/bookings')
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body)).toEqual({ slotId: 3, partySize: 4 })
+    expect(booking).toEqual(result)
+  })
+
+  it('createBooking throws ApiError with status and backend message on 409', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(fakeResponse(409, { error: 'Not enough seats' })),
+    )
+
+    const error = await createBooking(3, 30).catch((e) => e)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(409)
+    expect(error.message).toBe('Not enough seats')
   })
 })

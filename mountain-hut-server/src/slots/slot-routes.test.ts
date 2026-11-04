@@ -2,25 +2,30 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import type { Client } from "@libsql/client";
 import argon2 from "argon2";
 import { todayString } from "./slot-rules.ts";
+import { asc, count } from "drizzle-orm";
+import { tablesTable, timeSlotTable, tableAvailabilityTable } from "../db/schema.ts";
+import { resetTestDatabase } from "../test-support/test-database.ts";
 
 /**
  * HTTP integration tests for the table and slot API (MH-34).
  *
- * Only the database connection is replaced, with a dedicated in-memory SQLite
+ * Only the database connection is replaced, with a dedicated temporary SQLite
  * database: routes, validation and queries are the real ones, and local.db is
  * not touched.
  */
 vi.mock("../db/database.ts", async () => {
-  const { createClient } = await import("@libsql/client");
-  const { drizzle } = await import("drizzle-orm/libsql");
-  const client = createClient({ url: "file::memory:" });
-  return { db: drizzle({ client }), __integrationTestClient: client };
+  const { createIsolatedTestDatabase } = await import("../test-support/test-database.ts");
+  const { db, client, cleanup } = createIsolatedTestDatabase();
+  return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
 });
 
-// Imported after vi.mock, so that the routes use the in-memory database
-const { __integrationTestClient: client } = (await import("../db/database.ts")) as unknown as {
-  __integrationTestClient: Client;
-};
+// Imported after vi.mock, so that the routes use the temporary SQLite database
+const { db: testDb } = await import("../db/database.ts");
+const { __integrationTestClient: client, __integrationTestCleanup: cleanup } =
+  (await import("../db/database.ts")) as unknown as {
+    __integrationTestClient: Client;
+    __integrationTestCleanup: () => void;
+  };
 const { buildApp } = await import("../server.ts");
 const app = buildApp({ logger: false });
 
@@ -143,12 +148,14 @@ function createSlot(overrides: Record<string, unknown> = {}, cookie?: string) {
 }
 
 async function countRows(table: "tables" | "time_slots" | "table_availability") {
-  const { rows } = await client.execute(`SELECT COUNT(*) AS n FROM ${table}`);
-  return Number(rows[0].n);
+  switch (table) {
+    case "tables": return (await testDb.select({ n: count() }).from(tablesTable))[0].n;
+    case "time_slots": return (await testDb.select({ n: count() }).from(timeSlotTable))[0].n;
+    case "table_availability": return (await testDb.select({ n: count() }).from(tableAvailabilityTable))[0].n;
+  }
 }
 
 beforeAll(async () => {
-  await client.executeMultiple(createTestSchema);
   await app.ready();
 
   await insertUser("employee@example.com", "EMPLOYEE");
@@ -160,20 +167,14 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await client.executeMultiple(`
-    DELETE FROM reservations;
-    DELETE FROM table_availability;
-    DELETE FROM time_slots;
-    DELETE FROM tables;
-    DELETE FROM sqlite_sequence;
-    INSERT INTO tables(id, code, seats) VALUES
-      (1, 'T1', 2), (2, 'T2', 4), (3, 'T3', 6);
-  `);
+  await resetTestDatabase(client);
+  await testDb.insert(tablesTable).values([T1, T2, T3]);
 });
 
 afterAll(async () => {
   await app.close();
-  client.close();
+  await client.close();
+  cleanup();
 });
 
 describe("GET /api/tables", () => {
@@ -185,7 +186,7 @@ describe("GET /api/tables", () => {
   });
 
   it("returns an empty list when there are no tables", async () => {
-    await client.execute("DELETE FROM tables");
+    await testDb.delete(tablesTable);
 
     const res = await get("/api/tables");
 
@@ -280,14 +281,13 @@ describe("POST /api/slots", () => {
   it("saves the slot and its tables in the database", async () => {
     const { id } = (await createSlot({ tableIds: [3, 1] })).json();
 
-    const slots = await client.execute(`SELECT date, "from", "to" FROM time_slots`);
-    expect(slots.rows).toHaveLength(1);
-    expect(slots.rows[0]).toMatchObject({ date: DAY, from: "12:00", to: "13:00" });
+    const slots = await testDb.select().from(timeSlotTable);
+    expect(slots).toHaveLength(1);
+    expect(slots[0]).toMatchObject({ date: DAY, from: "12:00", to: "13:00" });
 
-    const links = await client.execute(
-      "SELECT slot_id, table_id FROM table_availability ORDER BY table_id",
-    );
-    expect(links.rows.map((row) => [row.slot_id, row.table_id])).toEqual([
+    const links = await testDb.select().from(tableAvailabilityTable)
+      .orderBy(asc(tableAvailabilityTable.tableId));
+    expect(links.map((row) => [row.slotId, row.tableId])).toEqual([
       [id, 1],
       [id, 3],
     ]);

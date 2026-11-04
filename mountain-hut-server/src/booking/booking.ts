@@ -117,6 +117,9 @@ export async function createBooking(input: CreateBookingInput) {
       status: "PLACED" as const,
       userId,
       slotId,
+      date: slot.date,
+      from: slot.from,
+      to: slot.to,
       partySize,
       reservations: created.map((reservation) => ({
         reservationId: reservation.id,
