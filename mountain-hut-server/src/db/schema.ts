@@ -48,13 +48,17 @@ export const allergensTable = sqliteTable("allergens", {
 export const reservationAllergensTable = sqliteTable(
   "reservation_allergens",
   {
-    allergenId: int("allergen_id").references(() => allergensTable.id, {
-      onDelete: "cascade",
-    }),
-    reservationId: int("reservation_id").references(
-      () => reservationsTable.id,
-      { onDelete: "cascade" },
-    ),
+    allergenId: int("allergen_id")
+      .notNull()
+      .references(() => allergensTable.id, {
+        onDelete: "cascade",
+      }),
+
+    reservationId: int("reservation_id")
+      .notNull()
+      .references(() => reservationsTable.id, {
+        onDelete: "cascade",
+      }),
   },
   (t) => [primaryKey({ columns: [t.allergenId, t.reservationId] })],
 );
@@ -85,12 +89,17 @@ export const reservationsTable = sqliteTable("reservations", {
 export const tableAvailabilityTable = sqliteTable(
   "table_availability",
   {
-    tableId: int("table_id").references(() => tablesTable.id, {
-      onDelete: "cascade",
-    }),
-    slotId: int("slot_id").references(() => timeSlotTable.id, {
-      onDelete: "cascade",
-    }),
+    tableId: int("table_id")
+      .notNull()
+      .references(() => tablesTable.id, {
+        onDelete: "cascade",
+      }),
+
+    slotId: int("slot_id")
+      .notNull()
+      .references(() => timeSlotTable.id, {
+        onDelete: "cascade",
+      }),
   },
   (t) => [primaryKey({ columns: [t.slotId, t.tableId] })],
 );
