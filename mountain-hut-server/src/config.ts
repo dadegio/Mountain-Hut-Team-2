@@ -9,6 +9,14 @@ const envSchema = z.object({
     .transform((val) => Number(val))
     .default(3000),
   DB_FILE_NAME: z.url().default("file:local.db"),
+  SESSION_SECRET: z
+    .string()
+    .min(32, "SESSION_SECRET must be at least 32 characters long")
+    .default("gristle9-flagship-savior-starting-charting"),
+  SESSION_SALT: z
+    .string()
+    .length(16, "SESSION_SALT must be exactly 16 characters (16 bytes) long")
+    .default("5Mk0vhGuVqBXYSdH"),
 
   SMTP_HOST: z.string().default("localhost"),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
