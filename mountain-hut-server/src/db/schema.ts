@@ -85,13 +85,12 @@ export const reservationsTable = sqliteTable("reservations", {
 export const tableAvailabilityTable = sqliteTable(
   "table_availability",
   {
-    id: int().primaryKey({ autoIncrement: true }),
-    tableId: int("table_id")
-      .notNull()
-      .references(() => tablesTable.id, {}),
-    slotId: int("slot_id")
-      .notNull()
-      .references(() => timeSlotTable.id, {}),
+    tableId: int("table_id").references(() => tablesTable.id, {
+      onDelete: "cascade",
+    }),
+    slotId: int("slot_id").references(() => timeSlotTable.id, {
+      onDelete: "cascade",
+    }),
   },
-  (t) => [unique().on(t.slotId, t.tableId)],
+  (t) => [primaryKey({ columns: [t.slotId, t.tableId] })],
 );
