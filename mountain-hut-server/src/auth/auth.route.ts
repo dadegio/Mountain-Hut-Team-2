@@ -4,14 +4,11 @@ import { StatusCodes } from "http-status-codes";
 import argon2 from "argon2";
 import { z } from "zod";
 
-import {
-  registerSchema,
-  loginSchema,
-  userResponseSchema,
-} from "./auth.schema.ts";
-import AuthRepository from "./auth.repository.ts";
+import UserRepository from "../users/user.repository.ts";
+import { userResponseSchema } from "../users/user.schema.ts";
+import { registerSchema, loginSchema } from "./auth.schema.ts";
 
-const authRoutes: FastifyPluginAsync = async (server) => {
+export const authRoutes: FastifyPluginAsync = async (server) => {
   const typed = server.withTypeProvider<ZodTypeProvider>();
 
   typed.post(
@@ -26,7 +23,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
       },
     },
     async (request, reply) => {
-      const existingUser = await AuthRepository.getUserByEmail(
+      const existingUser = await UserRepository.getUserByEmail(
         request.body.email,
       );
       if (existingUser) {
@@ -36,7 +33,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
       }
 
       const passwordHash = await argon2.hash(request.body.password);
-      const user = await AuthRepository.createUser({
+      const user = await UserRepository.createUser({
         email: request.body.email,
         passwordHash,
         name: request.body.name,
@@ -61,7 +58,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
       },
     },
     async (request, reply) => {
-      const user = await AuthRepository.getUserByEmail(request.body.email);
+      const user = await UserRepository.getUserByEmail(request.body.email);
       if (!user) {
         return reply
           .code(StatusCodes.UNAUTHORIZED)
@@ -110,5 +107,3 @@ const authRoutes: FastifyPluginAsync = async (server) => {
     return reply.code(StatusCodes.OK).send(request.user);
   });
 };
-
-export default authRoutes;

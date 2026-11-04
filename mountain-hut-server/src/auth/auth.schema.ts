@@ -15,15 +15,5 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-export const userResponseSchema = z.object({
-  id: z.number(),
-  email: z.string(),
-  name: z.string(),
-  surname: z.string(),
-  phone_number: z.string().nullable().optional(),
-  type: z.enum(USER_TYPES),
-});
-
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
-export type UserResponse = z.infer<typeof userResponseSchema>;
