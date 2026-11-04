@@ -27,5 +27,5 @@ export interface BookingRequest {
 
 export interface Booking extends BookingRequest {
   id: number;
-  status: "confirmed" | "cancelled";
+  status: "confirmed" | "cancelled" | "completed";
 }

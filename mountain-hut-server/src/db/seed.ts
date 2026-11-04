@@ -4,6 +4,7 @@ import {
   timeSlotTable,
   tableAvailabilityTable,
   reservationsTable,
+  allergensTable,
 } from "./schema.ts";
 import { db } from "./database.ts";
 
@@ -115,6 +116,22 @@ async function main() {
   });
 
   console.log("Successfully inserted 1 reservation.");
+
+  const insertedAllergens = await db
+    .insert(allergensTable)
+    .values([
+      { name: "Milk" },
+      { name: "Eggs" },
+      { name: "Peanuts" },
+      { name: "Tree Nuts" },
+      { name: "Soybeans" },
+      { name: "Wheat" },
+      { name: "Fish" },
+      { name: "Shellfish" },
+    ])
+    .returning();
+
+  console.log(`Successfully inserted ${insertedAllergens.length} allergens.`);
 }
 
 main().catch((e) => {

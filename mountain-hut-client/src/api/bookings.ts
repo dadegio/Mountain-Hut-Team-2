@@ -24,5 +24,11 @@ export async function getMyBookings(): Promise<Booking[]> {
     await delay(300);
     return mockBookings;
   }
-  return apiFetch<Booking[]>("/bookings/mine");
+  const rows = await apiFetch<Array<Omit<Booking, "status"> & { status: "PLACED" | "FULFILLED" | "CANCELED" }>>("/bookings/mine");
+  return rows.map((row) => ({
+    ...row,
+    status: row.status === "PLACED" ? "confirmed" as const
+      : row.status === "FULFILLED" ? "completed" as const
+      : "cancelled" as const,
+  }));
 }

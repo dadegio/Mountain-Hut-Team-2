@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, int, text, unique } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  int,
+  text,
+  unique,
+  primaryKey,
+} from "drizzle-orm/sqlite-core";
 
 export const USER_TYPES = ["HIKER", "EMPLOYEE", "MANAGER"] as const;
 export type UserType = (typeof USER_TYPES)[number];
@@ -34,6 +40,29 @@ export const tablesTable = sqliteTable("tables", {
   seats: int().notNull(),
 });
 
+export const allergensTable = sqliteTable("allergens", {
+  id: int().primaryKey({ autoIncrement: true }),
+  name: text().notNull().unique(),
+});
+
+export const reservationAllergensTable = sqliteTable(
+  "reservation_allergens",
+  {
+    allergenId: int("allergen_id")
+      .notNull()
+      .references(() => allergensTable.id, {
+        onDelete: "cascade",
+      }),
+
+    reservationId: int("reservation_id")
+      .notNull()
+      .references(() => reservationsTable.id, {
+        onDelete: "cascade",
+      }),
+  },
+  (t) => [primaryKey({ columns: [t.allergenId, t.reservationId] })],
+);
+
 export const reservationsTable = sqliteTable("reservations", {
   id: int().primaryKey({ autoIncrement: true }),
   userId: int("user_id")
@@ -53,19 +82,24 @@ export const reservationsTable = sqliteTable("reservations", {
     .notNull()
     .default(RESERVATION_STATUS[0])
     .$type<(typeof RESERVATION_STATUS)[number]>(),
+  description: text(),
 });
 
 // Which tables are available in a slot
 export const tableAvailabilityTable = sqliteTable(
   "table_availability",
   {
-    id: int().primaryKey({ autoIncrement: true }),
     tableId: int("table_id")
       .notNull()
-      .references(() => tablesTable.id, {}),
+      .references(() => tablesTable.id, {
+        onDelete: "cascade",
+      }),
+
     slotId: int("slot_id")
       .notNull()
-      .references(() => timeSlotTable.id, {}),
+      .references(() => timeSlotTable.id, {
+        onDelete: "cascade",
+      }),
   },
-  (t) => [unique().on(t.slotId, t.tableId)],
+  (t) => [primaryKey({ columns: [t.slotId, t.tableId] })],
 );
