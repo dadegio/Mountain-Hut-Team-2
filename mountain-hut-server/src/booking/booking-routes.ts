@@ -4,6 +4,7 @@ import { BookingError, createBooking } from "./booking.ts";
 import { hutSlotStartMs } from "./booking-rules.ts";
 import { SmtpEmailSender, type EmailSender } from "../notifications/sender.ts";
 import { sendBookingConfirmation } from "../notifications/booking-confirmation.ts";
+import { listBookingsForUser } from "./list-bookings.ts";
 
 export interface BookingRoutesOptions {
   emailSender?: EmailSender;
@@ -20,6 +21,22 @@ export async function bookingRoutes(
   options: BookingRoutesOptions = {},
 ) {
   const mailSender = options.emailSender ?? new SmtpEmailSender();
+
+  app.get("/api/bookings/mine", async (request, reply) => {
+    if (!request.user) {
+      return reply.status(401).send({ error: "Authentication required" });
+    }
+    if (request.user.type !== "HIKER") {
+      return reply.status(403).send({ error: "Only hikers can view their bookings" });
+    }
+
+    try {
+      return reply.status(200).send(await listBookingsForUser(request.user.id));
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  });
 
   app.post("/api/bookings", async (request, reply) => {
     if (!request.user) {
@@ -41,7 +58,7 @@ export async function bookingRoutes(
     try {
       const booking = await createBooking({ ...parsed.data, userId: request.user.id });
 
-      // Dispatch confirmation email in background to avoid blocking HTTP response
+      // Invio della mail di conferma all'hiker loggato
       try {
         const slotStart = new Date(hutSlotStartMs(booking.date, booking.from));
         const slotEnd = new Date(hutSlotStartMs(booking.date, booking.to));
