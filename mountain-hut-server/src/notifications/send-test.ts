@@ -12,6 +12,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Sending failed.:", err);
+  console.error("Sending failed:", err);
   process.exit(1);
 });
