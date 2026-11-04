@@ -78,7 +78,7 @@ export const reservationsTable = sqliteTable("reservations", {
     .notNull()
     .default(RESERVATION_STATUS[0])
     .$type<(typeof RESERVATION_STATUS)[number]>(),
-  description: text().default(""),
+  description: text(),
 });
 
 // Which tables are available in a slot
