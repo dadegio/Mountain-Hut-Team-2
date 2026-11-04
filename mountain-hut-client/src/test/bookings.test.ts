@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 vi.stubEnv('VITE_USE_MOCKS', 'true')
 
 // Dynamic import so the stub is in place before the module loads
-const { getMyBookings, createBooking } = await import('../api/bookings')
+const { getMyBookings, createBooking, createStaffBooking } = await import('../api/bookings')
 const { ApiError } = await import('../api/client')
 
 // Minimal fake of a fetch Response
@@ -35,6 +35,26 @@ describe('bookings API', () => {
     expect(bookings).toHaveLength(2)
     expect(bookings[0].status).toBe('confirmed')
     expect(bookings[1].status).toBe('cancelled')
+  })
+
+  it('createStaffBooking sends POST /api/staff/bookings with the hiker, slot and party', async () => {
+    const result = {
+      status: 'PLACED',
+      userId: 7,
+      slotId: 3,
+      partySize: 4,
+      reservations: [{ reservationId: 1, tableId: 3, seats: 4 }],
+    }
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(201, result))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const booking = await createStaffBooking({ hikerId: 7, slotId: 3, partySize: 4 })
+
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/staff/bookings')
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body)).toEqual({ hikerId: 7, slotId: 3, partySize: 4 })
+    expect(booking).toEqual(result)
   })
 
   it('createBooking sends POST /api/bookings with slotId and partySize', async () => {

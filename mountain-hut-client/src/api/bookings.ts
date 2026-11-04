@@ -1,9 +1,21 @@
 import { apiFetch } from "./client";
-import type { Booking, BookingResult, CreateBookingRequest } from "../types/booking";
+import type {
+  Booking,
+  BookingResult,
+  CreateBookingRequest,
+  CreateStaffBookingRequest,
+} from "../types/booking";
 
 export function createBooking(slotId: number, partySize: number) {
   const body: CreateBookingRequest = { slotId, partySize };
   return apiFetch<BookingResult>("/bookings", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function createStaffBooking(body: CreateStaffBookingRequest) {
+  return apiFetch<BookingResult>("/staff/bookings", {
     method: "POST",
     body: JSON.stringify(body),
   });

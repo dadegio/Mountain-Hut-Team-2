@@ -32,6 +32,11 @@ export function formatDay(date: string, style: "long" | "short" = "long"): strin
   );
 }
 
+// True once the end time of the slot has passed. UX hint only, the backend decides
+export function slotHasEnded(date: string, to: string, now: Date = new Date()): boolean {
+  return new Date(`${date}T${to}`).getTime() <= now.getTime();
+}
+
 // Accepts what people type ("12:30", "12.30", "1230", "930", "9") and returns
 // "HH:MM", or null when it is not a valid time
 export function normalizeTime(input: string): string | null {
