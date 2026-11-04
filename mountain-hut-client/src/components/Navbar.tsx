@@ -42,7 +42,8 @@ export default function Navbar() {
   }
 
   return (
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-lg backdrop-saturate-150 border-b border-white/50 shadow-sm">      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-lg backdrop-saturate-150 border-b border-white/50 shadow-sm">
+      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <NavLink to="/" className="text-lg font-bold text-green-800">
           Mountain Hut
         </NavLink>

@@ -42,7 +42,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
         name: request.body.name,
         surname: request.body.surname,
         phoneNumber: request.body.phone_number,
-        type: request.body.type,
+        type: "HIKER",
       });
 
       return reply.code(StatusCodes.CREATED).send(user);

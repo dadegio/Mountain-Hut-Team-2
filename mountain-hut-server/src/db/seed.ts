@@ -1,3 +1,4 @@
+import argon2 from "argon2";
 import {
   usersTable,
   tablesTable,
@@ -32,16 +33,14 @@ async function main() {
     .values([
       {
         email: "mario.rossi@example.com",
-        passwordHash:
-          "$argon2id$v=19$m=65536,p=4,t=3$IBNUxTebRIza6FaSgh9hAg$/f0tf4M/7dGqBiPeW2kHbl8HjxZaoC7vEnog03X2ZdM",
+        passwordHash: await argon2.hash("mariorossi"),
         name: "Mario",
         surname: "Rossi",
         phoneNumber: "+393331234567",
       },
       {
         email: "giulia.verdi@example.com",
-        passwordHash:
-          "$argon2id$v=19$m=65536,p=4,t=3$XkzEBkjCbMbjvjZ/5o8x3Q$+LsVAXAz2h/rUqAHOg2xJtZCgOnJJIpFRiH8gVscCVw",
+        passwordHash: await argon2.hash("giuliaverdi"),
         name: "Giulia",
         surname: "Verdi",
         phoneNumber: "+393339876543",
@@ -49,11 +48,17 @@ async function main() {
       },
       {
         email: "luca.neri@example.com",
-        passwordHash:
-          "$argon2id$v=19$m=65536,p=4,t=3$2eIkRe17LgnjfnIsFU9Dpw$e+yhlsOoFJyIg15S9P8/lWzvkuxnrzbqnk7It4iRcXk",
+        passwordHash: await argon2.hash("lucaneri"),
         name: "Luca",
         surname: "Neri",
         phoneNumber: "+393335554433",
+        type: "EMPLOYEE",
+      },
+      {
+        email: "test.employee@example.com",
+        passwordHash: await argon2.hash("Password123!"),
+        name: "Test",
+        surname: "Employee",
         type: "EMPLOYEE",
       },
     ])

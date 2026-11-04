@@ -4,7 +4,6 @@ POST {{base_url}}/api/v1/auth/register
     "password": "pwdTest1",
     "name": "Tizio",
     "surname": "Caio",
-    "phone_number": "+031415926535",
-    "type": "HIKER"
+    "phone_number": "+031415926535"
 }
 HTTP 201
