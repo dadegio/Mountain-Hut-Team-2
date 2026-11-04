@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { getMyBookings } from "../api/bookings";
 import { getTables } from "../api/slots";
 import AuthShell from "../components/AuthShell";
+import ChangeBookingPanel from "../components/ChangeBookingPanel";
 import { changeBlockReason, createdAtMs, isPast, slotStartMs } from "../utils/booking-rules";
 import type { MyBooking } from "../types/booking";
 import type { Table } from "../types/slot";
@@ -69,16 +70,20 @@ interface Loaded {
 export default function MyBookingsPage() {
   const [data, setData] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0); // bump to load the list again
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
 
     Promise.all([
       getMyBookings(),
-      getTables().catch(() : Table[] => []), 
+      getTables().catch((): Table[] => []), // table codes are nice to have, not essential
     ])
       .then(([bookings, tables]) => {
         if (ignore) return;
+        setError(null);
         setData({
           bookings,
           tableCodes: new Map(tables.map((t) => [t.id, t.code])),
@@ -91,7 +96,13 @@ export default function MyBookingsPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [reloadKey]);
+
+  function handleChanged() {
+    setEditingId(null);
+    setNotice("Your booking has been updated.");
+    setReloadKey((k) => k + 1);
+  }
 
   const upcoming = (data?.bookings ?? [])
     .filter((b) => b.status === "PLACED" && !isPast(b))
@@ -107,47 +118,67 @@ export default function MyBookingsPage() {
     const status = STATUS_STYLE[b.status];
     const day = fromDateString(b.date);
     const info = changeInfo(b);
+    const editing = editingId === b.id;
 
     return (
-      <li
-        key={b.id}
-        className="rounded-xl border border-stone-200 bg-white p-4 shadow-xs flex gap-4"
-      >
-        {/* calendar-style date block */}
-        <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-green-50 border border-green-100 py-2">
-          <span className="text-xs font-semibold uppercase text-green-700">
-            {day.toLocaleDateString("en-GB", { month: "short" })}
-          </span>
-          <span className="text-2xl font-extrabold leading-none text-stone-900">{day.getDate()}</span>
-        </div>
-
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-start justify-between gap-3">
-            <p className="font-semibold text-stone-900">{formatLongDate(b.date)}</p>
-            <span
-              className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${status.className}`}
-            >
-              {status.label}
+      <li key={b.id} className="rounded-xl border border-stone-200 bg-white p-4 shadow-xs">
+        <div className="flex gap-4">
+          {/* calendar-style date block */}
+          <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-green-50 border border-green-100 py-2">
+            <span className="text-xs font-semibold uppercase text-green-700">
+              {day.toLocaleDateString("en-GB", { month: "short" })}
             </span>
+            <span className="text-2xl font-extrabold leading-none text-stone-900">{day.getDate()}</span>
           </div>
 
-          <p className="text-sm text-stone-600">
-            {b.from}–{b.to} · {b.partySize} {b.partySize === 1 ? "person" : "people"}
-          </p>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-semibold text-stone-900">{formatLongDate(b.date)}</p>
+              <span
+                className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${status.className}`}
+              >
+                {status.label}
+              </span>
+            </div>
 
-          {b.reservations.length > 0 && (
-            <p className="text-sm text-stone-500">
-              Table{b.reservations.length > 1 ? "s" : ""}:{" "}
-              {b.reservations.map((r) => `${tableLabel(r.tableId)} (${r.seats})`).join(", ")}
+            <p className="text-sm text-stone-600">
+              {b.from}–{b.to} · {b.partySize} {b.partySize === 1 ? "person" : "people"}
             </p>
-          )}
 
-          {info && (
-            <p className={`pt-1 text-xs ${info.open ? "text-green-700" : "text-stone-500"}`}>
-              {info.text}
-            </p>
-          )}
+            {b.reservations.length > 0 && (
+              <p className="text-sm text-stone-500">
+                Table{b.reservations.length > 1 ? "s" : ""}:{" "}
+                {b.reservations.map((r) => `${tableLabel(r.tableId)} (${r.seats})`).join(", ")}
+              </p>
+            )}
+
+            {info && (
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <p className={`text-xs ${info.open ? "text-green-700" : "text-stone-500"}`}>{info.text}</p>
+                {info.open && !editing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotice(null);
+                      setEditingId(b.id);
+                    }}
+                    className="rounded-lg border border-green-600 px-3 py-1 text-sm font-semibold text-green-700 hover:bg-green-50 transition-colors cursor-pointer"
+                  >
+                    Change
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
+
+        {editing && (
+          <ChangeBookingPanel
+            booking={b}
+            onCancel={() => setEditingId(null)}
+            onChanged={handleChanged}
+          />
+        )}
       </li>
     );
   }
@@ -159,6 +190,12 @@ export default function MyBookingsPage() {
       title="My bookings"
       subtitle="Your upcoming meals at the hut and your booking history."
     >
+      {notice && (
+        <div role="status" className="mb-4 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-sm text-green-800">
+          {notice}
+        </div>
+      )}
+
       {error && (
         <div
           role="alert"
