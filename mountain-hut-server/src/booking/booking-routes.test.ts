@@ -463,7 +463,49 @@ describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
     expect(await reservationRows()).toHaveLength(0);
   });
 
-  it("409: respects the booking deadline", async () => {
+  it("201: staff can book within two hours of the slot start, while an hiker cannot", async () => {
+    const { hutSlotStartMs } = await import("./booking-rules.ts");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "11:00")));
+    try {
+      const hiker = await postBooking({ slotId: 1, partySize: 1 }, 2);
+      expect(hiker.statusCode).toBe(409);
+      const staff = await postStaffBooking({ hikerId: 1, slotId: 1, partySize: 1 });
+      expect(staff.statusCode).toBe(201);
+      expect((await reservationRows())).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("201: staff can book after the slot starts but before its end", async () => {
+    const { hutSlotStartMs } = await import("./booking-rules.ts");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "12:30")));
+    try {
+      const response = await postStaffBooking({ hikerId: 1, slotId: 1, partySize: 1 });
+      expect(response.statusCode).toBe(201);
+      expect((await reservationRows())).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("409: staff cannot book at the exact end of the slot", async () => {
+    const { hutSlotStartMs } = await import("./booking-rules.ts");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "13:00")));
+    try {
+      const response = await postStaffBooking({ hikerId: 1, slotId: 1, partySize: 1 });
+      expect(response.statusCode).toBe(409);
+      expect(response.json()).toMatchObject({ error: "Time slot has already ended" });
+      expect((await reservationRows())).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("409: staff cannot book a slot that ended in the past", async () => {
     const response = await postStaffBooking({ hikerId: 1, slotId: 4, partySize: 1 });
     expect(response.statusCode).toBe(409);
     expect(await reservationRows()).toHaveLength(0);

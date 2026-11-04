@@ -29,9 +29,11 @@ export async function staffBookingRoutes(app: FastifyInstance) {
 
     const { hikerId, slotId, partySize } = parsed.data;
     try {
-      // Reuses MH-18: validates that the target is a HIKER, enforces the
-      // 2-hour cutoff, duplicate rule, capacity and atomic table allocation.
-      const booking = await createBooking({ userId: hikerId, slotId, partySize });
+      // Only authenticated staff can bypass the hiker two-hour cutoff.
+      // The slot must still not have ended; all other booking rules remain.
+      const booking = await createBooking({
+        userId: hikerId, slotId, partySize, allowStaffLateBooking: true,
+      });
       return reply.status(201).send(booking);
     } catch (error) {
       if (error instanceof BookingError) {

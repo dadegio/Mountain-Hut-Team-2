@@ -38,12 +38,16 @@ session cookie, not a client-supplied role or user ID.
 - `401` missing session
 - `403` current user is not `EMPLOYEE`/`MANAGER`, or target user is not `HIKER`
 - `404` target hiker or slot not found
-- `409` booking deadline passed, already booked this slot, insufficient capacity
+- `409` slot ended (hut-local Europe/Rome time), already booked this slot, insufficient capacity
 - `500` unexpected internal failure, logged on server without leaking details
 
-The endpoint delegates to `createBooking()` (MH-18). It reuses the same MH-01
-cutoff/duplicate rules, MH-12 table allocation, seat accounting and atomic
-transaction. It does **not** change the existing hiker booking endpoint.
+The endpoint delegates to `createBooking()` (MH-18) with a server-side option
+that bypasses the two-hour cutoff **only for authenticated staff**. Staff can
+book before or during a slot, but not at or after its end time, evaluated
+in `Europe/Rome` using `hutSlotStartMs(slot.date, slot.to)`. Hiker bookings
+still close two hours before the slot begins; `isSlotBookable()` is unchanged
+(including for hiker booking changes). The beneficiary must still be a HIKER,
+and duplicate, capacity, allocation and transaction rules remain unchanged.
 
 ## Remaining MH-07 work and merge blockers
 
