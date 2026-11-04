@@ -13,7 +13,9 @@ export interface BookingRoutesOptions {
 const bookingSchema = z.object({
   slotId: z.number().int().positive(),
   partySize: z.number().int().positive().max(1000),
-  requirements: z.string().optional(),
+  description: z.string().max(1000).optional(),
+  allergenIds: z.array(z.number().int().positive()).optional().default([]),
+  requirements: z.string().max(1000).optional(),
 }).strict();
 
 export async function bookingRoutes(
@@ -56,7 +58,17 @@ export async function bookingRoutes(
     }
 
     try {
-      const booking = await createBooking({ ...parsed.data, userId: request.user.id });
+      const effectiveDescription = parsed.data.description !== undefined
+        ? parsed.data.description
+        : parsed.data.requirements;
+
+      const booking = await createBooking({
+        userId: request.user.id,
+        slotId: parsed.data.slotId,
+        partySize: parsed.data.partySize,
+        description: effectiveDescription,
+        allergenIds: parsed.data.allergenIds,
+      });
 
       // Invio della mail di conferma all'hiker loggato
       try {
@@ -65,13 +77,23 @@ export async function bookingRoutes(
         const reference = `MH-${booking.reservations[0]?.reservationId ?? booking.slotId}`;
         const hikerName = `${request.user.name ?? ""} ${request.user.surname ?? ""}`.trim() || request.user.name;
 
+        let emailRequirements: string | undefined = undefined;
+        const allergenNames = booking.allergens.map((a) => a.name);
+        if (allergenNames.length > 0 && booking.description) {
+          emailRequirements = `Allergens: ${allergenNames.join(", ")}. Details: ${booking.description}`;
+        } else if (allergenNames.length > 0) {
+          emailRequirements = `Allergens: ${allergenNames.join(", ")}`;
+        } else if (booking.description) {
+          emailRequirements = booking.description;
+        }
+
         sendBookingConfirmation(mailSender, request.user.email, {
           reference,
           hikerName,
           slotStart,
           slotEnd,
           partySize: booking.partySize,
-          requirements: parsed.data.requirements,
+          requirements: emailRequirements,
         }).catch((err) => {
           request.log.error(err, "Failed to send booking confirmation email");
         });
