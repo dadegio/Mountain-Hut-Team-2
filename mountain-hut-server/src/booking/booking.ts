@@ -1,4 +1,4 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db/database.ts";
 import {
   usersTable,
@@ -6,6 +6,8 @@ import {
   tablesTable,
   tableAvailabilityTable,
   reservationsTable,
+  allergensTable,
+  reservationAllergensTable,
 } from "../db/schema.ts";
 import { allocateTables, type FreeTable } from "./allocation.ts";
 import { hutSlotStartMs, isSlotBookable } from "./booking-rules.ts";
@@ -17,12 +19,14 @@ export interface CreateBookingInput {
   partySize: number;
   /** Trusted option set only by the authenticated staff route. */
   allowStaffLateBooking?: boolean;
+  description?: string | null;
+  allergenIds?: number[];
 }
 
 export class BookingError extends Error {
-  readonly statusCode: 403 | 404 | 409;
+  readonly statusCode: 400 | 403 | 404 | 409;
 
-  constructor(statusCode: 403 | 404 | 409, message: string) {
+  constructor(statusCode: 400 | 403 | 404 | 409, message: string) {
     super(message);
     this.name = "BookingError";
     this.statusCode = statusCode;
@@ -68,6 +72,24 @@ export async function createBooking(input: CreateBookingInput) {
       throw new BookingError(409, "You already have a booking for this time slot");
     }
 
+    const rawAllergenIds = input.allergenIds ?? [];
+    const uniqueAllergenIds = Array.from(new Set(rawAllergenIds));
+    let matchingAllergens: Array<{ id: number; name: string }> = [];
+
+    if (uniqueAllergenIds.length > 0) {
+      matchingAllergens = await tx
+        .select({
+          id: allergensTable.id,
+          name: allergensTable.name,
+        })
+        .from(allergensTable)
+        .where(inArray(allergensTable.id, uniqueAllergenIds));
+
+      if (matchingAllergens.length !== uniqueAllergenIds.length) {
+        throw new BookingError(400, "One or more allergen IDs are invalid");
+      }
+    }
+
     const configuredTables = await tx.select({
       tableId: tablesTable.id,
       code: tablesTable.code,
@@ -106,6 +128,8 @@ export async function createBooking(input: CreateBookingInput) {
       throw new BookingError(409, "Not enough available seats for this time slot");
     }
 
+    const description = input.description?.trim() ? input.description.trim() : null;
+
     const created = await tx.insert(reservationsTable)
       .values(allocation.map((assignment) => ({
         userId,
@@ -113,6 +137,7 @@ export async function createBooking(input: CreateBookingInput) {
         tableId: assignment.tableId,
         partySize: assignment.seats,
         status: "PLACED" as const,
+        description,
       })))
       .returning({
         id: reservationsTable.id,
@@ -120,11 +145,27 @@ export async function createBooking(input: CreateBookingInput) {
         seats: reservationsTable.partySize,
       });
 
+    if (uniqueAllergenIds.length > 0) {
+      const allergenRows = created.flatMap((reservation) =>
+        uniqueAllergenIds.map((allergenId) => ({
+          reservationId: reservation.id,
+          allergenId,
+        }))
+      );
+      await tx.insert(reservationAllergensTable).values(allergenRows);
+    }
+
     return {
       status: "PLACED" as const,
       userId,
       slotId,
+      date: slot.date,
+      from: slot.from,
+      to: slot.to,
       partySize,
+      description,
+      allergenIds: uniqueAllergenIds,
+      allergens: matchingAllergens,
       reservations: created.map((reservation) => ({
         reservationId: reservation.id,
         tableId: reservation.tableId,

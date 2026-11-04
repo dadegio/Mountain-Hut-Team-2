@@ -1,19 +1,26 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "@libsql/client";
 import argon2 from "argon2";
+import { asc, eq } from "drizzle-orm";
+import {
+  reservationsTable, usersTable, timeSlotTable, tablesTable, tableAvailabilityTable,
+} from "../db/schema.ts";
+import { resetTestDatabase } from "../test-support/test-database.ts";
 
 // Exercise the real PATCH HTTP route and service against an isolated SQLite DB.
 // Never touch local.db or the development seed database.
 vi.mock("../db/database.ts", async () => {
-  const { createClient } = await import("@libsql/client");
-  const { drizzle } = await import("drizzle-orm/libsql");
-  const client = createClient({ url: "file::memory:" });
-  return { db: drizzle({ client }), __integrationTestClient: client };
+  const { createIsolatedTestDatabase } = await import("../test-support/test-database.ts");
+  const { db, client, cleanup } = createIsolatedTestDatabase();
+  return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
 });
 
-const { __integrationTestClient: client } = (await import("../db/database.ts")) as unknown as {
-  __integrationTestClient: Client;
-};
+const { db: testDb } = await import("../db/database.ts");
+const { __integrationTestClient: client, __integrationTestCleanup: cleanup } =
+  (await import("../db/database.ts")) as unknown as {
+    __integrationTestClient: Client;
+    __integrationTestCleanup: () => void;
+  };
 const { buildApp } = await import("../server.ts");
 const app = buildApp({ logger: false });
 
@@ -32,65 +39,29 @@ let passwordHash = "";
 const futureDate = romeDate(5);
 const pastDate = romeDate(-5);
 
-const schemaSql = `
-  PRAGMA foreign_keys = ON;
-  CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL, name TEXT NOT NULL, surname TEXT NOT NULL,
-    phone_number TEXT, type TEXT NOT NULL DEFAULT 'HIKER'
-  );
-  CREATE TABLE time_slots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL,
-    "from" TEXT NOT NULL, "to" TEXT NOT NULL,
-    UNIQUE(date, "from", "to")
-  );
-  CREATE TABLE tables (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE,
-    seats INTEGER NOT NULL
-  );
-  CREATE TABLE table_availability (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    table_id INTEGER NOT NULL REFERENCES tables(id),
-    slot_id INTEGER NOT NULL REFERENCES time_slots(id),
-    UNIQUE(slot_id, table_id)
-  );
-  CREATE TABLE reservations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id),
-    slot_id INTEGER NOT NULL REFERENCES time_slots(id),
-    table_id INTEGER NOT NULL REFERENCES tables(id),
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    party_size INTEGER NOT NULL DEFAULT 1,
-    status TEXT NOT NULL DEFAULT 'PLACED'
-  );
-`;
-
 async function resetFixture() {
-  await client.executeMultiple(`
-    DELETE FROM reservations;
-    DELETE FROM table_availability;
-    DELETE FROM time_slots;
-    DELETE FROM tables;
-    DELETE FROM users;
-  `);
-  await client.executeMultiple(`
-    INSERT INTO users(id, email, password_hash, name, surname, type) VALUES
-      (1, 'first@example.test', '${passwordHash}', 'First', 'Hiker', 'HIKER'),
-      (2, 'second@example.test', '${passwordHash}', 'Second', 'Hiker', 'HIKER'),
-      (3, 'staff@example.test', '${passwordHash}', 'Staff', 'Member', 'EMPLOYEE');
-    INSERT INTO tables(id, code, seats) VALUES
-      (1, 'T1', 2), (2, 'T2', 4), (3, 'T3', 6);
-    INSERT INTO time_slots(id, date, "from", "to") VALUES
-      (1, '${futureDate}', '12:00', '13:00'),
-      (2, '${futureDate}', '13:00', '14:00'),
-      (3, '${futureDate}', '19:00', '20:00'),
-      (4, '${pastDate}', '12:00', '13:00');
-    INSERT INTO table_availability(slot_id, table_id) VALUES
-      (1, 1), (1, 2), (1, 3),
-      (2, 2), (2, 3),
-      (3, 1),
-      (4, 1);
-  `);
+  await resetTestDatabase(client);
+  await testDb.insert(usersTable).values([
+    { id: 1, email: "first@example.test", passwordHash, name: "First", surname: "Hiker", type: "HIKER" },
+    { id: 2, email: "second@example.test", passwordHash, name: "Second", surname: "Hiker", type: "HIKER" },
+    { id: 3, email: "staff@example.test", passwordHash, name: "Staff", surname: "Member", type: "EMPLOYEE" },
+  ]);
+  await testDb.insert(tablesTable).values([
+    { id: 1, code: "T1", seats: 2 },
+    { id: 2, code: "T2", seats: 4 },
+    { id: 3, code: "T3", seats: 6 },
+  ]);
+  await testDb.insert(timeSlotTable).values([
+    { id: 1, date: futureDate, from: "12:00", to: "13:00" },
+    { id: 2, date: futureDate, from: "13:00", to: "14:00" },
+    { id: 3, date: futureDate, from: "19:00", to: "20:00" },
+    { id: 4, date: pastDate, from: "12:00", to: "13:00" },
+  ]);
+  await testDb.insert(tableAvailabilityTable).values([
+    { slotId: 1, tableId: 1 }, { slotId: 1, tableId: 2 }, { slotId: 1, tableId: 3 },
+    { slotId: 2, tableId: 2 }, { slotId: 2, tableId: 3 },
+    { slotId: 3, tableId: 1 }, { slotId: 4, tableId: 1 },
+  ]);
 }
 
 const emails: Record<number, string> = {
@@ -136,15 +107,11 @@ async function patchBooking(
 }
 
 async function reservations() {
-  return (await client.execute(`
-    SELECT id, user_id, slot_id, table_id, party_size, created_at, status
-    FROM reservations ORDER BY id
-  `)).rows;
+  return testDb.select().from(reservationsTable).orderBy(asc(reservationsTable.id));
 }
 
 beforeAll(async () => {
   passwordHash = await argon2.hash(TEST_PASSWORD);
-  await client.executeMultiple(schemaSql);
   await app.ready();
 });
 
@@ -152,7 +119,8 @@ beforeEach(resetFixture);
 
 afterAll(async () => {
   await app.close();
-  client.close();
+  await client.close();
+  cleanup();
 });
 
 describe("MH-46: PATCH /api/bookings/:bookingId", () => {
@@ -185,21 +153,21 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
       reservations: [{ reservationId: id, tableId: 3, seats: 5 }],
     });
     const after = (await reservations()).find((row) => row.id === id)!;
-    expect(after).toMatchObject({ slot_id: 2, party_size: 5, created_at: before.created_at });
+    expect(after).toMatchObject({ slotId: 2, partySize: 5, createdAt: before.createdAt });
   });
 
   it("200: increases a booking across two tables without restarting the 48h clock", async () => {
     const created = await postBooking(1, 1, 5);
     const id = created.json().reservations[0].reservationId;
-    const initialTimestamp = (await reservations())[0].created_at;
+    const initialTimestamp = (await reservations())[0].createdAt;
 
     const changed = await patchBooking(id, { partySize: 9 });
     expect(changed.statusCode).toBe(200);
     expect(changed.json().reservations).toHaveLength(2);
     const rows = await reservations();
     expect(rows).toHaveLength(2);
-    expect(rows.reduce((sum, row) => sum + Number(row.party_size), 0)).toBe(9);
-    expect(rows.every((row) => row.created_at === initialTimestamp)).toBe(true);
+    expect(rows.reduce((sum, row) => sum + Number(row.partySize), 0)).toBe(9);
+    expect(rows.every((row) => row.createdAt === initialTimestamp)).toBe(true);
     expect(rows.some((row) => row.id === id)).toBe(true);
   });
 
@@ -239,10 +207,9 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
   it("409: rejects changes after 48 hours even if the meal is in the future", async () => {
     const created = await postBooking(1, 1, 2);
     const id = created.json().reservations[0].reservationId;
-    await client.execute({
-      sql: "UPDATE reservations SET created_at = datetime('now', '-49 hours') WHERE id = ?",
-      args: [id],
-    });
+    await testDb.update(reservationsTable)
+      .set({ createdAt: new Date(Date.now() - 49 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ") })
+      .where(eq(reservationsTable.id, id));
     const before = await reservations();
     const changed = await patchBooking(id, { partySize: 3 });
     expect(changed.statusCode).toBe(409);
@@ -273,8 +240,8 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
   it("409: completed and canceled reservations cannot be changed", async () => {
     const created = await postBooking(1, 1, 2);
     const id = created.json().reservations[0].reservationId;
-    for (const status of ["FULFILLED", "CANCELED"]) {
-      await client.execute({ sql: "UPDATE reservations SET status = ? WHERE id = ?", args: [status, id] });
+    for (const status of ["FULFILLED", "CANCELED"] as const) {
+      await testDb.update(reservationsTable).set({ status }).where(eq(reservationsTable.id, id));
       expect((await patchBooking(id, { partySize: 3 })).statusCode).toBe(409);
     }
   });
@@ -303,7 +270,7 @@ describe("MH-46: PATCH /api/bookings/:bookingId", () => {
     const changed = await patchBooking(id, { partySize: 6 });
     expect(changed.statusCode).toBe(200);
     const rows = await reservations();
-    expect(rows.filter((row) => row.user_id === 1).reduce((sum, row) => sum + Number(row.party_size), 0)).toBe(6);
-    expect(rows.filter((row) => row.user_id === 2).reduce((sum, row) => sum + Number(row.party_size), 0)).toBe(4);
+    expect(rows.filter((row) => row.userId === 1).reduce((sum, row) => sum + Number(row.partySize), 0)).toBe(6);
+    expect(rows.filter((row) => row.userId === 2).reduce((sum, row) => sum + Number(row.partySize), 0)).toBe(4);
   });
 });

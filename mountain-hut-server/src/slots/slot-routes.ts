@@ -43,12 +43,22 @@ function sendError(request: FastifyRequest, reply: FastifyReply, error: unknown)
   return reply.status(500).send({ error: "Internal server error" });
 }
 
-// TODO(MH-7): creating tables and slots is for EMPLOYEE and MANAGER only,
-// add the role check once authentication is available
+// Creating tables and slots is for EMPLOYEE and MANAGER only, reading is open
+async function requireStaff(request: FastifyRequest, reply: FastifyReply) {
+  if (!request.user) {
+    return reply.status(401).send({ error: "Authentication required" });
+  }
+  if (request.user.type !== "EMPLOYEE" && request.user.type !== "MANAGER") {
+    return reply
+      .status(403)
+      .send({ error: "Only employees and managers can create tables and slots" });
+  }
+}
+
 export async function slotRoutes(app: FastifyInstance) {
   app.get("/api/tables", async () => listTables());
 
-  app.post("/api/tables", async (request, reply) => {
+  app.post("/api/tables", { preHandler: requireStaff }, async (request, reply) => {
     const parsed = createTableSchema.safeParse(request.body);
 
     if (!parsed.success) {
@@ -96,7 +106,7 @@ export async function slotRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post("/api/slots", async (request, reply) => {
+  app.post("/api/slots", { preHandler: requireStaff }, async (request, reply) => {
     const parsed = createSlotSchema.safeParse(request.body);
 
     if (!parsed.success) {

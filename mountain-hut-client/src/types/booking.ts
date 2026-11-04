@@ -1,9 +1,9 @@
-// --- Used by POST /api/bookings (MH-18, provisional) ---
+// --- POST /api/bookings (MH-18) ---
 
 export interface CreateBookingRequest {
-  userId: number; // TODO(MH-7): removed once session auth is merged
   slotId: number;
   partySize: number;
+  requirements?: string; // dietary needs etc
 }
 
 export interface Reservation {
@@ -16,19 +16,40 @@ export interface BookingResult {
   status: "PLACED";
   userId: number;
   slotId: number;
+  date?: string;
+  from?: string;
+  to?: string;
   partySize: number;
   reservations: Reservation[];
 }
 
-// --- DRAFT: still used by My bookings mocks (MH-36), replace when that API exists ---
+// --- GET /api/bookings/mine (MH-36) ---
 
-export interface BookingRequest {
+export interface MyBooking {
+  id: number;
   date: string; // "YYYY-MM-DD"
   slotId: number;
+  from: string; // "HH:MM"
+  to: string; // "HH:MM"
   partySize: number;
+  status: "PLACED" | "FULFILLED" | "CANCELED";
+  createdAt: string; // "YYYY-MM-DD HH:MM:SS" in UTC
+  reservations: Reservation[];
 }
 
-export interface Booking extends BookingRequest {
-  id: number;
-  status: "confirmed" | "cancelled";
+// --- PATCH /api/bookings/:id (MH-39) ---
+
+// send only what changes, at least one field
+export interface ChangeBookingRequest {
+  slotId?: number;
+  partySize?: number;
+}
+
+export interface ChangeBookingResult {
+  bookingId: number;
+  status: "PLACED";
+  userId: number;
+  slotId: number;
+  partySize: number;
+  reservations: Reservation[];
 }

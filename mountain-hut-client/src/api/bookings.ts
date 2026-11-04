@@ -1,31 +1,30 @@
 import { apiFetch } from "./client";
-import type { Booking, BookingResult, CreateBookingRequest } from "../types/booking";
+import type {
+  BookingResult,
+  ChangeBookingRequest,
+  ChangeBookingResult,
+  CreateBookingRequest,
+  MyBooking,
+} from "../types/booking";
 
-// TODO(MH-7): remove when the backend reads the user from the session
-const DEV_HIKER_ID = 1; // Giulia (HIKER) from seed
-
+// POST /api/bookings: create a booking for the logged-in hiker
 export function createBooking(slotId: number, partySize: number) {
-  const body: CreateBookingRequest = { userId: DEV_HIKER_ID, slotId, partySize };
+  const body: CreateBookingRequest = { slotId, partySize };
   return apiFetch<BookingResult>("/bookings", {
     method: "POST",
     body: JSON.stringify(body),
   });
 }
 
-// --- MH-36: My bookings still uses mocks until its API exists ---
+// GET /api/bookings/mine: the logged-in hiker's bookings
+export function getMyBookings() {
+  return apiFetch<MyBooking[]>("/bookings/mine");
+}
 
-const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === "true";
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-const mockBookings: Booking[] = [
-  { date: "2026-12-15", slotId: 1, partySize: 4, id: 1, status: "confirmed" },
-  { date: "2026-12-20", slotId: 2, partySize: 2, id: 2, status: "cancelled" },
-];
-
-export async function getMyBookings(): Promise<Booking[]> {
-  if (USE_MOCKS) {
-    await delay(300);
-    return mockBookings;
-  }
-  return apiFetch<Booking[]>("/bookings/mine");
+// PATCH /api/bookings/:id: change slot and/or party size of a booking
+export function changeBooking(bookingId: number, changes: ChangeBookingRequest) {
+  return apiFetch<ChangeBookingResult>(`/bookings/${bookingId}`, {
+    method: "PATCH",
+    body: JSON.stringify(changes),
+  });
 }

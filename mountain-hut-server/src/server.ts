@@ -12,6 +12,7 @@ import { availabilityRoutes } from "./booking/availability-routes.ts";
 import { bookingRoutes } from "./booking/booking-routes.ts";
 import { staffBookingRoutes } from "./booking/staff-booking-routes.ts";
 import { changeBookingRoutes } from "./booking/change-booking-routes.ts";
+import { allergenRoutes } from "./allergens/allergen-routes.ts";
 import authRoutes from "./auth/auth.route.ts";
 import AuthRepository from "./auth/auth.repository.ts";
 
@@ -54,6 +55,7 @@ export function buildApp(opts: FastifyServerOptions = {}) {
   server.register(bookingRoutes);
   server.register(staffBookingRoutes);
   server.register(changeBookingRoutes);
+  server.register(allergenRoutes);
 
   const BASE_URL = "/api/v1";
   server.register(authRoutes, {
