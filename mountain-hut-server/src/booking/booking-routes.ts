@@ -2,6 +2,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { BookingError, createBooking } from "./booking.ts";
+import { listBookingsForUser } from "./list-bookings.ts";
 
 const bookingSchema = z.object({
   slotId: z.number().int().positive(),
@@ -9,6 +10,22 @@ const bookingSchema = z.object({
 }).strict();
 
 export async function bookingRoutes(app: FastifyInstance) {
+  app.get("/api/bookings/mine", async (request, reply) => {
+    if (!request.user) {
+      return reply.status(401).send({ error: "Authentication required" });
+    }
+    if (request.user.type !== "HIKER") {
+      return reply.status(403).send({ error: "Only hikers can view their bookings" });
+    }
+
+    try {
+      return reply.status(200).send(await listBookingsForUser(request.user.id));
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/bookings", async (request, reply) => {
     if (!request.user) {
       return reply.status(401).send({ error: "Authentication required" });
