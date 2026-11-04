@@ -297,6 +297,25 @@ describe("POST /api/bookings — MH-18 integration", () => {
 
     spy.mockRestore();
   });
+
+  it("sends a confirmation email to the hiker when a booking is placed", async () => {
+    const confirmationModule = await import("../notifications/booking-confirmation.ts");
+    const sendSpy = vi.spyOn(confirmationModule, "sendBookingConfirmation");
+
+    const response = await postBooking({ slotId: 1, partySize: 2 });
+    expect(response.statusCode).toBe(201);
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      emails[1],
+      expect.objectContaining({
+        hikerName: expect.any(String),
+        partySize: 2,
+        reference: expect.stringMatching(/^MH-/),
+      }),
+    );
+
+    sendSpy.mockRestore();
+  });
 });
 
 describe("GET /api/bookings/mine — Story 6", () => {
