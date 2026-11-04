@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router";
 import { describe, it, expect } from "vitest";
 import Navbar from "../components/Navbar";
 import { AuthContext, type AuthContextValue } from "../context/auth-context";
-import type { User } from "../api/auth";
+import type { User } from '../types/auth'
 
 function renderNavbarAs(user: User | null) {
   const auth: AuthContextValue = {
@@ -23,14 +23,14 @@ function renderNavbarAs(user: User | null) {
   );
 }
 
-const fakeUser = (type: string): User => ({
+const fakeUser = (type: User['type']): User => ({
   id: 1,
-  email: "test@example.com",
-  name: "Test",
-  surname: "User",
-  phone_number: "+390000000000",
+  email: 'test@example.com',
+  name: 'Test',
+  surname: 'User',
+  phone_number: '+390000000000',
   type,
-});
+})
 
 describe("Navbar", () => {
   it("renders the brand name linking to home", () => {
