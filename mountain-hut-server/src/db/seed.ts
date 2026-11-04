@@ -1,3 +1,4 @@
+import argon2 from "argon2";
 import {
   usersTable,
   tablesTable,
@@ -53,6 +54,14 @@ async function main() {
         name: "Luca",
         surname: "Neri",
         phoneNumber: "+393335554433",
+        type: "EMPLOYEE",
+      },
+      // Known credentials for E2E tests and manual testing, development only
+      {
+        email: "test.employee@example.com",
+        passwordHash: await argon2.hash("Password123!"),
+        name: "Test",
+        surname: "Employee",
         type: "EMPLOYEE",
       },
     ])
