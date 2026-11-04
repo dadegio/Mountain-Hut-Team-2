@@ -1,10 +1,4 @@
-// --- POST /api/bookings (MH-18) ---
-
-export interface CreateBookingRequest {
-  slotId: number;
-  partySize: number;
-  requirements?: string; // dietary needs etc
-}
+// --- shared ---
 
 export interface Reservation {
   reservationId: number;
@@ -12,14 +6,31 @@ export interface Reservation {
   seats: number;
 }
 
+// GET /api/allergens (MH-05)
+export interface Allergen {
+  id: number;
+  name: string;
+}
+
+// --- POST /api/bookings (MH-18, MH-05) ---
+
+export interface CreateBookingRequest {
+  slotId: number;
+  partySize: number;
+  allergenIds?: number[]; // ticked allergens, ids from GET /api/allergens
+  description?: string; // free-text requirements, max 1000 chars
+}
+
 export interface BookingResult {
   status: "PLACED";
   userId: number;
   slotId: number;
-  date?: string; 
+  date?: string;
   from?: string;
   to?: string;
   partySize: number;
+  description?: string | null;
+  allergens?: Allergen[];
   reservations: Reservation[];
 }
 

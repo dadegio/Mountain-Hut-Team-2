@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
+import { getAllergens } from "../api/allergens";
 import { getAvailability } from "../api/availability";
 import { createBooking } from "../api/bookings";
 import { ApiError } from "../api/client";
 import { useAuth } from "../hooks/useAuth";
 import AuthShell from "../components/AuthShell";
+import RequirementsFields from "../components/RequirementsFields";
 import type { SlotAvailability } from "../types/availability";
-import type { BookingResult } from "../types/booking";
+import type { Allergen, BookingResult } from "../types/booking";
 
 const MAX_PARTY_SIZE = 20; // TODO: confirm with PO (backend allows up to 1000)
 const BOOKING_DEADLINE_MS = 2 * 60 * 60 * 1000; // 2h before slot start
@@ -88,6 +90,12 @@ export default function BookingPage() {
 
   const [loaded, setLoaded] = useState<LoadedAvailability | null>(null);
 
+  // MH-05: allergens and free-text requirements
+  const [allergens, setAllergens] = useState<Allergen[] | null>(null);
+  const [allergensError, setAllergensError] = useState(false);
+  const [selectedAllergens, setSelectedAllergens] = useState<number[]>([]);
+  const [description, setDescription] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<BookingResult | null>(null);
 
@@ -115,6 +123,23 @@ export default function BookingPage() {
     };
   }, [date, partySize]);
 
+  // load the allergen list once
+  useEffect(() => {
+    let ignore = false;
+
+    getAllergens()
+      .then((list) => {
+        if (!ignore) setAllergens(list);
+      })
+      .catch(() => {
+        if (!ignore) setAllergensError(true);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   // derived from state: no extra useState needed
   const current = loaded && loaded.key === key ? loaded : null;
   const slotsLoading = key !== null && current === null;
@@ -133,6 +158,18 @@ export default function BookingPage() {
     setSlotId("");
   }
 
+  function toggleAllergen(id: number) {
+    setSelectedAllergens((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function startNewBooking() {
+    setResult(null);
+    setSelectedAllergens([]);
+    setDescription("");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -143,7 +180,12 @@ export default function BookingPage() {
     setFormError(null);
     setSubmitting(true);
     try {
-      setResult(await createBooking(Number(slotId), partySize));
+      setResult(
+        await createBooking(Number(slotId), partySize, {
+          allergenIds: selectedAllergens,
+          description,
+        }),
+      );
     } catch (err) {
       setFormError(bookingErrorMessage(err));
     } finally {
@@ -204,13 +246,27 @@ export default function BookingPage() {
                 {result.reservations.map((r) => `${tableCode(r.tableId)} (${r.seats})`).join(", ")}
               </dd>
             </div>
+            {result.allergens && result.allergens.length > 0 && (
+              <div className="flex justify-between gap-4 px-4 py-2.5">
+                <dt className="text-stone-500">Allergens</dt>
+                <dd className="font-medium text-stone-900 text-right">
+                  {result.allergens.map((a) => a.name).join(", ")}
+                </dd>
+              </div>
+            )}
+            {result.description && (
+              <div className="flex justify-between gap-4 px-4 py-2.5">
+                <dt className="text-stone-500">Notes</dt>
+                <dd className="font-medium text-stone-900 text-right">{result.description}</dd>
+              </div>
+            )}
           </dl>
 
           <div className="space-y-3">
             <Link to="/my-bookings" className={primaryButton}>
               My bookings
             </Link>
-            <button type="button" onClick={() => setResult(null)} className={secondaryButton}>
+            <button type="button" onClick={startNewBooking} className={secondaryButton}>
               Make another booking
             </button>
           </div>
@@ -240,7 +296,7 @@ export default function BookingPage() {
           />
         </div>
 
-        {/* Right: party size, slots, summary, submit */}
+        {/* Right: party size, slots, requirements, summary, submit */}
         <div className="flex flex-col gap-6">
           <div>
             <SectionLabel htmlFor="partySize">Party size</SectionLabel>
@@ -273,7 +329,7 @@ export default function BookingPage() {
                   type="number"
                   min={1}
                   max={MAX_PARTY_SIZE}
-                  value={partySize}
+                  value={partySize === 0 ? "" : partySize}
                   onChange={(e) => handlePartySizeChange(Number(e.target.value))}
                   className="w-full h-full py-2.5 pl-10 pr-3 text-stone-900 bg-transparent focus:outline-hidden [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
@@ -346,6 +402,16 @@ export default function BookingPage() {
               </div>
             )}
           </div>
+
+          {/* MH-05: allergens checkboxes + free-text requirements */}
+          <RequirementsFields
+            allergens={allergens}
+            loadError={allergensError}
+            selected={selectedAllergens}
+            onToggle={toggleAllergen}
+            description={description}
+            onDescriptionChange={setDescription}
+          />
 
           {/* Summary + submit pushed to the bottom of the right column */}
           <div className="mt-auto space-y-3">
