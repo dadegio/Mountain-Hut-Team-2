@@ -76,6 +76,31 @@ describe('bookings API', () => {
     expect(error.message).toBe('Not enough seats')
   })
 
+  it('createBooking sends allergenIds and a trimmed description when given', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(201, { status: 'PLACED' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createBooking(3, 2, { allergenIds: [9, 14], description: '  one vegetarian  ' })
+
+    const [, options] = fetchMock.mock.calls[0]
+    expect(JSON.parse(options.body)).toEqual({
+      slotId: 3,
+      partySize: 2,
+      allergenIds: [9, 14],
+      description: 'one vegetarian',
+    })
+  })
+
+  it('createBooking leaves out empty allergens and blank description', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(201, { status: 'PLACED' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createBooking(3, 2, { allergenIds: [], description: '   ' })
+
+    const [, options] = fetchMock.mock.calls[0]
+    expect(JSON.parse(options.body)).toEqual({ slotId: 3, partySize: 2 })
+  })
+
   it('changeBooking sends PATCH /api/bookings/:id with only the changed fields', async () => {
     const result = {
       bookingId: 12,
