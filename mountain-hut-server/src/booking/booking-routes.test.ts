@@ -1,9 +1,21 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { Client } from "@libsql/client";
 import argon2 from "argon2";
 import { asc } from "drizzle-orm";
 import {
-  reservationsTable, usersTable, timeSlotTable, tablesTable, tableAvailabilityTable,
+  reservationsTable,
+  usersTable,
+  timeSlotTable,
+  tablesTable,
+  tableAvailabilityTable,
 } from "../db/schema.ts";
 import { resetTestDatabase } from "../test-support/test-database.ts";
 
@@ -15,9 +27,14 @@ import { resetTestDatabase } from "../test-support/test-database.ts";
  * local.db, the seed database, and development reservations remain untouched.
  */
 vi.mock("../db/database.ts", async () => {
-  const { createIsolatedTestDatabase } = await import("../test-support/test-database.ts");
+  const { createIsolatedTestDatabase } =
+    await import("../test-support/test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
-  return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
+  return {
+    db,
+    __integrationTestClient: client,
+    __integrationTestCleanup: cleanup,
+  };
 });
 
 // Imports are intentionally AFTER vi.mock: buildApp -> routes -> booking service
@@ -40,7 +57,8 @@ function romeDate(daysFromToday: number): string {
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(reference);
-  const value = (type: string) => parts.find((part) => part.type === type)!.value;
+  const value = (type: string) =>
+    parts.find((part) => part.type === type)!.value;
   return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
@@ -53,11 +71,46 @@ const pastDate = romeDate(-3);
 async function resetFixture() {
   await resetTestDatabase(client);
   await testDb.insert(usersTable).values([
-    { id: 1, email: "hiker1@example.com", passwordHash, name: "Hiker", surname: "One", type: "HIKER" },
-    { id: 2, email: "hiker2@example.com", passwordHash, name: "Hiker", surname: "Two", type: "HIKER" },
-    { id: 3, email: "staff@example.com", passwordHash, name: "Employee", surname: "Three", type: "EMPLOYEE" },
-    { id: 4, email: "hiker4@example.com", passwordHash, name: "Hiker", surname: "Four", type: "HIKER" },
-    { id: 5, email: "manager@example.com", passwordHash, name: "Manager", surname: "Five", type: "MANAGER" },
+    {
+      id: 1,
+      email: "hiker1@example.com",
+      passwordHash,
+      name: "Hiker",
+      surname: "One",
+      type: "HIKER",
+    },
+    {
+      id: 2,
+      email: "hiker2@example.com",
+      passwordHash,
+      name: "Hiker",
+      surname: "Two",
+      type: "HIKER",
+    },
+    {
+      id: 3,
+      email: "staff@example.com",
+      passwordHash,
+      name: "Employee",
+      surname: "Three",
+      type: "EMPLOYEE",
+    },
+    {
+      id: 4,
+      email: "hiker4@example.com",
+      passwordHash,
+      name: "Hiker",
+      surname: "Four",
+      type: "HIKER",
+    },
+    {
+      id: 5,
+      email: "manager@example.com",
+      passwordHash,
+      name: "Manager",
+      surname: "Five",
+      type: "MANAGER",
+    },
   ]);
   await testDb.insert(tablesTable).values([
     { id: 1, code: "T1", seats: 2 },
@@ -72,9 +125,13 @@ async function resetFixture() {
     { id: 5, date: futureDate, from: "21:00", to: "22:00" },
   ]);
   await testDb.insert(tableAvailabilityTable).values([
-    { slotId: 1, tableId: 1 }, { slotId: 1, tableId: 2 }, { slotId: 1, tableId: 3 },
-    { slotId: 2, tableId: 2 }, { slotId: 2, tableId: 3 },
-    { slotId: 3, tableId: 1 }, { slotId: 4, tableId: 1 },
+    { slotId: 1, tableId: 1 },
+    { slotId: 1, tableId: 2 },
+    { slotId: 1, tableId: 3 },
+    { slotId: 2, tableId: 2 },
+    { slotId: 2, tableId: 3 },
+    { slotId: 3, tableId: 1 },
+    { slotId: 4, tableId: 1 },
   ]);
 }
 
@@ -86,7 +143,10 @@ const emails: Record<number, string> = {
   5: "manager@example.com",
 };
 
-async function postBooking(body: Record<string, unknown>, actingUserId: number | null = 1) {
+async function postBooking(
+  body: Record<string, unknown>,
+  actingUserId: number | null = 1,
+) {
   let cookie = "";
   if (actingUserId !== null) {
     const login = await app.inject({
@@ -115,7 +175,10 @@ async function postBooking(body: Record<string, unknown>, actingUserId: number |
 }
 
 async function reservationRows() {
-  return testDb.select().from(reservationsTable).orderBy(asc(reservationsTable.id));
+  return testDb
+    .select()
+    .from(reservationsTable)
+    .orderBy(asc(reservationsTable.id));
 }
 
 beforeAll(async () => {
@@ -135,9 +198,12 @@ afterAll(async () => {
 
 describe("POST /api/bookings — MH-18 integration", () => {
   it("400: rejects attempts to impersonate another user through the body", async () => {
-    const response = await postBooking({ userId: 2, slotId: 1, partySize: 2 }, 1);
+    const response = await postBooking(
+      { userId: 2, slotId: 1, partySize: 2 },
+      1,
+    );
     expect(response.statusCode).toBe(400);
-    expect((await reservationRows())).toHaveLength(0);
+    expect(await reservationRows()).toHaveLength(0);
   });
 
   it("201: attributes the booking to the logged-in hiker", async () => {
@@ -159,7 +225,13 @@ describe("POST /api/bookings — MH-18 integration", () => {
     });
     const rows = await reservationRows();
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ userId: 1, slotId: 1, tableId: 3, partySize: 5, status: "PLACED" });
+    expect(rows[0]).toMatchObject({
+      userId: 1,
+      slotId: 1,
+      tableId: 3,
+      partySize: 5,
+      status: "PLACED",
+    });
   });
 
   it("201: saves a 10-person group across two tables", async () => {
@@ -167,8 +239,15 @@ describe("POST /api/bookings — MH-18 integration", () => {
     expect(response.statusCode).toBe(201);
     const booking = response.json();
     expect(booking.reservations).toHaveLength(2);
-    expect(booking.reservations.map((r: { tableId: number }) => r.tableId).sort()).toEqual([2, 3]);
-    expect(booking.reservations.reduce((sum: number, r: { seats: number }) => sum + r.seats, 0)).toBe(10);
+    expect(
+      booking.reservations.map((r: { tableId: number }) => r.tableId).sort(),
+    ).toEqual([2, 3]);
+    expect(
+      booking.reservations.reduce(
+        (sum: number, r: { seats: number }) => sum + r.seats,
+        0,
+      ),
+    ).toBe(10);
     const rows = await reservationRows();
     expect(rows).toHaveLength(2);
     expect(rows.reduce((sum, row) => sum + Number(row.partySize), 0)).toBe(10);
@@ -186,25 +265,25 @@ describe("POST /api/bookings — MH-18 integration", () => {
   ])("400: rejects %s", async (_name, body) => {
     const response = await postBooking(body);
     expect(response.statusCode).toBe(400);
-    expect((await reservationRows())).toHaveLength(0);
+    expect(await reservationRows()).toHaveLength(0);
   });
 
   it("403: rejects an EMPLOYEE", async () => {
     const response = await postBooking({ slotId: 1, partySize: 2 }, 3);
     expect(response.statusCode).toBe(403);
-    expect((await reservationRows())).toHaveLength(0);
+    expect(await reservationRows()).toHaveLength(0);
   });
 
   it("403: rejects a MANAGER", async () => {
     const response = await postBooking({ slotId: 1, partySize: 2 }, 5);
     expect(response.statusCode).toBe(403);
-    expect((await reservationRows())).toHaveLength(0);
+    expect(await reservationRows()).toHaveLength(0);
   });
 
   it("401: rejects requests without a session", async () => {
     const response = await postBooking({ slotId: 1, partySize: 2 }, null);
     expect(response.statusCode).toBe(401);
-    expect((await reservationRows())).toHaveLength(0);
+    expect(await reservationRows()).toHaveLength(0);
   });
 
   it("404: rejects an unknown slot", async () => {
@@ -217,35 +296,43 @@ describe("POST /api/bookings — MH-18 integration", () => {
     expect((await postBooking(request)).statusCode).toBe(201);
     const duplicate = await postBooking(request);
     expect(duplicate.statusCode).toBe(409);
-    expect(duplicate.json()).toMatchObject({ error: "You already have a booking for this time slot" });
-    expect((await reservationRows())).toHaveLength(1);
+    expect(duplicate.json()).toMatchObject({
+      error: "You already have a booking for this time slot",
+    });
+    expect(await reservationRows()).toHaveLength(1);
   });
 
   it("409: rejects insufficient capacity without inserting partial rows", async () => {
     const response = await postBooking({ slotId: 2, partySize: 11 });
     expect(response.statusCode).toBe(409);
-    expect((await reservationRows())).toHaveLength(0);
+    expect(await reservationRows()).toHaveLength(0);
   });
 
   it("409: rejects a time slot in the past", async () => {
     const response = await postBooking({ slotId: 4, partySize: 1 });
     expect(response.statusCode).toBe(409);
-    expect((await reservationRows())).toHaveLength(0);
+    expect(await reservationRows()).toHaveLength(0);
   });
 
   it("409: rejects a time slot with no tables", async () => {
     const response = await postBooking({ slotId: 5, partySize: 1 });
     expect(response.statusCode).toBe(409);
-    expect((await reservationRows())).toHaveLength(0);
+    expect(await reservationRows()).toHaveLength(0);
   });
 
   it("ignores canceled bookings for the same hiker and for table capacity", async () => {
     await testDb.insert(reservationsTable).values({
-      userId: 1, slotId: 1, tableId: 2, partySize: 4, status: "CANCELED",
+      userId: 1,
+      slotId: 1,
+      tableId: 2,
+      partySize: 4,
+      status: "CANCELED",
     });
     const response = await postBooking({ slotId: 1, partySize: 4 });
     expect(response.statusCode).toBe(201);
-    expect(response.json().reservations).toMatchObject([{ tableId: 2, seats: 4 }]);
+    expect(response.json().reservations).toMatchObject([
+      { tableId: 2, seats: 4 },
+    ]);
     const rows = await reservationRows();
     expect(rows).toHaveLength(2);
     expect(rows.filter((r) => r.status === "PLACED")).toHaveLength(1);
@@ -263,16 +350,24 @@ describe("POST /api/bookings — MH-18 integration", () => {
   it("chooses the smallest single table available (minimizes unused capacity)", async () => {
     const response = await postBooking({ slotId: 1, partySize: 3 });
     expect(response.statusCode).toBe(201);
-    expect(response.json().reservations).toMatchObject([{ tableId: 2, seats: 3 }]);
+    expect(response.json().reservations).toMatchObject([
+      { tableId: 2, seats: 3 },
+    ]);
   });
 
   it("respects seats already occupied by other hikers", async () => {
     await testDb.insert(reservationsTable).values({
-      userId: 2, slotId: 1, tableId: 2, partySize: 3, status: "PLACED",
+      userId: 2,
+      slotId: 1,
+      tableId: 2,
+      partySize: 3,
+      status: "PLACED",
     });
     const response = await postBooking({ slotId: 1, partySize: 4 });
     expect(response.statusCode).toBe(201);
-    expect(response.json().reservations).toMatchObject([{ tableId: 3, seats: 4 }]);
+    expect(response.json().reservations).toMatchObject([
+      { tableId: 3, seats: 4 },
+    ]);
   });
 
   it("never overbooks when two hikers request the last two seats simultaneously", async () => {
@@ -289,7 +384,9 @@ describe("POST /api/bookings — MH-18 integration", () => {
 
   it("500: returns internal server error on unexpected database failure", async () => {
     const bookingModule = await import("./booking.ts");
-    const spy = vi.spyOn(bookingModule, "createBooking").mockRejectedValueOnce(new Error("Database disconnected"));
+    const spy = vi
+      .spyOn(bookingModule, "createBooking")
+      .mockRejectedValueOnce(new Error("Database disconnected"));
 
     const response = await postBooking({ slotId: 1, partySize: 2 });
     expect(response.statusCode).toBe(500);
@@ -299,7 +396,7 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 
   it("sends a confirmation email to the hiker when a booking is placed", async () => {
-    const confirmationModule = await import("../notifications/booking-confirmation.ts");
+    const confirmationModule = await import("../notifications/confirmation.ts");
     const sendSpy = vi.spyOn(confirmationModule, "sendBookingConfirmation");
 
     const response = await postBooking({ slotId: 1, partySize: 2 });
@@ -334,13 +431,17 @@ describe("GET /api/bookings/mine — Story 6", () => {
   }
 
   it("401: requires authentication", async () => {
-    const response = await app.inject({ method: "GET", url: "/api/bookings/mine" });
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/bookings/mine",
+    });
     expect(response.statusCode).toBe(401);
   });
 
   it("403: permits only hikers", async () => {
     const response = await app.inject({
-      method: "GET", url: "/api/bookings/mine",
+      method: "GET",
+      url: "/api/bookings/mine",
       headers: { cookie: await cookieFor(3) },
     });
     expect(response.statusCode).toBe(403);
@@ -348,7 +449,8 @@ describe("GET /api/bookings/mine — Story 6", () => {
 
   it("200: returns an empty array when the hiker has no bookings", async () => {
     const response = await app.inject({
-      method: "GET", url: "/api/bookings/mine",
+      method: "GET",
+      url: "/api/bookings/mine",
       headers: { cookie: await cookieFor(1) },
     });
     expect(response.statusCode).toBe(200);
@@ -359,24 +461,35 @@ describe("GET /api/bookings/mine — Story 6", () => {
     const created = await postBooking({ slotId: 2, partySize: 10 }, 1);
     expect(created.statusCode).toBe(201);
     const response = await app.inject({
-      method: "GET", url: "/api/bookings/mine",
+      method: "GET",
+      url: "/api/bookings/mine",
       headers: { cookie: await cookieFor(1) },
     });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toHaveLength(1);
     expect(response.json()[0]).toMatchObject({
       id: created.json().reservations[0].reservationId,
-      date: futureDate, slotId: 2, from: "13:00", to: "14:00",
-      partySize: 10, status: "PLACED", reservations: expect.any(Array),
+      date: futureDate,
+      slotId: 2,
+      from: "13:00",
+      to: "14:00",
+      partySize: 10,
+      status: "PLACED",
+      reservations: expect.any(Array),
     });
     expect(response.json()[0].reservations).toHaveLength(2);
   });
 
   it("200: does not reveal another hiker's bookings", async () => {
-    expect((await postBooking({ slotId: 1, partySize: 2 }, 1)).statusCode).toBe(201);
-    expect((await postBooking({ slotId: 2, partySize: 2 }, 2)).statusCode).toBe(201);
+    expect((await postBooking({ slotId: 1, partySize: 2 }, 1)).statusCode).toBe(
+      201,
+    );
+    expect((await postBooking({ slotId: 2, partySize: 2 }, 2)).statusCode).toBe(
+      201,
+    );
     const response = await app.inject({
-      method: "GET", url: "/api/bookings/mine",
+      method: "GET",
+      url: "/api/bookings/mine",
       headers: { cookie: await cookieFor(1) },
     });
     expect(response.statusCode).toBe(200);
