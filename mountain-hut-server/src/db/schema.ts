@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, int, text, unique } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  int,
+  text,
+  unique,
+  primaryKey,
+} from "drizzle-orm/sqlite-core";
 
 export const USER_TYPES = ["HIKER", "EMPLOYEE", "MANAGER"] as const;
 export type UserType = (typeof USER_TYPES)[number];
@@ -34,6 +40,25 @@ export const tablesTable = sqliteTable("tables", {
   seats: int().notNull(),
 });
 
+export const allergensTable = sqliteTable("allergens", {
+  id: int().primaryKey({ autoIncrement: true }),
+  name: text().notNull().unique(),
+});
+
+export const reservationAllergensTable = sqliteTable(
+  "reservation_allergens",
+  {
+    allergenId: int("allergen_id").references(() => allergensTable.id, {
+      onDelete: "cascade",
+    }),
+    reservationId: int("reservation_id").references(
+      () => reservationsTable.id,
+      { onDelete: "cascade" },
+    ),
+  },
+  (t) => [primaryKey({ columns: [t.allergenId, t.reservationId] })],
+);
+
 export const reservationsTable = sqliteTable("reservations", {
   id: int().primaryKey({ autoIncrement: true }),
   userId: int("user_id")
@@ -53,6 +78,7 @@ export const reservationsTable = sqliteTable("reservations", {
     .notNull()
     .default(RESERVATION_STATUS[0])
     .$type<(typeof RESERVATION_STATUS)[number]>(),
+  description: text().default(""),
 });
 
 // Which tables are available in a slot
