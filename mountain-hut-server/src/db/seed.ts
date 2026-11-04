@@ -5,6 +5,7 @@ import {
   tableAvailabilityTable,
   reservationsTable,
   allergensTable,
+  reservationAllergensTable,
 } from "./schema.ts";
 import { db } from "./database.ts";
 
@@ -21,6 +22,8 @@ async function main() {
   console.log("Seeding database...");
 
   // Children first, otherwise the foreign keys block the deletes
+  await db.delete(reservationAllergensTable);
+  await db.delete(allergensTable);
   await db.delete(reservationsTable);
   await db.delete(tableAvailabilityTable);
   await db.delete(timeSlotTable);
