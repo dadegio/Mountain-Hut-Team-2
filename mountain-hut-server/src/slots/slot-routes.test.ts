@@ -29,47 +29,6 @@ const { __integrationTestClient: client, __integrationTestCleanup: cleanup } =
 const { buildApp } = await import("../server.ts");
 const app = buildApp({ logger: false });
 
-// Mirrors src/db/schema.ts, for the tables these routes use
-const createTestSchema = `
-  PRAGMA foreign_keys = ON;
-  CREATE TABLE "users" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-    "email" TEXT NOT NULL UNIQUE,
-    "password_hash" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "surname" TEXT NOT NULL,
-    "phone_number" TEXT,
-    "type" TEXT NOT NULL DEFAULT 'HIKER'
-  );
-  CREATE TABLE "time_slots" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-    "date" TEXT NOT NULL,
-    "from" TEXT NOT NULL,
-    "to" TEXT NOT NULL,
-    UNIQUE("date", "from", "to")
-  );
-  CREATE TABLE "tables" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-    "code" TEXT NOT NULL UNIQUE,
-    "seats" INTEGER NOT NULL
-  );
-  CREATE TABLE "table_availability" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-    "table_id" INTEGER NOT NULL REFERENCES "tables"("id"),
-    "slot_id" INTEGER NOT NULL REFERENCES "time_slots"("id"),
-    UNIQUE("slot_id", "table_id")
-  );
-  CREATE TABLE "reservations" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-    "user_id" INTEGER NOT NULL,
-    "slot_id" INTEGER NOT NULL REFERENCES "time_slots"("id"),
-    "table_id" INTEGER NOT NULL REFERENCES "tables"("id"),
-    "created_at" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "party_size" INTEGER NOT NULL DEFAULT 1,
-    "status" TEXT NOT NULL DEFAULT 'PLACED'
-  );
-`;
-
 const T1 = { id: 1, code: "T1", seats: 2 };
 const T2 = { id: 2, code: "T2", seats: 4 };
 const T3 = { id: 3, code: "T3", seats: 6 };
@@ -89,9 +48,9 @@ function get(url: string) {
 }
 
 const TEST_PASSWORD = "test-password-for-slots";
+let passwordHash = "";
 
 async function insertUser(email: string, type: string) {
-  const passwordHash = await argon2.hash(TEST_PASSWORD);
   await client.execute({
     sql: `INSERT INTO users(email, password_hash, name, surname, type)
           VALUES (?, ?, 'Test', 'User', ?)`,
@@ -155,12 +114,19 @@ async function countRows(table: "tables" | "time_slots" | "table_availability") 
   }
 }
 
-beforeAll(async () => {
-  await app.ready();
-
+// Same ids every time, because the reset restarts the counters: the session
+// cookies of beforeAll stay valid for all the tests
+async function insertUsers() {
   await insertUser("employee@example.com", "EMPLOYEE");
   await insertUser("manager@example.com", "MANAGER");
   await insertUser("hiker@example.com", "HIKER");
+}
+
+beforeAll(async () => {
+  await app.ready();
+
+  passwordHash = await argon2.hash(TEST_PASSWORD);
+  await insertUsers();
   employeeCookie = await login("employee@example.com");
   managerCookie = await login("manager@example.com");
   hikerCookie = await login("hiker@example.com");
@@ -168,6 +134,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await resetTestDatabase(client);
+  await insertUsers();
   await testDb.insert(tablesTable).values([T1, T2, T3]);
 });
 
