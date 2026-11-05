@@ -61,10 +61,7 @@ MAIL_REPLY_TO=prenotazioni@mountain-hut.example
 
 ```
 src/notifications/
-├── index.ts               # Singleton emailSender instance
-├── sender.ts              # SmtpEmailSender (EmailSender interface + Nodemailer)
-├── templates.ts           # renderBookingConfirmation — builds subject/text/html
-└── booking-confirmation.ts # sendBookingConfirmation — domain-level send function
+├── sender.ts         # SmtpEmailSender & emailSender singleton instance
+├── templates.ts      # renderBookingConfirmation — builds subject/text/html
+└── confirmation.ts   # sendBookingConfirmation — domain-level send function
 ```
-
-> `send-test.ts` is a dev-only script to manually verify the SMTP connection: `npx tsx src/notifications/send-test.ts`
