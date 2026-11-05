@@ -24,12 +24,12 @@ async function main() {
 
   // Children first, otherwise the foreign keys block the deletes
   await db.delete(reservationAllergensTable);
-  await db.delete(allergensTable);
   await db.delete(reservationsTable);
   await db.delete(tableAvailabilityTable);
   await db.delete(timeSlotTable);
   await db.delete(tablesTable);
   await db.delete(usersTable);
+  await db.delete(allergensTable);
 
   const insertedUsers = await db
     .insert(usersTable)

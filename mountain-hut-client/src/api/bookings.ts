@@ -7,9 +7,25 @@ import type {
   MyBooking,
 } from "../types/booking";
 
+// optional extras for a booking (MH-05)
+export interface BookingExtras {
+  allergenIds?: number[];
+  description?: string;
+}
+
 // POST /api/bookings: create a booking for the logged-in hiker
-export function createBooking(slotId: number, partySize: number) {
+export function createBooking(slotId: number, partySize: number, extras: BookingExtras = {}) {
   const body: CreateBookingRequest = { slotId, partySize };
+
+  // only send what was actually filled in
+  if (extras.allergenIds && extras.allergenIds.length > 0) {
+    body.allergenIds = extras.allergenIds;
+  }
+  const description = extras.description?.trim();
+  if (description) {
+    body.description = description;
+  }
+
   return apiFetch<BookingResult>("/bookings", {
     method: "POST",
     body: JSON.stringify(body),
