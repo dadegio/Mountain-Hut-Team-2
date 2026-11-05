@@ -60,7 +60,7 @@ export default function HikerSearch({ onSelect }: HikerSearchProps) {
       {longEnough && !current && <p className="text-sm text-stone-500">Searching…</p>}
       {current?.error && <p className="text-sm text-red-600">Error: {current.error}</p>}
       {current && !current.error && current.hikers.length === 0 && (
-        <p className="text-sm text-stone-500">No hiker found</p>
+        <p className="text-sm text-stone-500">No hiker found: enter the whole name, phone or email</p>
       )}
 
       {current && current.hikers.length > 0 && (

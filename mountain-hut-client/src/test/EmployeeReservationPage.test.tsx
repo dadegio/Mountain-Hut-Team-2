@@ -286,7 +286,7 @@ describe('EmployeeReservationPage', () => {
 
       await user.type(searchField(), 'nobody')
 
-      expect(await screen.findByText('No hiker found')).toBeInTheDocument()
+      expect(await screen.findByText(/^No hiker found/)).toBeInTheDocument()
     })
 
     it('shows when the search fails', async () => {
