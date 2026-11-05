@@ -131,7 +131,7 @@ The database seed (`npm run db:seed`) provides test accounts with different role
 
 ## Using the System
 
-### 🥾 As a Hiker
+### As a Hiker
 1. **Log in** at `http://localhost:5173/login` with hiker credentials.
 2. **Book a Table** (`/booking`):
    - Choose a meal date and party size.
@@ -143,7 +143,7 @@ The database seed (`npm run db:seed`) provides test accounts with different role
    - View upcoming and past reservations.
    - Modify party size or time slot within 48 hours of booking (provided the slot start cutoff has not passed).
 
-### 🧑‍🍳 As Hut Staff (Employee)
+### As Hut Staff (Employee)
 1. **Log in** with employee credentials (`luca.neri@example.com`).
 2. **Manage Slots & Tables** (`/employee/slots`):
    - Navigate day by day to create lunch and dinner slots.
