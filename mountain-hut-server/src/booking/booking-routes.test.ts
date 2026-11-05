@@ -736,3 +736,143 @@ describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
     }
   });
 });
+
+// MH-78: extra integration tests for MH-05 (allergens & party requirements).
+// They cover what the MH-74 block above does not: the allergen list endpoint,
+// edge cases of the request body, rollback on a partly invalid list, and the
+// requirements text that goes into the confirmation email.
+describe("MH-78: allergens integration (MH-05)", () => {
+  async function allergenLinks() {
+    return testDb.select().from(reservationAllergensTable);
+  }
+
+  describe("GET /api/allergens", () => {
+    it("200: returns every allergen with id and name, no login needed", async () => {
+      const response = await app.inject({ method: "GET", url: "/api/allergens" });
+
+      expect(response.statusCode).toBe(200);
+      const list = response.json();
+      expect(list).toHaveLength(8);
+      expect(list).toEqual(expect.arrayContaining([
+        { id: 1, name: "Milk" },
+        { id: 3, name: "Peanuts" },
+        { id: 8, name: "Shellfish" },
+      ]));
+    });
+  });
+
+  describe("POST /api/bookings with requirements", () => {
+    it("201: an empty allergenIds array saves no allergen links", async () => {
+      const response = await postBooking({ slotId: 1, partySize: 2, allergenIds: [] });
+
+      expect(response.statusCode).toBe(201);
+      expect(response.json().allergens).toEqual([]);
+      expect(await reservationRows()).toHaveLength(1);
+      expect(await allergenLinks()).toHaveLength(0);
+    });
+
+    it("400: one unknown ID in the list rejects the whole booking and saves nothing", async () => {
+      const response = await postBooking({ slotId: 1, partySize: 2, allergenIds: [1, 9999] });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({ error: "One or more allergen IDs are invalid" });
+      expect(await reservationRows()).toHaveLength(0);
+      expect(await allergenLinks()).toHaveLength(0);
+    });
+
+    it("201: accepts a description of exactly 1000 characters", async () => {
+      const description = "a".repeat(1000);
+      const response = await postBooking({ slotId: 1, partySize: 2, description });
+
+      expect(response.statusCode).toBe(201);
+      expect((await reservationRows())[0].description).toBe(description);
+    });
+
+    it.each([
+      ["description longer than 1000 characters", { description: "a".repeat(1001) }],
+      ["allergen IDs sent as strings", { allergenIds: ["1"] }],
+      ["allergenIds that is not an array", { allergenIds: 1 }],
+      ["zero as allergen ID", { allergenIds: [0] }],
+      ["description that is not a string", { description: 42 }],
+    ])("400: rejects %s", async (_name, extra) => {
+      const response = await postBooking({ slotId: 1, partySize: 2, ...extra });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error).toBe("Invalid request body");
+      expect(await reservationRows()).toHaveLength(0);
+      expect(await allergenLinks()).toHaveLength(0);
+    });
+
+    it("201: description wins when both description and legacy requirements are sent", async () => {
+      const response = await postBooking({
+        slotId: 1,
+        partySize: 2,
+        description: "New field",
+        requirements: "Old field",
+      });
+
+      expect(response.statusCode).toBe(201);
+      expect(response.json().description).toBe("New field");
+      expect((await reservationRows())[0].description).toBe("New field");
+    });
+
+    it("links allergens only to the reservation rows of that booking", async () => {
+      expect((await postBooking({ slotId: 1, partySize: 2, allergenIds: [7] }, 1)).statusCode).toBe(201);
+      expect((await postBooking({ slotId: 1, partySize: 2 }, 2)).statusCode).toBe(201);
+
+      const rows = await reservationRows();
+      const hikerOneRow = rows.find((r) => Number(r.userId) === 1)!;
+      const links = await allergenLinks();
+      expect(links).toHaveLength(1);
+      expect(links[0]).toMatchObject({ reservationId: hikerOneRow.id, allergenId: 7 });
+    });
+  });
+
+  describe("GET /api/bookings/mine", () => {
+    it("200: another hiker does not see the first hiker's requirements", async () => {
+      await postBooking({ slotId: 1, partySize: 2, allergenIds: [1], description: "No dairy" }, 1);
+      await postBooking({ slotId: 2, partySize: 2 }, 2);
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/bookings/mine",
+        headers: { cookie: await cookieFor(2) },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const list = response.json();
+      expect(list).toHaveLength(1);
+      expect(list[0].slotId).toBe(2);
+      expect(list[0].allergens).toEqual([]);
+      expect(list[0].description).not.toBe("No dairy");
+    });
+  });
+
+  describe("confirmation email", () => {
+    it.each([
+      [
+        "allergens and description",
+        { allergenIds: [1, 3], description: "Table near the window" },
+        "Allergens: Milk, Peanuts. Details: Table near the window",
+      ],
+      ["only allergens", { allergenIds: [2] }, "Allergens: Eggs"],
+      ["only description", { description: "Birthday cake" }, "Birthday cake"],
+      ["no requirements", {}, undefined],
+    ])("passes the right requirements text for %s", async (_name, extra, expected) => {
+      const confirmationModule = await import("../notifications/booking-confirmation.ts");
+      const sendSpy = vi.spyOn(confirmationModule, "sendBookingConfirmation");
+      try {
+        const response = await postBooking({ slotId: 1, partySize: 2, ...extra });
+
+        expect(response.statusCode).toBe(201);
+        expect(sendSpy).toHaveBeenCalledWith(
+          expect.anything(),
+          emails[1],
+          expect.objectContaining({ requirements: expected }),
+        );
+      } finally {
+        sendSpy.mockRestore();
+      }
+    });
+  });
+});
