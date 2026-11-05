@@ -20,7 +20,7 @@ export interface BookingResult {
   status: "PLACED";
   userId: number;
   slotId: number;
-  date?: string; 
+  date?: string;
   from?: string;
   to?: string;
   partySize: number;
