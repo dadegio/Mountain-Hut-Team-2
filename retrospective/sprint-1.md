@@ -1,16 +1,12 @@
 # Sprint 1 Retrospective - Team 02
 
-- [process measures](#process-measures)
-- [quality measures](#quality-measures)
-- [general assessment](#assessment)
-
 ## 1. Process Measures
 
 ### 1.1 Macro Statistics
 
 - Number of stories committed vs done: **7** committed, **6** done.
 - Total points committed vs done: **33** committed, **28** done.
-- Number of hours planned vs spent (as a team): TODO
+- Number of hours planned vs spent (as a team): **97h 45m** planned, **96h 50m** spent.
 
 We started working on `MH-07 — Reserve for an hiker`, though we can't consider it as finished since it doesn't respect our Definition of Done, which includes:
 
@@ -25,40 +21,50 @@ We started working on `MH-07 — Reserve for an hiker`, though we can't consider
 | Story | # Tasks | Points | Hours est. | Hours actual |
 | ----- | ------- | ------ | ---------- | ------------ |
 | _#0_  |         | -      |            |              |
-| _#1_  | 8       | 8      | 11h        | 12h 49m      |
-| _#2_  |         | 5      |            |              |
-| _#3_  |         |        |            |              |
-| _#4_  |         |        |            |              |
-| _#5_  |         |        |            |              |
-| _#6_  |         |        |            |              |
-| _#7_  |         |        |            |              |
+| _#1_  | 8       | 8      | 11h        | 12h 49min    |
+| _#2_  | 7       | 5      | 9h 30min   | 9h 10min     |
+| _#3_  | 7       | 5      | 7h 30min   | 7h 15min     |
+| _#4_  | 3       | 2      | 2h         | 2h 5min      |
+| _#5_  | 7       | 3      | 5h 30min   | 4h 20min     |
+| _#6_  | 6       | 6      | 7h         | 5h 20min     |
+| _#7_  | 7       | 5      | 7h 30min   | 4h 27min     |
 
 - Hours per task <span style="color:red">per person</span> (average, standard deviation)
-- Total task estimation error ratio: sum of total hours estimation / sum of total hours spent -1
+
+  |            | Mean     | StDev    |
+  | ---------- | -------- | -------- |
+  | Estimation | 1h 36min | 1h 43min |
+  | Actual     | 1h 35min | 2h 55min |
+
+- Total task estimation error ratio
+
+$$
+    \frac{\sum_i \text{estimation}_{task_i}}{\sum_i \text{spent}_{task_i}} - 1 = \frac{97\text{h } 45\text{min}}{96\text{h } 50\text{min}} - 1 = 0.009
+$$
 
 ## 2. Quality Measures
 
 ### 2.1 Unit Testing
 
-- Total hours estimated
-- Total hours spent
-- Number of automated unit test cases
-- Coverage (if available)
+- Total hours estimated: 6h
+- Total hours spent: 4h 25min
+- Number of automated unit test cases: 140
+- Coverage (if available): 89.48%
 
 ### 2.2 Integration Testing
 
-- Total hours estimated
-- Total hours spent
+- Total hours estimated: 6h
+- Total hours spent: 4h 10min
 
 ### 2.3 E2E Testing
 
-- Total hours estimated
-- Total hours spent
+- Total hours estimated: 5h 30min
+- Total hours spent: 3h 30min
 
 ### 2.4 Code Review
 
-- Total hours estimated
-- Total hours spent
+- Total hours estimated: 5h 30min
+- Total hours spent: 5h 19min
 
 ## 3. Assessment
 
