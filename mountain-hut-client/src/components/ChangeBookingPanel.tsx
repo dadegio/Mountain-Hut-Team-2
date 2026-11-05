@@ -90,7 +90,7 @@ export default function ChangeBookingPanel({ booking, onCancel, onChanged }: Cha
   const slotsLoading = key !== null && current === null;
 
   const slots = [...(current?.slots ?? [])];
-  
+
   if (date === booking.date && !slots.some((s) => s.slotId === booking.slotId)) {
     slots.unshift({
       slotId: booking.slotId,
