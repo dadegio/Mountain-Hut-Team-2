@@ -6,6 +6,10 @@ export interface CreateBookingRequest {
   requirements?: string; // dietary needs etc
 }
 
+export interface CreateStaffBookingRequest extends CreateBookingRequest {
+  hikerId: number;
+}
+
 export interface Reservation {
   reservationId: number;
   tableId: number;

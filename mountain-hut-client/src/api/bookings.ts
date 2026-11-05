@@ -4,6 +4,7 @@ import type {
   ChangeBookingRequest,
   ChangeBookingResult,
   CreateBookingRequest,
+  CreateStaffBookingRequest,
   MyBooking,
 } from "../types/booking";
 
@@ -11,6 +12,14 @@ import type {
 export function createBooking(slotId: number, partySize: number) {
   const body: CreateBookingRequest = { slotId, partySize };
   return apiFetch<BookingResult>("/bookings", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+// POST /api/staff/bookings: create a booking for a hiker, as staff
+export function createStaffBooking(body: CreateStaffBookingRequest) {
+  return apiFetch<BookingResult>("/staff/bookings", {
     method: "POST",
     body: JSON.stringify(body),
   });

@@ -4,9 +4,24 @@ import {
   normalizeTime,
   openPicker,
   shiftDate,
+  slotHasEnded,
   toDateString,
   todayString,
 } from '../utils/date'
+
+describe('slotHasEnded', () => {
+  const now = new Date(2026, 10, 4, 12, 0)
+
+  it.each([
+    ['earlier today', '2026-11-04', '11:59', true],
+    ['exactly now', '2026-11-04', '12:00', true],
+    ['later today', '2026-11-04', '12:01', false],
+    ['on a past day, even if later in the day', '2026-11-03', '23:00', true],
+    ['on a future day, even if earlier in the day', '2026-11-05', '08:00', false],
+  ])('a slot ending %s', (_label, date, to, expected) => {
+    expect(slotHasEnded(date, to, now)).toBe(expected)
+  })
+})
 
 describe('toDateString', () => {
   it('formats a date as YYYY-MM-DD', () => {

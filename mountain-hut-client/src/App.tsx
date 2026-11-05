@@ -7,6 +7,7 @@ import MyBookingsPage from "./pages/MyBookingsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import EmployeeSlotsPage from "./pages/EmployeeSlotsPage";
+import EmployeeReservationPage from "./pages/EmployeeReservationPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AuthProvider from "./context/AuthProvider";
 
@@ -34,6 +35,7 @@ function App() {
             {/* employees and managers only */}
             <Route element={<RequireRole allow={STAFF} />}>
               <Route path="employee/slots" element={<EmployeeSlotsPage />} />
+              <Route path="employee/reservations" element={<EmployeeReservationPage />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />

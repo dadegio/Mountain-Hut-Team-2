@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { getSlots, getTables } from "../api/slots";
 import AddTableForm from "../components/AddTableForm";
 import CreateSlotForm from "../components/CreateSlotForm";
+import DayBar from "../components/DayBar";
 import SlotList from "../components/SlotList";
-import { formatDay, openPicker, shiftDate, todayString } from "../utils/date";
+import { todayString } from "../utils/date";
 import type { Table, TimeSlot } from "../types/slot";
 
 interface SlotsResult {
@@ -15,8 +16,6 @@ interface SlotsResult {
 const byStartTime = (a: TimeSlot, b: TimeSlot) => a.from.localeCompare(b.from);
 
 const card = "bg-white border border-stone-200 rounded-lg p-5";
-const dayButton =
-  "px-3 py-1.5 rounded border border-stone-300 bg-white text-sm hover:border-green-600";
 
 // TODO(MH-7): restrict this page to EMPLOYEE and MANAGER
 export default function EmployeeSlotsPage() {
@@ -60,7 +59,6 @@ export default function EmployeeSlotsPage() {
   }, [date]);
 
   const loadingSlots = slotsResult?.date !== date;
-  const today = todayString();
 
   function handleSlotCreated(slot: TimeSlot) {
     setSlotsResult((current) =>
@@ -78,44 +76,8 @@ export default function EmployeeSlotsPage() {
         <p className="text-stone-600">Hikers can only book the slots defined here.</p>
       </div>
 
-      <div className={`${card} flex flex-wrap items-center gap-3`}>
-        <button
-          type="button"
-          aria-label="Previous day"
-          onClick={() => setDate(shiftDate(date, -1))}
-          className={dayButton}
-        >
-          ←
-        </button>
-        <input
-          type="date"
-          aria-label="Day"
-          value={date}
-          onChange={(e) => {
-            if (e.target.value) setDate(e.target.value);
-          }}
-          onClick={(e) => openPicker(e.currentTarget)}
-          className="border border-stone-300 rounded px-3 py-2 bg-white cursor-pointer hover:border-green-600"
-        />
-        <button
-          type="button"
-          aria-label="Next day"
-          onClick={() => setDate(shiftDate(date, 1))}
-          className={dayButton}
-        >
-          →
-        </button>
-        <button type="button" onClick={() => setDate(today)} className={dayButton}>
-          Today
-        </button>
-        <button
-          type="button"
-          onClick={() => setDate(shiftDate(today, 1))}
-          className={dayButton}
-        >
-          Tomorrow
-        </button>
-        <p className="text-xl font-semibold sm:ml-auto">{formatDay(date)}</p>
+      <div className={card}>
+        <DayBar date={date} onChange={setDate} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_3fr] items-start">

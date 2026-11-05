@@ -59,12 +59,14 @@ describe("Navbar", () => {
     expect(screen.getByText("My bookings")).toBeInTheDocument();
     expect(screen.getByText("Logout")).toBeInTheDocument();
     expect(screen.queryByText("Manage slots")).not.toBeInTheDocument();
+    expect(screen.queryByText("New reservation")).not.toBeInTheDocument();
     expect(screen.queryByText("Login")).not.toBeInTheDocument();
   });
 
   it("shows Manage slots to employees, but not booking links", () => {
     renderNavbarAs(fakeUser("EMPLOYEE"));
     expect(screen.getByText("Manage slots")).toBeInTheDocument();
+    expect(screen.getByText("New reservation")).toBeInTheDocument();
     expect(screen.getByText("Logout")).toBeInTheDocument();
     expect(screen.queryByText("Book a table")).not.toBeInTheDocument();
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
