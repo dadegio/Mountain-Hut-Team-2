@@ -1,6 +1,6 @@
 # Mountain-Hut-Team-2
 
-A web application for managing meal reservations and dining schedules at an Alpine mountain hut. 
+A web application for managing meal reservations and dining schedules at an Alpine mountain hut.
 
 Hikers can view real-time table availability, book meals with specific dietary needs and allergens, receive automated email confirmations, and modify existing bookings. Hut employees can configure daily meal slots, allocate tables, manage capacities, and create bookings on behalf of hikers.
 
@@ -8,14 +8,14 @@ Hikers can view real-time table availability, book meals with specific dietary n
 
 ## Tech Stack
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React 19 · TypeScript 5.9 · Vite 8 · Tailwind CSS v4 · React Router v7 |
-| **Backend** | Node.js (v20–v24) · TypeScript · Fastify v5 · Zod · Fastify Secure Session |
-| **Database** | SQLite via `@libsql/client` · Drizzle ORM · Drizzle Kit |
-| **Email** | Nodemailer (SMTP transport) · Mailpit (Local dev/testing) · Brevo (Production relay) |
-| **Testing** | Vitest (Client & Server unit/integration) · Playwright (Cross-browser E2E) |
-| **API Docs** | OpenAPI 3.0 / Swagger UI (`/docs`) |
+| Layer        | Technologies                                                                         |
+| :----------- | :----------------------------------------------------------------------------------- |
+| **Frontend** | React 19 · TypeScript 5.9 · Vite 8 · Tailwind CSS v4 · React Router v7               |
+| **Backend**  | Node.js (v20–v24) · TypeScript · Fastify v5 · Zod · Fastify Secure Session           |
+| **Database** | SQLite via `@libsql/client` · Drizzle ORM · Drizzle Kit                              |
+| **Email**    | Nodemailer (SMTP transport) · Mailpit (Local dev/testing) · Brevo (Production relay) |
+| **Testing**  | Vitest (Client & Server unit/integration) · Playwright (Cross-browser E2E)           |
+| **API Docs** | OpenAPI 3.0 / Swagger UI (`/docs`)                                                   |
 
 ---
 
@@ -23,7 +23,7 @@ Hikers can view real-time table availability, book meals with specific dietary n
 
 - **[Node.js](https://nodejs.org/)** >= 20.x (LTS recommended, tested on v22 and v24)
 - **npm** >= 10.x
-- **[Docker](https://www.docker.com/)** *(optional)* — to run Mailpit locally for testing email capture
+- **[Docker](https://www.docker.com/)** _(optional)_ — to run Mailpit locally for testing email capture
 - SQLite is file-based and embedded — no external database server needed.
 
 ---
@@ -75,7 +75,7 @@ npm run db:seed
 npm run dev
 ```
 
-The API server will start on **`http://localhost:3000`**.  
+The API server will start on **`http://localhost:3000`**.
 Interactive API documentation is available at **`http://localhost:3000/docs`**.
 
 ---
@@ -92,7 +92,7 @@ npm install
 npm run dev
 ```
 
-The frontend application will start on **`http://localhost:5173`**.  
+The frontend application will start on **`http://localhost:5173`**.
 Vite automatically proxies all `/api` requests to `http://localhost:3000`.
 
 ---
@@ -110,7 +110,7 @@ docker run -d --name mailpit -p 8025:8025 -p 1025:1025 axllent/mailpit
 - **Web Inbox**: [http://localhost:8025](http://localhost:8025) (inspect captured confirmation emails)
 - **SMTP Server**: `localhost:1025` (pre-configured in `.env.template`)
 
-*(If Docker is not installed, the application continues to operate normally; failed email deliveries are logged without blocking bookings).*
+_(If Docker is not installed, the application continues to operate normally; failed email deliveries are logged without blocking bookings)._
 
 ---
 
@@ -118,20 +118,21 @@ docker run -d --name mailpit -p 8025:8025 -p 1025:1025 axllent/mailpit
 
 The database seed (`npm run db:seed`) provides test accounts with different roles:
 
-| Role | Email | Password | Description |
-| :--- | :--- | :--- | :--- |
-| **Hiker** | `giulia.verdi@example.com` | `giuliaverdi` | Regular hiker with existing booking history |
-| **Hiker** | `mario.rossi@example.com` | `mariorossi` | Regular hiker account |
-| **Employee** | `luca.neri@example.com` | `lucaneri` | Staff account (can manage slots & staff reservations) |
-| **Employee** | `test.employee@example.com` | `Password123!` | Test staff account |
+| Role         | Email                       | Password       | Description                                           |
+| :----------- | :-------------------------- | :------------- | :---------------------------------------------------- |
+| **Hiker**    | `giulia.verdi@example.com`  | `giuliaverdi`  | Regular hiker with existing booking history           |
+| **Hiker**    | `mario.rossi@example.com`   | `mariorossi`   | Regular hiker account                                 |
+| **Employee** | `luca.neri@example.com`     | `lucaneri`     | Staff account (can manage slots & staff reservations) |
+| **Employee** | `test.employee@example.com` | `Password123!` | Test staff account                                    |
 
-*(You can also register a brand new hiker account directly from the frontend registration page).*
+_(You can also register a brand new hiker account directly from the frontend registration page)._
 
 ---
 
 ## Using the System
 
 ### As a Hiker
+
 1. **Log in** at `http://localhost:5173/login` with hiker credentials.
 2. **Book a Table** (`/booking`):
    - Choose a meal date and party size.
@@ -144,6 +145,7 @@ The database seed (`npm run db:seed`) provides test accounts with different role
    - Modify party size or time slot within 48 hours of booking (provided the slot start cutoff has not passed).
 
 ### As Hut Staff (Employee)
+
 1. **Log in** with employee credentials (`luca.neri@example.com`).
 2. **Manage Slots & Tables** (`/employee/slots`):
    - Navigate day by day to create lunch and dinner slots.
@@ -157,6 +159,7 @@ The database seed (`npm run db:seed`) provides test accounts with different role
 ## Running Tests
 
 ### Backend Tests
+
 ```bash
 cd mountain-hut-server
 
@@ -168,6 +171,7 @@ npm run test:watch
 ```
 
 ### Frontend Tests
+
 ```bash
 cd mountain-hut-client
 
@@ -180,6 +184,7 @@ npm run build
 ```
 
 ### End-to-End (E2E) Browser Tests
+
 The end-to-end suite uses [Playwright](https://playwright.dev/) to verify full user journeys across frontend and backend.
 
 ```bash
@@ -231,3 +236,5 @@ MAIL_REPLY_TO=info@mountain-hut.example
 ## License
 
 This project is licensed under the **[European Union Public Licence v1.2 (EUPL-1.2)](https://interoperable-europe.ec.europa.eu/collection/eupl/eupl-text-eupl-12)** (see [LICENSE](LICENSE)).
+
+We chose the EUPL because it is a copyleft licence that requires any modified version to remain open source, even when offered as an online service, while being legally valid across the EU and available in all official EU languages.
