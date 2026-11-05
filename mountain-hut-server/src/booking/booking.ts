@@ -10,13 +10,15 @@ import {
   reservationAllergensTable,
 } from "../db/schema.ts";
 import { allocateTables, type FreeTable } from "./allocation.ts";
-import { isSlotBookable } from "./booking-rules.ts";
+import { hutSlotStartMs, isSlotBookable } from "./booking-rules.ts";
 
 export interface CreateBookingInput {
   /** Trusted user ID, supplied by the authenticated HTTP route. */
   userId: number;
   slotId: number;
   partySize: number;
+  /** Trusted option set only by the authenticated staff route. */
+  allowStaffLateBooking?: boolean;
   description?: string | null;
   allergenIds?: number[];
 }
@@ -32,7 +34,7 @@ export class BookingError extends Error {
 }
 
 export async function createBooking(input: CreateBookingInput) {
-  const { userId, slotId, partySize } = input;
+  const { userId, slotId, partySize, allowStaffLateBooking = false } = input;
 
   // Ensure the read/check/write sequence is contained in one transaction.
   return db.transaction(async (tx) => {
@@ -47,8 +49,13 @@ export async function createBooking(input: CreateBookingInput) {
       .where(eq(timeSlotTable.id, slotId)).limit(1);
     if (!slot) throw new BookingError(404, "Time slot not found");
 
-    // MH-01: reservations close two hours before the slot begins.
-    if (!isSlotBookable(slot.date, slot.from)) {
+    // MH-01: hikers retain the two-hour cutoff; authenticated staff can book
+    // until the end of the slot, using the hut-local Europe/Rome clock.
+    if (allowStaffLateBooking) {
+      if (Date.now() >= hutSlotStartMs(slot.date, slot.to)) {
+        throw new BookingError(409, "Time slot has already ended");
+      }
+    } else if (!isSlotBookable(slot.date, slot.from)) {
       throw new BookingError(409, "Booking deadline has passed (2 hours before the slot)");
     }
 
