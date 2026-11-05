@@ -18,28 +18,41 @@ We started working on `MH-07 — Reserve for an hiker`, though we can't consider
 
 ### 1.2 Detailed Statistics
 
-| Story | # Tasks | Points | Hours est. | Hours actual |
-| ----- | ------- | ------ | ---------- | ------------ |
-| _#0_  |         | -      |            |              |
-| _#1_  | 8       | 8      | 11h        | 12h 49min    |
-| _#2_  | 7       | 5      | 9h 30min   | 9h 10min     |
-| _#3_  | 7       | 5      | 7h 30min   | 7h 15min     |
-| _#4_  | 3       | 2      | 2h         | 2h 5min      |
-| _#5_  | 7       | 3      | 5h 30min   | 4h 20min     |
-| _#6_  | 6       | 6      | 7h         | 5h 20min     |
-| _#7_  | 7       | 5      | 7h 30min   | 4h 27min     |
+| Story  | # Tasks | Points | Hours est. | Hours actual |
+| :----- | :------ | :----- | :--------- | :----------- |
+| **#0** | 16      | -      | 63h 45min  | 73h 24min    |
+| **#1** | 8       | 8      | 11h        | 12h 49min    |
+| **#2** | 7       | 5      | 9h 30min   | 9h 10min     |
+| **#3** | 7       | 5      | 7h 30min   | 7h 15min     |
+| **#4** | 3       | 2      | 2h         | 2h 5min      |
+| **#5** | 7       | 3      | 5h 30min   | 4h 20min     |
+| **#6** | 6       | 5      | 7h         | 5h 20min     |
+| **#7** | 7       | 5      | 7h 30min   | 4h 27min     |
 
-- Hours per task <span style="color:red">per person</span> (average, standard deviation)
+#### 1.2.1 Hours per Task (Average, Standard Deviation)
 
-  |            | Mean     | StDev    |
-  | ---------- | -------- | -------- |
-  | Estimation | 1h 36min | 1h 43min |
-  | Actual     | 1h 35min | 2h 55min |
+<!-- **Per Person**: -->
 
-- Total task estimation error ratio
+| Member          | Time (Minutes) | # Tasks | Average | StDev  |
+| :-------------- | :------------- | :------ | :------ | :----- |
+| Alice Nicotra   | 975            | 14      | 1h 09m  | 0h 44m |
+| Davide Giordano | 1020           | 11      | 1h 32m  | 1h 19m |
+| Elif Guney      | 965            | 14      | 1h 08m  | 0h 35m |
+| Eren Altuntas   | 805            | 12      | 1h 07m  | 1h 18m |
+| Giacomo Viviano | 935            | 12      | 1h 17m  | 1h 14m |
+| Leonardo Miani  | 1110           | 11      | 1h 40m  | 1h 17m |
+
+<!-- **General**: -->
+<!---->
+<!-- |            | Mean     | StDev    | -->
+<!-- | ---------- | -------- | -------- | -->
+<!-- | Estimation | 1h 36min | 1h 43min | -->
+<!-- | Actual     | 1h 35min | 2h 55min | -->
+
+#### 1.2.2 Total task estimation error ratio
 
 $$
-    \frac{\sum_i \text{estimation}_{task_i}}{\sum_i \text{spent}_{task_i}} - 1 = \frac{97\text{h } 45\text{min}}{96\text{h } 50\text{min}} - 1 = 0.009
+    \frac{\sum_i \text{estimation}_{\text{task}_i}}{\sum_i \text{spent}_{\text{task}_i}} - 1 = \frac{97\text{h} \; 45\text{min}}{96\text{h} \; 50\text{min}} - 1 = 0.009
 $$
 
 ## 2. Quality Measures
@@ -49,7 +62,7 @@ $$
 - Total hours estimated: 6h
 - Total hours spent: 4h 25min
 - Number of automated unit test cases: 140
-- Coverage (if available): 89.48%
+- Coverage: 89.48%
 
 ### 2.2 Integration Testing
 
@@ -89,19 +102,19 @@ At the same time, we realized that reviewers need dedicated time up front to ful
 
 ### 3.3 Improvement Goals
 
-#### 3.3.a Achieved
+#### 3.3.1 Achieved
 
 > Which improvement goals set in the previous retrospective were you able to achieve?
 
 Just like we promised in the pilot project's demo, this time we actually set aside some time to prepare for the demo.
 
-#### 3.3.b Not Achieved
+#### 3.3.2 Not Achieved
 
 > Which ones you were not able to achieve? Why?
 
 In this sprint we still failed to achieve a more balanced task distribution between team members.
 
-#### 3.3.c For the next sprint
+#### 3.3.3 For the next sprint
 
 > Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
 
