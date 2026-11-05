@@ -1,6 +1,9 @@
 
 import Fastify, { type FastifyServerOptions } from "fastify";
 import secureSession from "@fastify/secure-session";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
+import { fileURLToPath } from "node:url";
 import {
   serializerCompiler,
   validatorCompiler,
@@ -47,6 +50,16 @@ export function buildApp(opts: FastifyServerOptions = {}) {
       request.user = null;
     }
   });
+
+  // The routes have no schemas yet, so the docs come from a handwritten file
+  server.register(swagger, {
+    mode: "static",
+    specification: {
+      path: fileURLToPath(new URL("../docs/openapi.yaml", import.meta.url)),
+      baseDir: fileURLToPath(new URL("../docs", import.meta.url)),
+    },
+  });
+  server.register(swaggerUi, { routePrefix: "/docs" });
 
   server.get("/", async () => ({ hello: "world" }));
 

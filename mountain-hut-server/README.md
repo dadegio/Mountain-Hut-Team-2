@@ -14,6 +14,12 @@ npm run dev
 
 To initialize and seed the database, you can use `npm run db:init` and `npm run db:seed`.
 
+## API documentation
+
+With the server running, open `http://localhost:3000/docs`.
+
+The page shows [`docs/openapi.yaml`](docs/openapi.yaml), which is written by hand. When you add or change a route, update that file too: `src/openapi.test.ts` fails if a route is missing from it.
+
 ## Email Notifications
 
 The server sends booking confirmation emails via SMTP using [Nodemailer](https://nodemailer.com/).
