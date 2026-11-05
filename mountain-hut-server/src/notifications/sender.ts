@@ -34,3 +34,5 @@ export class SmtpEmailSender implements EmailSender {
     });
   }
 }
+
+export const emailSender = new SmtpEmailSender();

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { BookingError, createBooking } from "./booking.ts";
 import { hutSlotStartMs } from "./booking-rules.ts";
 import { SmtpEmailSender, type EmailSender } from "../notifications/sender.ts";
-import { sendBookingConfirmation } from "../notifications/booking-confirmation.ts";
+import { sendBookingConfirmation } from "../notifications/confirmation.ts";
 import { listBookingsForUser } from "./list-bookings.ts";
 
 export interface BookingRoutesOptions {
@@ -29,7 +29,9 @@ export async function bookingRoutes(
       return reply.status(401).send({ error: "Authentication required" });
     }
     if (request.user.type !== "HIKER") {
-      return reply.status(403).send({ error: "Only hikers can view their bookings" });
+      return reply
+        .status(403)
+        .send({ error: "Only hikers can view their bookings" });
     }
 
     try {
@@ -75,7 +77,9 @@ export async function bookingRoutes(
         const slotStart = new Date(hutSlotStartMs(booking.date, booking.from));
         const slotEnd = new Date(hutSlotStartMs(booking.date, booking.to));
         const reference = `MH-${booking.reservations[0]?.reservationId ?? booking.slotId}`;
-        const hikerName = `${request.user.name ?? ""} ${request.user.surname ?? ""}`.trim() || request.user.name;
+        const hikerName =
+          `${request.user.name ?? ""} ${request.user.surname ?? ""}`.trim() ||
+          request.user.name;
 
         let emailRequirements: string | undefined = undefined;
         const allergenNames = booking.allergens.map((a) => a.name);

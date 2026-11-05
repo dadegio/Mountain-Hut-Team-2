@@ -18,8 +18,9 @@
           typescript-language-server
           eslint
 
-          # API Testing
+          # Testing
           hurl
+          mailpit
 
           # DB Management + SQL formatter
           sqlitebrowser

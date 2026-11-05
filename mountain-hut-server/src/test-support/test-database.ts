@@ -75,7 +75,9 @@ export function createIsolatedTestDatabase() {
     execFileSync(
       process.execPath,
       [
-        fileURLToPath(new URL("../../node_modules/drizzle-kit/bin.cjs", import.meta.url)),
+        fileURLToPath(
+          new URL("../../node_modules/drizzle-kit/bin.cjs", import.meta.url),
+        ),
         "push",
         "--config",
         fileURLToPath(new URL("../../drizzle.config.ts", import.meta.url)),

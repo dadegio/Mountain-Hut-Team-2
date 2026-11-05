@@ -3,7 +3,7 @@ import {
   renderBookingConfirmation,
   type BookingConfirmation,
 } from "./templates.ts";
-import { sendBookingConfirmation } from "./booking-confirmation.ts";
+import { sendBookingConfirmation } from "./confirmation.ts";
 
 const booking: BookingConfirmation = {
   reference: "MH-123",
@@ -44,10 +44,12 @@ describe("MH-79 — confirmation email template", () => {
   });
 
   it("displays None when requirements are missing or blank", () => {
-    expect(renderBookingConfirmation({ ...booking, requirements: undefined }).text)
-      .toContain("Special Requirements: None");
-    expect(renderBookingConfirmation({ ...booking, requirements: "   " }).html)
-      .toContain("<strong>Special Requirements:</strong> None");
+    expect(
+      renderBookingConfirmation({ ...booking, requirements: undefined }).text,
+    ).toContain("Special Requirements: None");
+    expect(
+      renderBookingConfirmation({ ...booking, requirements: "   " }).html,
+    ).toContain("<strong>Special Requirements:</strong> None");
   });
 
   it("trims special requirements", () => {
@@ -56,7 +58,9 @@ describe("MH-79 — confirmation email template", () => {
       requirements: "  Gluten free  ",
     });
     expect(text).toContain("Special Requirements: Gluten free");
-    expect(html).toContain("<strong>Special Requirements:</strong> Gluten free");
+    expect(html).toContain(
+      "<strong>Special Requirements:</strong> Gluten free",
+    );
     expect(html).not.toContain("  Gluten free  ");
   });
 
@@ -69,7 +73,9 @@ describe("MH-79 — confirmation email template", () => {
     });
     expect(html).toContain("MH&lt;&amp;&quot;123");
     expect(html).toContain("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;");
-    expect(html).toContain("&lt;img src=x onerror=&quot;oops&quot;&gt; &amp; nuts");
+    expect(html).toContain(
+      "&lt;img src=x onerror=&quot;oops&quot;&gt; &amp; nuts",
+    );
     expect(html).not.toContain("<script>");
     expect(html).not.toContain("<img");
   });
@@ -87,7 +93,14 @@ describe("MH-79 — confirmation email template", () => {
 
 describe("MH-79 — sendBookingConfirmation", () => {
   it("sends one email to the requested address and returns true", async () => {
-    const send = vi.fn(async (_email: { to: string; subject: string; text: string; html: string }) => {});
+    const send = vi.fn(
+      async (_email: {
+        to: string;
+        subject: string;
+        text: string;
+        html: string;
+      }) => {},
+    );
 
     const result = await sendBookingConfirmation(
       { send },
@@ -109,7 +122,11 @@ describe("MH-79 — sendBookingConfirmation", () => {
     });
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const result = await sendBookingConfirmation({ send }, "mario@example.com", booking);
+    const result = await sendBookingConfirmation(
+      { send },
+      "mario@example.com",
+      booking,
+    );
 
     expect(result).toBe(false);
     expect(send).toHaveBeenCalledTimes(1);
