@@ -1,11 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-
-// Mock import.meta.env so VITE_USE_MOCKS=true
-vi.stubEnv('VITE_USE_MOCKS', 'true')
-
-// Dynamic import so the stub is in place before the module loads
-const { getMyBookings, createBooking } = await import('../api/bookings')
-const { ApiError } = await import('../api/client')
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { changeBooking, createBooking, getMyBookings } from '../api/bookings'
+import { ApiError } from '../api/client'
 
 // Minimal fake of a fetch Response
 function fakeResponse(status: number, body: unknown) {
@@ -19,22 +14,32 @@ function fakeResponse(status: number, body: unknown) {
 }
 
 describe('bookings API', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
   afterEach(() => {
     vi.unstubAllGlobals()
-    vi.useRealTimers()
   })
 
-  it('getMyBookings returns mock bookings', async () => {
-    const promise = getMyBookings()
-    vi.runAllTimersAsync()
-    const bookings = await promise
-    expect(bookings).toHaveLength(2)
-    expect(bookings[0].status).toBe('confirmed')
-    expect(bookings[1].status).toBe('cancelled')
+  it('getMyBookings calls GET /api/bookings/mine and returns the list', async () => {
+    const data = [
+      {
+        id: 12,
+        date: '2026-11-05',
+        slotId: 15,
+        from: '19:00',
+        to: '21:00',
+        partySize: 2,
+        status: 'PLACED',
+        createdAt: '2026-11-04 14:14:03',
+        reservations: [{ reservationId: 12, tableId: 19, seats: 2 }],
+      },
+    ]
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(200, data))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const bookings = await getMyBookings()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/bookings/mine')
+    expect(bookings).toEqual(data)
   })
 
   it('createBooking sends POST /api/bookings with slotId and partySize', async () => {
@@ -69,5 +74,66 @@ describe('bookings API', () => {
     expect(error).toBeInstanceOf(ApiError)
     expect(error.status).toBe(409)
     expect(error.message).toBe('Not enough seats')
+  })
+
+  it('createBooking sends allergenIds and a trimmed description when given', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(201, { status: 'PLACED' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createBooking(3, 2, { allergenIds: [9, 14], description: '  one vegetarian  ' })
+
+    const [, options] = fetchMock.mock.calls[0]
+    expect(JSON.parse(options.body)).toEqual({
+      slotId: 3,
+      partySize: 2,
+      allergenIds: [9, 14],
+      description: 'one vegetarian',
+    })
+  })
+
+  it('createBooking leaves out empty allergens and blank description', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(201, { status: 'PLACED' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createBooking(3, 2, { allergenIds: [], description: '   ' })
+
+    const [, options] = fetchMock.mock.calls[0]
+    expect(JSON.parse(options.body)).toEqual({ slotId: 3, partySize: 2 })
+  })
+
+  it('changeBooking sends PATCH /api/bookings/:id with only the changed fields', async () => {
+    const result = {
+      bookingId: 12,
+      status: 'PLACED',
+      userId: 2,
+      slotId: 16,
+      partySize: 4,
+      reservations: [{ reservationId: 12, tableId: 3, seats: 4 }],
+    }
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(200, result))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const changed = await changeBooking(12, { slotId: 16, partySize: 4 })
+
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/bookings/12')
+    expect(options.method).toBe('PATCH')
+    expect(JSON.parse(options.body)).toEqual({ slotId: 16, partySize: 4 })
+    expect(changed).toEqual(result)
+  })
+
+  it('changeBooking throws ApiError when the change window has expired', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        fakeResponse(409, { error: 'Booking change window has expired (48 hours after creation)' }),
+      ),
+    )
+
+    const error = await changeBooking(12, { partySize: 3 }).catch((e) => e)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(409)
+    expect(error.message).toContain('48 hours')
   })
 })

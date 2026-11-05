@@ -1,4 +1,4 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db/database.ts";
 import {
   usersTable,
@@ -6,21 +6,27 @@ import {
   tablesTable,
   tableAvailabilityTable,
   reservationsTable,
+  allergensTable,
+  reservationAllergensTable,
 } from "../db/schema.ts";
 import { allocateTables, type FreeTable } from "./allocation.ts";
-import { isSlotBookable } from "./booking-rules.ts";
+import { hutSlotStartMs, isSlotBookable } from "./booking-rules.ts";
 
 export interface CreateBookingInput {
   /** Trusted user ID, supplied by the authenticated HTTP route. */
   userId: number;
   slotId: number;
   partySize: number;
+  /** Trusted option set only by the authenticated staff route. */
+  allowStaffLateBooking?: boolean;
+  description?: string | null;
+  allergenIds?: number[];
 }
 
 export class BookingError extends Error {
-  readonly statusCode: 403 | 404 | 409;
+  readonly statusCode: 400 | 403 | 404 | 409;
 
-  constructor(statusCode: 403 | 404 | 409, message: string) {
+  constructor(statusCode: 400 | 403 | 404 | 409, message: string) {
     super(message);
     this.name = "BookingError";
     this.statusCode = statusCode;
@@ -28,7 +34,7 @@ export class BookingError extends Error {
 }
 
 export async function createBooking(input: CreateBookingInput) {
-  const { userId, slotId, partySize } = input;
+  const { userId, slotId, partySize, allowStaffLateBooking = false } = input;
 
   // Ensure the read/check/write sequence is contained in one transaction.
   return db.transaction(async (tx) => {
@@ -43,8 +49,13 @@ export async function createBooking(input: CreateBookingInput) {
       .where(eq(timeSlotTable.id, slotId)).limit(1);
     if (!slot) throw new BookingError(404, "Time slot not found");
 
-    // MH-01: reservations close two hours before the slot begins.
-    if (!isSlotBookable(slot.date, slot.from)) {
+    // MH-01: hikers retain the two-hour cutoff; authenticated staff can book
+    // until the end of the slot, using the hut-local Europe/Rome clock.
+    if (allowStaffLateBooking) {
+      if (Date.now() >= hutSlotStartMs(slot.date, slot.to)) {
+        throw new BookingError(409, "Time slot has already ended");
+      }
+    } else if (!isSlotBookable(slot.date, slot.from)) {
       throw new BookingError(409, "Booking deadline has passed (2 hours before the slot)");
     }
 
@@ -59,6 +70,24 @@ export async function createBooking(input: CreateBookingInput) {
       .limit(1);
     if (existingBooking) {
       throw new BookingError(409, "You already have a booking for this time slot");
+    }
+
+    const rawAllergenIds = input.allergenIds ?? [];
+    const uniqueAllergenIds = Array.from(new Set(rawAllergenIds));
+    let matchingAllergens: Array<{ id: number; name: string }> = [];
+
+    if (uniqueAllergenIds.length > 0) {
+      matchingAllergens = await tx
+        .select({
+          id: allergensTable.id,
+          name: allergensTable.name,
+        })
+        .from(allergensTable)
+        .where(inArray(allergensTable.id, uniqueAllergenIds));
+
+      if (matchingAllergens.length !== uniqueAllergenIds.length) {
+        throw new BookingError(400, "One or more allergen IDs are invalid");
+      }
     }
 
     const configuredTables = await tx.select({
@@ -99,6 +128,8 @@ export async function createBooking(input: CreateBookingInput) {
       throw new BookingError(409, "Not enough available seats for this time slot");
     }
 
+    const description = input.description?.trim() ? input.description.trim() : null;
+
     const created = await tx.insert(reservationsTable)
       .values(allocation.map((assignment) => ({
         userId,
@@ -106,12 +137,23 @@ export async function createBooking(input: CreateBookingInput) {
         tableId: assignment.tableId,
         partySize: assignment.seats,
         status: "PLACED" as const,
+        description,
       })))
       .returning({
         id: reservationsTable.id,
         tableId: reservationsTable.tableId,
         seats: reservationsTable.partySize,
       });
+
+    if (uniqueAllergenIds.length > 0) {
+      const allergenRows = created.flatMap((reservation) =>
+        uniqueAllergenIds.map((allergenId) => ({
+          reservationId: reservation.id,
+          allergenId,
+        }))
+      );
+      await tx.insert(reservationAllergensTable).values(allergenRows);
+    }
 
     return {
       status: "PLACED" as const,
@@ -121,6 +163,9 @@ export async function createBooking(input: CreateBookingInput) {
       from: slot.from,
       to: slot.to,
       partySize,
+      description,
+      allergenIds: uniqueAllergenIds,
+      allergens: matchingAllergens,
       reservations: created.map((reservation) => ({
         reservationId: reservation.id,
         tableId: reservation.tableId,
