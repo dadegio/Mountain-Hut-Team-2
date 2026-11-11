@@ -1,14 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router";
-import Layout from "./components/layout/Layout";
-import RequireRole from "./components/layout/RequireRole";
-import HomePage from "./pages/HomePage";
-import BookingPage from "./pages/BookingPage";
-import MyBookingsPage from "./pages/MyBookingsPage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import EmployeeSlotsPage from "./pages/EmployeeSlotsPage";
-import NotFoundPage from "./pages/NotFoundPage";
-import AuthProvider from "./context/AuthProvider";
+import { Layout, HomePage, NotFoundPage } from "./shared/index.ts";
+import { AuthProvider, RequireRole, LoginPage, RegisterPage } from "./auth/index.ts";
+import { BookingPage, MyBookingsPage } from "./booking/index.ts";
+import { EmployeeSlotsPage } from "./slots/index.ts";
 
 const STAFF = ["EMPLOYEE", "MANAGER"];
 
