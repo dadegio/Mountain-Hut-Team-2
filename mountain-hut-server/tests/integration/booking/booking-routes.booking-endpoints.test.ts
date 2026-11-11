@@ -422,7 +422,7 @@ describe("POST /api/v1/bookings — MH-18 integration", () => {
 
   it("sends a confirmation email to the hiker when a booking is placed", async () => {
     const confirmationModule =
-      await import("../../../src/booking/services/booking.notification.ts");
+      await import("../../../src/booking/services/booking-notification.ts");
     const sendSpy = vi.spyOn(confirmationModule, "sendBookingConfirmation");
 
     const response = await postBooking({ slotId: 1, partySize: 2 });
@@ -1128,7 +1128,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
 
     it("keeps a successful booking when sending its confirmation email rejects", async () => {
       const confirmation =
-        await import("../../../src/booking/services/booking.notification.ts");
+        await import("../../../src/booking/services/booking-notification.ts");
       const spy = vi
         .spyOn(confirmation, "sendBookingConfirmation")
         .mockRejectedValueOnce(new Error("SMTP unavailable"));
@@ -1162,7 +1162,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
           reservations: [],
         });
       const confirmation =
-        await import("../../../src/booking/services/booking.notification.ts");
+        await import("../../../src/booking/services/booking-notification.ts");
       const emailSpy = vi
         .spyOn(confirmation, "sendBookingConfirmation")
         .mockResolvedValueOnce(true);
@@ -1334,7 +1334,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
       "passes the right requirements text for %s",
       async (_name, extra, expected) => {
         const confirmationModule =
-          await import("../../../src/booking/services/booking.notification.ts");
+          await import("../../../src/booking/services/booking-notification.ts");
         const sendSpy = vi.spyOn(confirmationModule, "sendBookingConfirmation");
         try {
           const response = await postBooking({

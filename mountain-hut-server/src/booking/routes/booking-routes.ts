@@ -4,7 +4,7 @@ import { BookingError, createBooking } from "../services/booking.ts";
 import { hutSlotStartMs } from "../rules/booking-rules.ts";
 import { SmtpEmailSender, type EmailSender } from "../../notifications/sender.ts";
 import { listBookingsForUser } from "../services/list-bookings.ts";
-import { sendBookingConfirmation } from "../services/booking.notification.ts";
+import { sendBookingConfirmation } from "../services/booking-notification.ts";
 
 export interface BookingRoutesOptions {
   emailSender?: EmailSender;
