@@ -1,11 +1,11 @@
-import { ApiError, apiFetch } from "./client";
-import { todayString } from "../utils/date";
+import { ApiError, apiFetch } from "./client.ts";
+import { todayString } from "../utils/date.ts";
 import type {
   CreateSlotRequest,
   CreateTableRequest,
   Table,
   TimeSlot,
-} from "../types/slot";
+} from "../types/slot.ts";
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === "true";
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));

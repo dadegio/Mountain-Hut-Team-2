@@ -1,5 +1,5 @@
 import { and, eq, inArray, ne } from "drizzle-orm";
-import { db } from "../db/database.ts";
+import { db } from "../../db/database.ts";
 import {
   usersTable,
   timeSlotTable,
@@ -8,9 +8,9 @@ import {
   reservationsTable,
   allergensTable,
   reservationAllergensTable,
-} from "../db/schema.ts";
-import { allocateTables, type FreeTable } from "./allocation.ts";
-import { hutSlotStartMs, isSlotBookable } from "./booking-rules.ts";
+} from "../../db/schema.ts";
+import { allocateTables, type FreeTable } from "../rules/allocation.ts";
+import { hutSlotStartMs, isSlotBookable } from "../rules/booking-rules.ts";
 
 export interface CreateBookingInput {
   /** Trusted user ID, supplied by the authenticated HTTP route. */

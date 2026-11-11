@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
-import { getAvailability } from "../api/availability";
-import { changeBooking } from "../api/bookings";
-import { ApiError } from "../api/client";
-import { slotStartMs } from "../utils/booking-rules";
-import type { SlotAvailability } from "../types/availability";
-import type { ChangeBookingRequest, MyBooking } from "../types/booking";
+import { getAvailability } from "../../api/availability.ts";
+import { changeBooking } from "../../api/bookings.ts";
+import { ApiError } from "../../api/client.ts";
+import { slotStartMs } from "../../utils/booking-rules.ts";
+import type { SlotAvailability } from "../../types/availability.ts";
+import type { ChangeBookingRequest, MyBooking } from "../../types/booking.ts";
 
 const MAX_PARTY_SIZE = 20; // same limit as the booking page
 const SLOT_CUTOFF_MS = 2 * 60 * 60 * 1000;

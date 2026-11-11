@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hutSlotStartMs, isSlotBookable } from "../../../src/booking/booking-rules.ts";
+import { hutSlotStartMs, isSlotBookable } from "../../../src/booking/rules/booking-rules.ts";
 
 describe("MH-01 booking cutoff (Europe/Rome)", () => {
   it("converts a winter date (CET)", () => {

@@ -1,9 +1,9 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { createSlot } from "../api/slots";
-import { formatDay, normalizeTime, todayString } from "../utils/date";
+import { createSlot } from "../../api/slots.ts";
+import { formatDay, normalizeTime, todayString } from "../../utils/date.ts";
 import CopyTablesPicker from "./CopyTablesPicker";
 import TimeField from "./TimeField";
-import type { Table, TimeSlot } from "../types/slot";
+import type { Table, TimeSlot } from "../../types/slot.ts";
 
 interface CreateSlotFormProps {
   date: string;

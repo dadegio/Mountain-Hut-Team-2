@@ -115,9 +115,9 @@ test.describe('as an employee', () => {
     await expect(slotsOfTheDay(page).getByText('09:30–11:30')).toBeVisible()
 
     // And it is what hikers can book: 6 seats fit, 7 do not
-    const fits = await page.request.get(`/api/availability?date=${day}&partySize=6`)
+    const fits = await page.request.get(`/api/v1/availability?date=${day}&partySize=6`)
     expect((await fits.json()).slots[0]).toMatchObject({ availableSeats: 6, available: true })
-    const tooMany = await page.request.get(`/api/availability?date=${day}&partySize=7`)
+    const tooMany = await page.request.get(`/api/v1/availability?date=${day}&partySize=7`)
     expect((await tooMany.json()).slots[0]).toMatchObject({ available: false })
   })
 

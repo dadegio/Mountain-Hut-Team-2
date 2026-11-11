@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { ApiError } from '../api/client'
-import { useAuth } from '../hooks/useAuth'
-import AuthShell from '../components/AuthShell'
-import AuthField from '../components/AuthField'
+import { ApiError } from '../api/client.ts'
+import { useAuth } from '../hooks/useAuth.ts'
+import AuthShell from '../components/layout/AuthShell'
+import AuthField from '../components/auth/AuthField'
 
 const primaryButton =
   'w-full inline-flex items-center justify-center px-7 py-3 text-base font-semibold text-white bg-green-600 hover:bg-green-500 active:bg-green-700 rounded-lg shadow-lg transition-colors disabled:opacity-50 cursor-pointer'

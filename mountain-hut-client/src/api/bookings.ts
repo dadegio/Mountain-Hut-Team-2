@@ -1,11 +1,11 @@
-import { apiFetch } from "./client";
+import { apiFetch } from "./client.ts";
 import type {
   BookingResult,
   ChangeBookingRequest,
   ChangeBookingResult,
   CreateBookingRequest,
   MyBooking,
-} from "../types/booking";
+} from "../types/booking.ts";
 
 // optional extras for a booking (MH-05)
 export interface BookingExtras {
@@ -13,7 +13,7 @@ export interface BookingExtras {
   description?: string;
 }
 
-// POST /api/bookings: create a booking for the logged-in hiker
+// POST /api/v1/bookings: create a booking for the logged-in hiker
 export function createBooking(slotId: number, partySize: number, extras: BookingExtras = {}) {
   const body: CreateBookingRequest = { slotId, partySize };
 
@@ -32,12 +32,12 @@ export function createBooking(slotId: number, partySize: number, extras: Booking
   });
 }
 
-// GET /api/bookings/mine: the logged-in hiker's bookings
+// GET /api/v1/bookings/mine: the logged-in hiker's bookings
 export function getMyBookings() {
   return apiFetch<MyBooking[]>("/bookings/mine");
 }
 
-// PATCH /api/bookings/:id: change slot and/or party size of a booking
+// PATCH /api/v1/bookings/:id: change slot and/or party size of a booking
 export function changeBooking(bookingId: number, changes: ChangeBookingRequest) {
   return apiFetch<ChangeBookingResult>(`/bookings/${bookingId}`, {
     method: "PATCH",

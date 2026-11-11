@@ -1,12 +1,12 @@
 import Fastify from "fastify";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../src/booking/availability.ts", () => ({
+vi.mock("../../../src/booking/services/availability.ts", () => ({
   getAvailability: vi.fn(),
 }));
 
-import { getAvailability } from "../../../src/booking/availability.ts";
-import { availabilityRoutes } from "../../../src/booking/availability-routes.ts";
+import { getAvailability } from "../../../src/booking/services/availability.ts";
+import { availabilityRoutes } from "../../../src/booking/routes/availability-routes.ts";
 
 const mockedGetAvailability = vi.mocked(getAvailability);
 
@@ -29,7 +29,7 @@ describe("availability-routes query behavior", () => {
     try {
       const response = await app.inject({
         method: "GET",
-        url: `/api/availability?date=${date}`,
+        url: `/availability?date=${date}`,
       });
 
       expect(response.statusCode).toBe(400);
@@ -47,7 +47,7 @@ describe("availability-routes query behavior", () => {
     try {
       const response = await app.inject({
         method: "GET",
-        url: `/api/availability?date=2026-11-06&partySize=${partySize}`,
+        url: `/availability?date=2026-11-06&partySize=${partySize}`,
       });
 
       expect(response.statusCode).toBe(400);
@@ -69,7 +69,7 @@ describe("availability-routes query behavior", () => {
     try {
       const response = await app.inject({
         method: "GET",
-        url: "/api/availability?date=2026-11-06",
+        url: "/availability?date=2026-11-06",
       });
 
       expect(response.statusCode).toBe(200);
@@ -95,7 +95,7 @@ describe("availability-routes query behavior", () => {
     try {
       const response = await app.inject({
         method: "GET",
-        url: "/api/availability?date=2026-11-06&partySize=2&slotId=8",
+        url: "/availability?date=2026-11-06&partySize=2&slotId=8",
       });
 
       expect(response.statusCode).toBe(200);
@@ -120,7 +120,7 @@ describe("availability-routes query behavior", () => {
     try {
       const response = await app.inject({
         method: "GET",
-        url: "/api/availability?date=2026-11-06&slotId=99",
+        url: "/availability?date=2026-11-06&slotId=99",
       });
 
       expect(response.statusCode).toBe(404);

@@ -1,9 +1,9 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { describe, it, expect } from "vitest";
-import Navbar from "../../../src/components/Navbar";
-import { AuthContext, type AuthContextValue } from "../../../src/context/auth-context";
-import type { User } from '../../../src/types/auth'
+import Navbar from "../../../src/components/layout/Navbar";
+import { AuthContext, type AuthContextValue } from "../../../src/context/auth-context.ts";
+import type { User } from '../../../src/types/auth.ts'
 
 function renderNavbarAs(user: User | null) {
   const auth: AuthContextValue = {

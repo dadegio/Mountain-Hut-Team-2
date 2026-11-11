@@ -1,11 +1,11 @@
 import { asc, desc, eq, inArray } from "drizzle-orm";
-import { db } from "../db/database.ts";
+import { db } from "../../db/database.ts";
 import {
   allergensTable,
   reservationAllergensTable,
   reservationsTable,
   timeSlotTable,
-} from "../db/schema.ts";
+} from "../../db/schema.ts";
 
 /** One logical booking may span several reservation rows (one per table). */
 export async function listBookingsForUser(userId: number) {

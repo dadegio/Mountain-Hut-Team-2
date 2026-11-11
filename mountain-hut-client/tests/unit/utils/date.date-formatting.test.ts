@@ -6,7 +6,7 @@ import {
   shiftDate,
   toDateString,
   todayString,
-} from '../../../src/utils/date'
+} from '../../../src/utils/date.ts'
 
 describe('toDateString', () => {
   it('formats a date as YYYY-MM-DD', () => {

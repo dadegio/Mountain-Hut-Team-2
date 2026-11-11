@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { getAvailability } from '../../../src/api/availability'
-import { ApiError } from '../../../src/api/client'
+import { getAvailability } from '../../../src/api/availability.ts'
+import { ApiError } from '../../../src/api/client.ts'
 
 // Minimal fake of a fetch Response
 function fakeResponse(status: number, body: unknown) {
@@ -18,7 +18,7 @@ describe('availability API', () => {
     vi.unstubAllGlobals()
   })
 
-  it('getAvailability calls /api/availability with date and partySize', async () => {
+  it('getAvailability calls /api/v1/availability with date and partySize', async () => {
     const response = {
       date: '2026-11-03',
       partySize: 4,
@@ -40,7 +40,7 @@ describe('availability API', () => {
     const result = await getAvailability('2026-11-03', 4)
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/availability?date=2026-11-03&partySize=4')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/availability?date=2026-11-03&partySize=4')
     expect(result.slots).toHaveLength(1)
     expect(result.slots[0]).toMatchObject({ slotId: 3, available: true })
   })

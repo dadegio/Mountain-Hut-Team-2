@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router";
-import Layout from "./components/Layout";
-import RequireRole from "./components/RequireRole";
+import Layout from "./components/layout/Layout";
+import RequireRole from "./components/layout/RequireRole";
 import HomePage from "./pages/HomePage";
 import BookingPage from "./pages/BookingPage";
 import MyBookingsPage from "./pages/MyBookingsPage";

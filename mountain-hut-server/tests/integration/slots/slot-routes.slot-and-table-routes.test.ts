@@ -94,7 +94,7 @@ function post(
 
 function createSlot(overrides: Record<string, unknown> = {}, cookie?: string) {
   return post(
-    "/api/slots",
+    "/api/v1/slots",
     {
       date: DAY,
       from: "12:00",
@@ -144,9 +144,9 @@ afterAll(async () => {
   cleanup();
 });
 
-describe("GET /api/tables", () => {
+describe("GET /api/v1/tables", () => {
   it("lists all the tables, ordered by id", async () => {
-    const res = await get("/api/tables");
+    const res = await get("/api/v1/tables");
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual([T1, T2, T3]);
@@ -155,43 +155,43 @@ describe("GET /api/tables", () => {
   it("returns an empty list when there are no tables", async () => {
     await testDb.delete(tablesTable);
 
-    const res = await get("/api/tables");
+    const res = await get("/api/v1/tables");
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual([]);
   });
 });
 
-describe("POST /api/tables", () => {
+describe("POST /api/v1/tables", () => {
   it("creates a table and returns it", async () => {
-    const res = await post("/api/tables", { code: "T4", seats: 8 });
+    const res = await post("/api/v1/tables", { code: "T4", seats: 8 });
 
     expect(res.statusCode).toBe(201);
     expect(res.json()).toEqual({ id: expect.any(Number), code: "T4", seats: 8 });
 
-    const list = await get("/api/tables");
+    const list = await get("/api/v1/tables");
     expect(list.json()).toContainEqual(res.json());
   });
 
   it("removes the spaces around the code", async () => {
-    const res = await post("/api/tables", { code: "  T4  ", seats: 8 });
+    const res = await post("/api/v1/tables", { code: "  T4  ", seats: 8 });
 
     expect(res.statusCode).toBe(201);
     expect(res.json().code).toBe("T4");
   });
 
   it("refuses a code that already exists and changes nothing", async () => {
-    const res = await post("/api/tables", { code: "T1", seats: 10 });
+    const res = await post("/api/v1/tables", { code: "T1", seats: 10 });
 
     expect(res.statusCode).toBe(409);
     expect(res.json()).toEqual({ error: "Table code T1 already exists" });
 
-    const list = await get("/api/tables");
+    const list = await get("/api/v1/tables");
     expect(list.json()).toEqual([T1, T2, T3]);
   });
 
   it("treats the code as already existing after removing the spaces", async () => {
-    const res = await post("/api/tables", { code: " T1 ", seats: 10 });
+    const res = await post("/api/v1/tables", { code: " T1 ", seats: 10 });
 
     expect(res.statusCode).toBe(409);
   });
@@ -208,7 +208,7 @@ describe("POST /api/tables", () => {
     ["decimal seats", { code: "T4", seats: 2.5 }, "seats"],
     ["seats as text", { code: "T4", seats: "4" }, "seats"],
   ])("refuses %s", async (_description, body, field) => {
-    const res = await post("/api/tables", body);
+    const res = await post("/api/v1/tables", body);
 
     expect(res.statusCode).toBe(400);
     expect(res.json().error).toBe("Invalid request body");
@@ -217,20 +217,20 @@ describe("POST /api/tables", () => {
   });
 
   it("refuses unknown fields", async () => {
-    const res = await post("/api/tables", { code: "T4", seats: 4, extra: true });
+    const res = await post("/api/v1/tables", { code: "T4", seats: 4, extra: true });
 
     expect(res.statusCode).toBe(400);
     expect(await countRows("tables")).toBe(3);
   });
 
   it("accepts a code of exactly 20 characters", async () => {
-    const res = await post("/api/tables", { code: "T".repeat(20), seats: 4 });
+    const res = await post("/api/v1/tables", { code: "T".repeat(20), seats: 4 });
 
     expect(res.statusCode).toBe(201);
   });
 });
 
-describe("POST /api/slots", () => {
+describe("POST /api/v1/slots", () => {
   it("creates a slot and returns it with its tables and seats", async () => {
     const res = await createSlot();
 
@@ -364,7 +364,7 @@ describe("POST /api/slots", () => {
     it("refuses a body that is not valid JSON", async () => {
       const res = await app.inject({
         method: "POST",
-        url: "/api/slots",
+        url: "/api/v1/slots",
         headers: { "content-type": "application/json" },
         payload: "{ not json",
       });
@@ -468,7 +468,7 @@ describe("who can create tables and slots", () => {
     ["a manager", () => managerCookie],
   ])("%s", (_who, cookie) => {
     it("can create a table", async () => {
-      const res = await post("/api/tables", newTable, cookie());
+      const res = await post("/api/v1/tables", newTable, cookie());
 
       expect(res.statusCode).toBe(201);
     });
@@ -488,7 +488,7 @@ describe("who can create tables and slots", () => {
         .mockRejectedValueOnce(new Error("Database unavailable"));
 
       try {
-        const response = await get("/api/slots/1");
+        const response = await get("/api/v1/slots/1");
 
         expect(response.statusCode).toBe(500);
         expect(response.json()).toEqual({ error: "Internal server error" });
@@ -504,7 +504,7 @@ describe("who can create tables and slots", () => {
     ["someone with an invalid session", () => "session=not-a-real-session", 401, "Authentication required"],
   ])("%s", (_who, cookie, status, error) => {
     it("cannot create a table", async () => {
-      const res = await post("/api/tables", newTable, cookie());
+      const res = await post("/api/v1/tables", newTable, cookie());
 
       expect(res.statusCode).toBe(status);
       expect(res.json()).toEqual({ error });
@@ -531,7 +531,7 @@ describe("who can create tables and slots", () => {
       const headers = cookie() ? { cookie: cookie() } : {};
       const created = (await createSlot()).json();
 
-      for (const url of ["/api/tables", `/api/slots?date=${DAY}`, `/api/slots/${created.id}`]) {
+      for (const url of ["/api/v1/tables", `/api/v1/slots?date=${DAY}`, `/api/v1/slots/${created.id}`]) {
         const res = await app.inject({ method: "GET", url, headers });
         expect(res.statusCode).toBe(200);
       }
@@ -550,9 +550,9 @@ describe("who can create tables and slots", () => {
   });
 });
 
-describe("GET /api/slots", () => {
+describe("GET /api/v1/slots", () => {
   it("returns an empty list for a day without slots", async () => {
-    const res = await get(`/api/slots?date=${DAY}`);
+    const res = await get(`/api/v1/slots?date=${DAY}`);
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual([]);
@@ -563,7 +563,7 @@ describe("GET /api/slots", () => {
     await createSlot({ from: "12:00", to: "13:00", tableIds: [2] });
     await createSlot({ date: OTHER_DAY, from: "08:00", to: "09:00", tableIds: [3] });
 
-    const res = await get(`/api/slots?date=${DAY}`);
+    const res = await get(`/api/v1/slots?date=${DAY}`);
 
     expect(res.statusCode).toBe(200);
     expect(res.json().map((slot: { from: string }) => slot.from)).toEqual(["12:00", "19:00"]);
@@ -574,7 +574,7 @@ describe("GET /api/slots", () => {
     await createSlot({ from: "13:00", to: "14:00", tableIds: [2] });
     await createSlot({ from: "14:00", to: "15:00", tableIds: [] });
 
-    const res = await get(`/api/slots?date=${DAY}`);
+    const res = await get(`/api/v1/slots?date=${DAY}`);
 
     expect(res.json()).toMatchObject([
       { from: "12:00", totalSeats: 8, tables: [T1, T3] },
@@ -589,18 +589,18 @@ describe("GET /api/slots", () => {
     ["a wrong format", "?date=10-12-2027"],
     ["an empty date", "?date="],
   ])("refuses %s", async (_description, query) => {
-    const res = await get(`/api/slots${query}`);
+    const res = await get(`/api/v1/slots${query}`);
 
     expect(res.statusCode).toBe(400);
     expect(res.json().error).toBe("Invalid query parameters");
   });
 });
 
-describe("GET /api/slots/:id", () => {
+describe("GET /api/v1/slots/:id", () => {
   it("returns the slot with its tables and seats", async () => {
     const created = (await createSlot()).json();
 
-    const res = await get(`/api/slots/${created.id}`);
+    const res = await get(`/api/v1/slots/${created.id}`);
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual(created);
@@ -609,21 +609,21 @@ describe("GET /api/slots/:id", () => {
   it("returns a slot without tables, with 0 seats", async () => {
     const created = (await createSlot({ tableIds: [] })).json();
 
-    const res = await get(`/api/slots/${created.id}`);
+    const res = await get(`/api/v1/slots/${created.id}`);
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ totalSeats: 0, tables: [] });
   });
 
   it("answers 404 for a slot that does not exist", async () => {
-    const res = await get("/api/slots/999");
+    const res = await get("/api/v1/slots/999");
 
     expect(res.statusCode).toBe(404);
     expect(res.json()).toEqual({ error: "Time slot not found" });
   });
 
   it.each([["abc"], ["0"], ["-1"], ["1.5"]])("refuses the id %s", async (id) => {
-    const res = await get(`/api/slots/${id}`);
+    const res = await get(`/api/v1/slots/${id}`);
 
     expect(res.statusCode).toBe(400);
     expect(res.json().error).toBe("Invalid path parameters");
@@ -635,7 +635,7 @@ describe("slots and availability", () => {
   it("makes a new slot available for the seats of its tables", async () => {
     const { id } = (await createSlot({ tableIds: [1, 2] })).json();
 
-    const res = await get(`/api/availability?date=${DAY}&partySize=6`);
+    const res = await get(`/api/v1/availability?date=${DAY}&partySize=6`);
 
     expect(res.statusCode).toBe(200);
     expect(res.json().slots).toMatchObject([
@@ -646,7 +646,7 @@ describe("slots and availability", () => {
   it("does not accept a party larger than the seats of the slot", async () => {
     await createSlot({ tableIds: [1, 2] });
 
-    const res = await get(`/api/availability?date=${DAY}&partySize=7`);
+    const res = await get(`/api/v1/availability?date=${DAY}&partySize=7`);
 
     expect(res.json().slots).toMatchObject([{ availableSeats: 6, available: false }]);
   });
@@ -654,7 +654,7 @@ describe("slots and availability", () => {
   it("offers no seats in a slot without tables", async () => {
     await createSlot({ tableIds: [] });
 
-    const res = await get(`/api/availability?date=${DAY}`);
+    const res = await get(`/api/v1/availability?date=${DAY}`);
 
     expect(res.json().slots).toMatchObject([{ availableSeats: 0, available: false }]);
   });

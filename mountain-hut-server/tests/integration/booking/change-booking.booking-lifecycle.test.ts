@@ -63,7 +63,7 @@ async function sessionCookie(userId: number): Promise<string> {
 async function postBooking(userId: number, slotId: number, partySize: number) {
   return app.inject({
     method: "POST",
-    url: "/api/bookings",
+    url: "/api/v1/bookings",
     headers: { cookie: await sessionCookie(userId) },
     payload: { slotId, partySize },
   });
@@ -77,7 +77,7 @@ async function patchBooking(
   const cookie = actingUserId === null ? null : await sessionCookie(actingUserId);
   return app.inject({
     method: "PATCH",
-    url: `/api/bookings/${bookingId}`,
+    url: `/api/v1/bookings/${bookingId}`,
     ...(cookie ? { headers: { cookie } } : {}),
     payload,
   });
@@ -86,7 +86,7 @@ async function patchBooking(
 async function getMyBookings(userId: number) {
   return app.inject({
     method: "GET",
-    url: "/api/bookings/mine",
+    url: "/api/v1/bookings/mine",
     headers: { cookie: await sessionCookie(userId) },
   });
 }
@@ -94,7 +94,7 @@ async function getMyBookings(userId: number) {
 async function getAvailability(date: string, partySize: number = 1) {
   return app.inject({
     method: "GET",
-    url: `/api/availability?date=${date}&partySize=${partySize}`,
+    url: `/api/v1/availability?date=${date}&partySize=${partySize}`,
   });
 }
 
@@ -309,7 +309,7 @@ describe("MH-77: Integration tests — Change Booking lifecycle", () => {
 
   describe("change-booking service input validation", () => {
     it("rejects a user who is not a hiker", async () => {
-      const { changeBooking } = await import("../../../src/booking/change-booking.ts");
+      const { changeBooking } = await import("../../../src/booking/services/change-booking.ts");
 
       await expect(
         changeBooking({ bookingId: 1, userId: 3, partySize: 2 }),
@@ -321,7 +321,7 @@ describe("MH-77: Integration tests — Change Booking lifecycle", () => {
     });
 
     it("returns not found when the supplied user does not exist", async () => {
-      const { changeBooking } = await import("../../../src/booking/change-booking.ts");
+      const { changeBooking } = await import("../../../src/booking/services/change-booking.ts");
 
       await expect(
         changeBooking({ bookingId: 1, userId: 999, partySize: 2 }),
@@ -333,7 +333,7 @@ describe("MH-77: Integration tests — Change Booking lifecycle", () => {
     });
 
     it("returns an internal error when the change service fails unexpectedly", async () => {
-      const changeModule = await import("../../../src/booking/change-booking.ts");
+      const changeModule = await import("../../../src/booking/services/change-booking.ts");
       const spy = vi
         .spyOn(changeModule, "changeBooking")
         .mockRejectedValueOnce(new Error("Database disconnected"));
@@ -341,7 +341,7 @@ describe("MH-77: Integration tests — Change Booking lifecycle", () => {
       try {
         const response = await app.inject({
           method: "PATCH",
-          url: "/api/bookings/1",
+          url: "/api/v1/bookings/1",
           headers: { cookie: await sessionCookie(1) },
           payload: { partySize: 3 },
         });

@@ -22,7 +22,7 @@ describe("allergen-routes error response", () => {
     try {
       const response = await app.inject({
         method: "GET",
-        url: "/api/allergens",
+        url: "/allergens",
       });
 
       expect(response.statusCode).toBe(500);

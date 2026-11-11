@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOOKING_CHANGE_WINDOW_MS, isBookingChangeAllowed } from "../../../src/booking/change-rules.ts";
+import { BOOKING_CHANGE_WINDOW_MS, isBookingChangeAllowed } from "../../../src/booking/rules/change-rules.ts";
 
 describe("MH-46 / MH-06: 48-hour booking change rule", () => {
   const createdAt = "2026-11-02 09:00:00"; // SQLite UTC timestamp

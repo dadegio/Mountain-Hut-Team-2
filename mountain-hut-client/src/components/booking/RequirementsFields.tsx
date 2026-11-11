@@ -1,4 +1,4 @@
-import type { Allergen } from "../types/booking";
+import type { Allergen } from "../../types/booking.ts";
 
 const MAX_DESCRIPTION = 1000; 
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { getSlots } from "../api/slots";
-import { formatDay, shiftDate } from "../utils/date";
-import type { TimeSlot } from "../types/slot";
+import { getSlots } from "../../api/slots.ts";
+import { formatDay, shiftDate } from "../../utils/date.ts";
+import type { TimeSlot } from "../../types/slot.ts";
 
 interface CopyTablesPickerProps {
   // Day of the slot being created: the picker starts from the day before

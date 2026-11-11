@@ -187,10 +187,10 @@ describe("Booking confirmation email integration tests", () => {
     await seedFixture(testEmail);
     const cookie = await loginAndGetCookie(testEmail);
 
-    // 1. Book a table via POST /api/bookings
+    // 1. Book a table via POST /api/v1/bookings
     const bookingRes = await app.inject({
       method: "POST",
-      url: "/api/bookings",
+      url: "/api/v1/bookings",
       headers: { cookie },
       payload: {
         slotId: 1,
@@ -244,7 +244,7 @@ describe("Booking confirmation email integration tests", () => {
     // Attempt booking with invalid party size (schema validation failure)
     const res = await app.inject({
       method: "POST",
-      url: "/api/bookings",
+      url: "/api/v1/bookings",
       headers: { cookie },
       payload: {
         slotId: 1,
@@ -278,7 +278,7 @@ describe("Booking confirmation email integration tests", () => {
     // Attempt booking with party size exceeding table availability
     const res = await app.inject({
       method: "POST",
-      url: "/api/bookings",
+      url: "/api/v1/bookings",
       headers: { cookie },
       payload: {
         slotId: 1,

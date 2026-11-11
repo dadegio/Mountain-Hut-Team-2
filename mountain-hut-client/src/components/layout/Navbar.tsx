@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth.ts";
 
 type Role = string | null; // null = guest
 

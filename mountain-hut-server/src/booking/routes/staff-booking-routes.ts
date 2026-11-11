@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { BookingError, createBooking } from "./booking.ts";
+import { BookingError, createBooking } from "../services/booking.ts";
 
 // MH-07: staff may reserve for an EXISTING hiker. The temporary-hiker flow
 // depends on separate schema/auth work and is intentionally not accepted here.
@@ -11,7 +11,7 @@ const staffBookingSchema = z.object({
 }).strict();
 
 export async function staffBookingRoutes(app: FastifyInstance) {
-  app.post("/api/staff/bookings", async (request, reply) => {
+  app.post("/staff/bookings", async (request, reply) => {
     if (!request.user) {
       return reply.status(401).send({ error: "Authentication required" });
     }

@@ -87,7 +87,7 @@ async function sessionCookie(userId: number): Promise<string> {
 
 async function postBooking(userId: number, slotId: number, partySize: number) {
   return app.inject({
-    method: "POST", url: "/api/bookings",
+    method: "POST", url: "/api/v1/bookings",
     headers: { cookie: await sessionCookie(userId) },
     payload: { slotId, partySize },
   });
@@ -100,7 +100,7 @@ async function patchBooking(
 ) {
   const cookie = actingUserId === null ? null : await sessionCookie(actingUserId);
   return app.inject({
-    method: "PATCH", url: `/api/bookings/${bookingId}`,
+    method: "PATCH", url: `/api/v1/bookings/${bookingId}`,
     ...(cookie ? { headers: { cookie } } : {}),
     payload,
   });
@@ -123,7 +123,7 @@ afterAll(async () => {
   cleanup();
 });
 
-describe("MH-46: PATCH /api/bookings/:bookingId", () => {
+describe("MH-46: PATCH /api/v1/bookings/:bookingId", () => {
   it("401: unauthenticated users cannot change a booking", async () => {
     const created = await postBooking(1, 1, 2);
     const id = created.json().reservations[0].reservationId;

@@ -176,7 +176,7 @@ async function postBooking(
 
   return app.inject({
     method: "POST",
-    url: "/api/bookings",
+    url: "/api/v1/bookings",
     headers: {
       "content-type": "application/json",
       ...(cookie ? { cookie } : {}),
@@ -221,7 +221,7 @@ afterAll(async () => {
   cleanup();
 });
 
-describe("POST /api/bookings — MH-18 integration", () => {
+describe("POST /api/v1/bookings — MH-18 integration", () => {
   it("400: rejects attempts to impersonate another user through the body", async () => {
     const response = await postBooking(
       { userId: 2, slotId: 1, partySize: 2 },
@@ -408,7 +408,7 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 
   it("500: returns internal server error on unexpected database failure", async () => {
-    const bookingModule = await import("../../../src/booking/booking.ts");
+    const bookingModule = await import("../../../src/booking/services/booking.ts");
     const spy = vi
       .spyOn(bookingModule, "createBooking")
       .mockRejectedValueOnce(new Error("Database disconnected"));
@@ -422,7 +422,7 @@ describe("POST /api/bookings — MH-18 integration", () => {
 
   it("sends a confirmation email to the hiker when a booking is placed", async () => {
     const confirmationModule =
-      await import("../../../src/booking/booking.notification.ts");
+      await import("../../../src/booking/services/booking.notification.ts");
     const sendSpy = vi.spyOn(confirmationModule, "sendBookingConfirmation");
 
     const response = await postBooking({ slotId: 1, partySize: 2 });
@@ -441,11 +441,11 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 });
 
-describe("GET /api/bookings/mine — Story 6", () => {
+describe("GET /api/v1/bookings/mine — Story 6", () => {
   it("401: requires authentication", async () => {
     const response = await app.inject({
       method: "GET",
-      url: "/api/bookings/mine",
+      url: "/api/v1/bookings/mine",
     });
     expect(response.statusCode).toBe(401);
   });
@@ -453,7 +453,7 @@ describe("GET /api/bookings/mine — Story 6", () => {
   it("403: permits only hikers", async () => {
     const response = await app.inject({
       method: "GET",
-      url: "/api/bookings/mine",
+      url: "/api/v1/bookings/mine",
       headers: { cookie: await cookieFor(3) },
     });
     expect(response.statusCode).toBe(403);
@@ -462,7 +462,7 @@ describe("GET /api/bookings/mine — Story 6", () => {
   it("200: returns an empty array when the hiker has no bookings", async () => {
     const response = await app.inject({
       method: "GET",
-      url: "/api/bookings/mine",
+      url: "/api/v1/bookings/mine",
       headers: { cookie: await cookieFor(1) },
     });
     expect(response.statusCode).toBe(200);
@@ -474,7 +474,7 @@ describe("GET /api/bookings/mine — Story 6", () => {
     expect(created.statusCode).toBe(201);
     const response = await app.inject({
       method: "GET",
-      url: "/api/bookings/mine",
+      url: "/api/v1/bookings/mine",
       headers: { cookie: await cookieFor(1) },
     });
     expect(response.statusCode).toBe(200);
@@ -501,7 +501,7 @@ describe("GET /api/bookings/mine — Story 6", () => {
     );
     const response = await app.inject({
       method: "GET",
-      url: "/api/bookings/mine",
+      url: "/api/v1/bookings/mine",
       headers: { cookie: await cookieFor(1) },
     });
     expect(response.statusCode).toBe(200);
@@ -636,7 +636,7 @@ describe("MH-74: Allergens & Party Requirements", () => {
     expect(response.json().error).toBe("Invalid request body");
   });
 
-  it("GET /api/bookings/mine returns allergens and description for placed bookings", async () => {
+  it("GET /api/v1/bookings/mine returns allergens and description for placed bookings", async () => {
     await postBooking(
       {
         slotId: 1,
@@ -649,7 +649,7 @@ describe("MH-74: Allergens & Party Requirements", () => {
 
     const response = await app.inject({
       method: "GET",
-      url: "/api/bookings/mine",
+      url: "/api/v1/bookings/mine",
       headers: { cookie: await cookieFor(1) },
     });
 
@@ -692,7 +692,7 @@ async function postStaffBooking(
 
   return app.inject({
     method: "POST",
-    url: "/api/staff/bookings",
+    url: "/api/v1/staff/bookings",
     headers: {
       "content-type": "application/json",
       ...(cookie ? { cookie } : {}),
@@ -701,7 +701,7 @@ async function postStaffBooking(
   });
 }
 
-describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
+describe("POST /api/v1/staff/bookings — MH-07 existing hiker", () => {
   it("201: EMPLOYEE books for another registered HIKER", async () => {
     const response = await postStaffBooking({
       hikerId: 1,
@@ -823,7 +823,7 @@ describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
 
   it("201: staff can book within two hours of the slot start, while an hiker cannot", async () => {
     const { hutSlotStartMs } =
-      await import("../../../src/booking/booking-rules.ts");
+      await import("../../../src/booking/rules/booking-rules.ts");
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "11:00")));
     try {
@@ -843,7 +843,7 @@ describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
 
   it("201: staff can book after the slot starts but before its end", async () => {
     const { hutSlotStartMs } =
-      await import("../../../src/booking/booking-rules.ts");
+      await import("../../../src/booking/rules/booking-rules.ts");
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "12:30")));
     try {
@@ -861,7 +861,7 @@ describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
 
   it("409: staff cannot book at the exact end of the slot", async () => {
     const { hutSlotStartMs } =
-      await import("../../../src/booking/booking-rules.ts");
+      await import("../../../src/booking/rules/booking-rules.ts");
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "13:00")));
     try {
@@ -906,7 +906,7 @@ describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
   });
 
   it("500: does not expose unexpected server errors", async () => {
-    const bookingModule = await import("../../../src/booking/booking.ts");
+    const bookingModule = await import("../../../src/booking/services/booking.ts");
     const spy = vi
       .spyOn(bookingModule, "createBooking")
       .mockRejectedValueOnce(new Error("DB unavailable"));
@@ -933,11 +933,11 @@ describe("MH-78: allergens integration (MH-05)", () => {
     return testDb.select().from(reservationAllergensTable);
   }
 
-  describe("GET /api/allergens", () => {
+  describe("GET /api/v1/allergens", () => {
     it("200: returns every allergen with id and name, no login needed", async () => {
       const response = await app.inject({
         method: "GET",
-        url: "/api/allergens",
+        url: "/api/v1/allergens",
       });
 
       expect(response.statusCode).toBe(200);
@@ -1052,7 +1052,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
     ])("rejects availability for a %s", async (_description, date) => {
       const response = await app.inject({
         method: "GET",
-        url: `/api/availability?date=${date}`,
+        url: `/api/v1/availability?date=${date}`,
       });
       expect(response.statusCode).toBe(400);
       expect(response.json()).toMatchObject({
@@ -1063,7 +1063,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
     it("filters availability to one configured slot and returns 404 for an unknown slot", async () => {
       const selected = await app.inject({
         method: "GET",
-        url: `/api/availability?date=${futureDate}&partySize=2&slotId=1`,
+        url: `/api/v1/availability?date=${futureDate}&partySize=2&slotId=1`,
       });
       expect(selected.statusCode).toBe(200);
       expect(selected.json().slots).toHaveLength(1);
@@ -1071,7 +1071,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
 
       const missing = await app.inject({
         method: "GET",
-        url: `/api/availability?date=${futureDate}&slotId=999`,
+        url: `/api/v1/availability?date=${futureDate}&slotId=999`,
       });
       expect(missing.statusCode).toBe(404);
     });
@@ -1079,7 +1079,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
     it("returns an empty availability list when the date has no configured slots", async () => {
       const response = await app.inject({
         method: "GET",
-        url: "/api/availability?date=2099-01-01",
+        url: "/api/v1/availability?date=2099-01-01",
       });
 
       expect(response.statusCode).toBe(200);
@@ -1092,14 +1092,14 @@ describe("MH-78: allergens integration (MH-05)", () => {
 
     it("returns a logged internal error when listing bookings fails", async () => {
       const bookingModule =
-        await import("../../../src/booking/list-bookings.ts");
+        await import("../../../src/booking/services/list-bookings.ts");
       const spy = vi
         .spyOn(bookingModule, "listBookingsForUser")
         .mockRejectedValueOnce(new Error("Database disconnected"));
       try {
         const response = await app.inject({
           method: "GET",
-          url: "/api/bookings/mine",
+          url: "/api/v1/bookings/mine",
           headers: { cookie: await cookieFor(1) },
         });
 
@@ -1111,7 +1111,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
     });
 
     it("keeps a successful booking when preparing its confirmation email fails", async () => {
-      const rules = await import("../../../src/booking/booking-rules.ts");
+      const rules = await import("../../../src/booking/rules/booking-rules.ts");
       const spy = vi
         .spyOn(rules, "hutSlotStartMs")
         .mockImplementationOnce(() => {
@@ -1128,7 +1128,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
 
     it("keeps a successful booking when sending its confirmation email rejects", async () => {
       const confirmation =
-        await import("../../../src/booking/booking.notification.ts");
+        await import("../../../src/booking/services/booking.notification.ts");
       const spy = vi
         .spyOn(confirmation, "sendBookingConfirmation")
         .mockRejectedValueOnce(new Error("SMTP unavailable"));
@@ -1145,7 +1145,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
       await client.execute(
         "UPDATE users SET name = '', surname = '' WHERE id = 1",
       );
-      const bookingModule = await import("../../../src/booking/booking.ts");
+      const bookingModule = await import("../../../src/booking/services/booking.ts");
       const createSpy = vi
         .spyOn(bookingModule, "createBooking")
         .mockResolvedValueOnce({
@@ -1162,7 +1162,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
           reservations: [],
         });
       const confirmation =
-        await import("../../../src/booking/booking.notification.ts");
+        await import("../../../src/booking/services/booking.notification.ts");
       const emailSpy = vi
         .spyOn(confirmation, "sendBookingConfirmation")
         .mockResolvedValueOnce(true);
@@ -1194,7 +1194,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
 
       const mine = await app.inject({
         method: "GET",
-        url: "/api/bookings/mine",
+        url: "/api/v1/bookings/mine",
         headers: { cookie: await cookieFor(1) },
       });
       expect(mine.statusCode).toBe(200);
@@ -1205,7 +1205,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
     });
   });
 
-  describe("POST /api/bookings with requirements", () => {
+  describe("POST /api/v1/bookings with requirements", () => {
     it("201: an empty allergenIds array saves no allergen links", async () => {
       const response = await postBooking({
         slotId: 1,
@@ -1297,7 +1297,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
     });
   });
 
-  describe("GET /api/bookings/mine", () => {
+  describe("GET /api/v1/bookings/mine", () => {
     it("200: another hiker does not see the first hiker's requirements", async () => {
       await postBooking(
         { slotId: 1, partySize: 2, allergenIds: [1], description: "No dairy" },
@@ -1307,7 +1307,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
 
       const response = await app.inject({
         method: "GET",
-        url: "/api/bookings/mine",
+        url: "/api/v1/bookings/mine",
         headers: { cookie: await cookieFor(2) },
       });
 
@@ -1334,7 +1334,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
       "passes the right requirements text for %s",
       async (_name, extra, expected) => {
         const confirmationModule =
-          await import("../../../src/booking/booking.notification.ts");
+          await import("../../../src/booking/services/booking.notification.ts");
         const sendSpy = vi.spyOn(confirmationModule, "sendBookingConfirmation");
         try {
           const response = await postBooking({

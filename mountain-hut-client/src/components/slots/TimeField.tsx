@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { normalizeTime } from "../utils/date";
+import { normalizeTime } from "../../utils/date.ts";
 
 interface TimeFieldProps {
   label: string;

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { getMe, login as apiLogin, logout as apiLogout } from '../api/auth'
-import type { User } from '../types/auth'
-import { AuthContext } from './auth-context'
+import { getMe, login as apiLogin, logout as apiLogout } from '../api/auth.ts'
+import type { User } from '../types/auth.ts'
+import { AuthContext } from './auth-context.ts'
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)

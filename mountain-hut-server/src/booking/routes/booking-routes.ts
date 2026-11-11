@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { BookingError, createBooking } from "./booking.ts";
-import { hutSlotStartMs } from "./booking-rules.ts";
-import { SmtpEmailSender, type EmailSender } from "../notifications/sender.ts";
-import { listBookingsForUser } from "./list-bookings.ts";
-import { sendBookingConfirmation } from "./booking.notification.ts";
+import { BookingError, createBooking } from "../services/booking.ts";
+import { hutSlotStartMs } from "../rules/booking-rules.ts";
+import { SmtpEmailSender, type EmailSender } from "../../notifications/sender.ts";
+import { listBookingsForUser } from "../services/list-bookings.ts";
+import { sendBookingConfirmation } from "../services/booking.notification.ts";
 
 export interface BookingRoutesOptions {
   emailSender?: EmailSender;
@@ -26,7 +26,7 @@ export async function bookingRoutes(
 ) {
   const mailSender = options.emailSender ?? new SmtpEmailSender();
 
-  app.get("/api/bookings/mine", async (request, reply) => {
+  app.get("/bookings/mine", async (request, reply) => {
     if (!request.user) {
       return reply.status(401).send({ error: "Authentication required" });
     }
@@ -44,7 +44,7 @@ export async function bookingRoutes(
     }
   });
 
-  app.post("/api/bookings", async (request, reply) => {
+  app.post("/bookings", async (request, reply) => {
     if (!request.user) {
       return reply.status(401).send({ error: "Authentication required" });
     }

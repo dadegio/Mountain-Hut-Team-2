@@ -30,21 +30,21 @@ vi.mock("../../../src/config.ts", () => ({
   },
 }));
 vi.mock("../../../src/slots/slot-routes.ts", () => ({ slotRoutes: vi.fn() }));
-vi.mock("../../../src/booking/availability-routes.ts", () => ({
+vi.mock("../../../src/booking/routes/availability-routes.ts", () => ({
   availabilityRoutes: vi.fn(),
 }));
-vi.mock("../../../src/booking/booking-routes.ts", () => ({ bookingRoutes: vi.fn() }));
-vi.mock("../../../src/booking/staff-booking-routes.ts", () => ({
+vi.mock("../../../src/booking/routes/booking-routes.ts", () => ({ bookingRoutes: vi.fn() }));
+vi.mock("../../../src/booking/routes/staff-booking-routes.ts", () => ({
   staffBookingRoutes: vi.fn(),
 }));
-vi.mock("../../../src/booking/change-booking-routes.ts", () => ({
+vi.mock("../../../src/booking/routes/change-booking-routes.ts", () => ({
   changeBookingRoutes: vi.fn(),
 }));
 vi.mock("../../../src/allergens/allergen-routes.ts", () => ({
   allergenRoutes: vi.fn(),
 }));
-vi.mock("../../../src/auth/auth.route.ts", () => ({ default: vi.fn() }));
-vi.mock("../../../src/auth/auth.repository.ts", () => ({
+vi.mock("../../../src/auth/auth-routes.ts", () => ({ default: vi.fn() }));
+vi.mock("../../../src/auth/auth-repository.ts", () => ({
   default: { getUserById: vi.fn() },
 }));
 

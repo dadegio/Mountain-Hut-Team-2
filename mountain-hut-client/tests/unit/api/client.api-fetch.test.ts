@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, apiFetch } from '../../../src/api/client'
+import { ApiError, apiFetch } from '../../../src/api/client.ts'
 
 const fetchMock = vi.fn()
 
@@ -33,12 +33,12 @@ describe('apiFetch', () => {
       ])
     })
 
-    it('calls the path under /api, sending JSON', async () => {
+    it('calls the path under /api/v1, sending JSON', async () => {
       respondWith('[]', 200)
 
       await apiFetch('/tables')
 
-      expect(fetchMock).toHaveBeenCalledWith('/api/tables', {
+      expect(fetchMock).toHaveBeenCalledWith('/api/v1/tables', {
         headers: { 'Content-Type': 'application/json' },
       })
     })
@@ -50,7 +50,7 @@ describe('apiFetch', () => {
       await apiFetch('/tables', { method: 'POST', body })
 
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/tables',
+        '/api/v1/tables',
         expect.objectContaining({ method: 'POST', body }),
       )
     })

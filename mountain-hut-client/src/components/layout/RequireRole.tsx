@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth.ts";
 
 interface RequireRoleProps {
   allow: string[]; // user types that may see the page, e.g. ["HIKER"]

@@ -56,9 +56,9 @@ async function requireStaff(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export async function slotRoutes(app: FastifyInstance) {
-  app.get("/api/tables", async () => listTables());
+  app.get("/tables", async () => listTables());
 
-  app.post("/api/tables", { preHandler: requireStaff }, async (request, reply) => {
+  app.post("/tables", { preHandler: requireStaff }, async (request, reply) => {
     const parsed = createTableSchema.safeParse(request.body);
 
     if (!parsed.success) {
@@ -76,7 +76,7 @@ export async function slotRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get("/api/slots", async (request, reply) => {
+  app.get("/slots", async (request, reply) => {
     const parsed = listSlotsQuerySchema.safeParse(request.query);
 
     if (!parsed.success) {
@@ -89,7 +89,7 @@ export async function slotRoutes(app: FastifyInstance) {
     return listSlots(parsed.data.date);
   });
 
-  app.get("/api/slots/:id", async (request, reply) => {
+  app.get("/slots/:id", async (request, reply) => {
     const parsed = slotParamsSchema.safeParse(request.params);
 
     if (!parsed.success) {
@@ -106,7 +106,7 @@ export async function slotRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post("/api/slots", { preHandler: requireStaff }, async (request, reply) => {
+  app.post("/slots", { preHandler: requireStaff }, async (request, reply) => {
     const parsed = createSlotSchema.safeParse(request.body);
 
     if (!parsed.success) {

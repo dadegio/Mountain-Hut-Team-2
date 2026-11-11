@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { allocateTables, type FreeTable } from "../../../src/booking/allocation.ts";
+import { allocateTables, type FreeTable } from "../../../src/booking/rules/allocation.ts";
 
 // EDGE CASES
 describe("allocateTables - Input validation (invalid partySize)", () => {

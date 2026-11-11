@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { getAllergens } from '../../../src/api/allergens'
-import { ApiError } from '../../../src/api/client'
+import { getAllergens } from '../../../src/api/allergens.ts'
+import { ApiError } from '../../../src/api/client.ts'
 
 function fakeResponse(status: number, body: unknown) {
   return {
@@ -17,7 +17,7 @@ describe('allergens API', () => {
     vi.unstubAllGlobals()
   })
 
-  it('getAllergens calls GET /api/allergens and returns the list', async () => {
+  it('getAllergens calls GET /api/v1/allergens and returns the list', async () => {
     const list = [
       { id: 9, name: 'Milk' },
       { id: 14, name: 'Wheat' },
@@ -27,7 +27,7 @@ describe('allergens API', () => {
 
     const allergens = await getAllergens()
 
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/allergens')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/allergens')
     expect(allergens).toEqual(list)
   })
 

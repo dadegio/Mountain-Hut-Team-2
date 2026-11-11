@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import CreateSlotForm from '../../../src/components/CreateSlotForm'
-import { createSlot, getSlots } from '../../../src/api/slots'
-import type { Table, TimeSlot } from '../../../src/types/slot'
+import CreateSlotForm from '../../../src/components/slots/CreateSlotForm'
+import { createSlot, getSlots } from '../../../src/api/slots.ts'
+import type { Table, TimeSlot } from '../../../src/types/slot.ts'
 
 // Only the calls to the backend are replaced: the form logic is the real one
-vi.mock('../../../src/api/slots', () => ({
+vi.mock('../../../src/api/slots.ts', () => ({
   createSlot: vi.fn(),
   getSlots: vi.fn(),
 }))

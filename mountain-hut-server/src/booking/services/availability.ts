@@ -1,18 +1,18 @@
 
 import { and, eq, inArray, ne } from "drizzle-orm";
 
-import { db } from "../db/database.ts";
+import { db } from "../../db/database.ts";
 import {
   reservationsTable,
   tableAvailabilityTable,
   tablesTable,
   timeSlotTable,
-} from "../db/schema.ts";
+} from "../../db/schema.ts";
 
 import {
   allocateTables,
   type FreeTable,
-} from "./allocation.ts";
+} from "../rules/allocation.ts";
 
 export async function getAvailability(
   date: string,

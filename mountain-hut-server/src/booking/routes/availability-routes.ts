@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 
-import { getAvailability } from "./availability.ts";
+import { getAvailability } from "../services/availability.ts";
 
 const realDate = (value: string): boolean => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -25,7 +25,7 @@ const querySchema = z.object({
 });
 
 export async function availabilityRoutes(app: FastifyInstance) {
-  app.get("/api/availability", async (request, reply) => {
+  app.get("/availability", async (request, reply) => {
     const parsed = querySchema.safeParse(request.query);
 
     if (!parsed.success) {

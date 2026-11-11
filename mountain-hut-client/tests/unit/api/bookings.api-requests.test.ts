@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { changeBooking, createBooking, getMyBookings } from '../../../src/api/bookings'
-import { ApiError } from '../../../src/api/client'
+import { changeBooking, createBooking, getMyBookings } from '../../../src/api/bookings.ts'
+import { ApiError } from '../../../src/api/client.ts'
 
 // Minimal fake of a fetch Response
 function fakeResponse(status: number, body: unknown) {
@@ -18,7 +18,7 @@ describe('bookings API', () => {
     vi.unstubAllGlobals()
   })
 
-  it('getMyBookings calls GET /api/bookings/mine and returns the list', async () => {
+  it('getMyBookings calls GET /api/v1/bookings/mine and returns the list', async () => {
     const data = [
       {
         id: 12,
@@ -38,11 +38,11 @@ describe('bookings API', () => {
     const bookings = await getMyBookings()
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/bookings/mine')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/bookings/mine')
     expect(bookings).toEqual(data)
   })
 
-  it('createBooking sends POST /api/bookings with slotId and partySize', async () => {
+  it('createBooking sends POST /api/v1/bookings with slotId and partySize', async () => {
     const result = {
       status: 'PLACED',
       userId: 2,
@@ -57,7 +57,7 @@ describe('bookings API', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [url, options] = fetchMock.mock.calls[0]
-    expect(url).toBe('/api/bookings')
+    expect(url).toBe('/api/v1/bookings')
     expect(options.method).toBe('POST')
     expect(JSON.parse(options.body)).toEqual({ slotId: 3, partySize: 4 })
     expect(booking).toEqual(result)
@@ -101,7 +101,7 @@ describe('bookings API', () => {
     expect(JSON.parse(options.body)).toEqual({ slotId: 3, partySize: 2 })
   })
 
-  it('changeBooking sends PATCH /api/bookings/:id with only the changed fields', async () => {
+  it('changeBooking sends PATCH /api/v1/bookings/:id with only the changed fields', async () => {
     const result = {
       bookingId: 12,
       status: 'PLACED',
@@ -116,7 +116,7 @@ describe('bookings API', () => {
     const changed = await changeBooking(12, { slotId: 16, partySize: 4 })
 
     const [url, options] = fetchMock.mock.calls[0]
-    expect(url).toBe('/api/bookings/12')
+    expect(url).toBe('/api/v1/bookings/12')
     expect(options.method).toBe('PATCH')
     expect(JSON.parse(options.body)).toEqual({ slotId: 16, partySize: 4 })
     expect(changed).toEqual(result)

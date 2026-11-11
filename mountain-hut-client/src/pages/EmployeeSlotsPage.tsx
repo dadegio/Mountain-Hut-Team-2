@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { getSlots, getTables } from "../api/slots";
-import AddTableForm from "../components/AddTableForm";
-import CreateSlotForm from "../components/CreateSlotForm";
-import SlotList from "../components/SlotList";
-import { formatDay, openPicker, shiftDate, todayString } from "../utils/date";
-import type { Table, TimeSlot } from "../types/slot";
+import { getSlots, getTables } from "../api/slots.ts";
+import AddTableForm from "../components/slots/AddTableForm";
+import CreateSlotForm from "../components/slots/CreateSlotForm";
+import SlotList from "../components/slots/SlotList";
+import { formatDay, openPicker, shiftDate, todayString } from "../utils/date.ts";
+import type { Table, TimeSlot } from "../types/slot.ts";
 
 interface SlotsResult {
   date: string;

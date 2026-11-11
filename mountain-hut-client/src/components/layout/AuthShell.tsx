@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import backgroundImage from "../pages/images/BackgroundMountainHut.jpeg";
+import backgroundImage from "../../assets/BackgroundMountainHut.jpeg";
 
 const widths = {
   md: "max-w-md", // login

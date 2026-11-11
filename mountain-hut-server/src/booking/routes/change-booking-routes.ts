@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { BookingError } from "./booking.ts";
-import { changeBooking } from "./change-booking.ts";
+import { BookingError } from "../services/booking.ts";
+import { changeBooking } from "../services/change-booking.ts";
 
 const changeSchema = z.object({
   slotId: z.number().int().positive().optional(),
@@ -12,7 +12,7 @@ const changeSchema = z.object({
 );
 
 export async function changeBookingRoutes(app: FastifyInstance) {
-  app.patch("/api/bookings/:bookingId", async (request, reply) => {
+  app.patch("/bookings/:bookingId", async (request, reply) => {
     if (!request.user) {
       return reply.status(401).send({ error: "Authentication required" });
     }

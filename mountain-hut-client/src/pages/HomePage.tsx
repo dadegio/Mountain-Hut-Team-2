@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
-import backgroundImage from "./images/BackgroundMountainHut.jpeg";
-import foto1 from "./images/Foto1MountainHut.jpeg";
-import foto2 from "./images/Foto2MountainHut.jpeg";
-import foto3 from "./images/Foto3MountainHut.jpeg";
-import videoHut from "./images/VideoMountainHut.mp4";
+import backgroundImage from "../assets/BackgroundMountainHut.jpeg";
+import foto1 from "../assets/Foto1MountainHut.jpeg";
+import foto2 from "../assets/Foto2MountainHut.jpeg";
+import foto3 from "../assets/Foto3MountainHut.jpeg";
+import videoHut from "../assets/VideoMountainHut.mp4";
 
 // TODO(MH-7): replace hard-coded role simulation with actual authentication state
 // Role types matching backend: 'GUEST' | 'HIKER' | 'EMPLOYEE' | 'MANAGER'

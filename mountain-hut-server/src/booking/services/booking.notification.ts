@@ -1,5 +1,5 @@
-import { dayFmt, timeFmt, esc } from "../notifications/utils.ts";
-import type { EmailSender } from "../notifications/sender.ts";
+import { dayFmt, timeFmt, esc } from "../../notifications/utils.ts";
+import type { EmailSender } from "../../notifications/sender.ts";
 
 export interface BookingConfirmation {
   reference: string;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { changeBlockReason, createdAtMs, isPast } from '../../../src/utils/booking-rules'
-import type { MyBooking } from '../../../src/types/booking'
+import { changeBlockReason, createdAtMs, isPast } from '../../../src/utils/booking-rules.ts'
+import type { MyBooking } from '../../../src/types/booking.ts'
 
 const booking = (overrides: Partial<MyBooking> = {}): MyBooking => ({
   id: 1,

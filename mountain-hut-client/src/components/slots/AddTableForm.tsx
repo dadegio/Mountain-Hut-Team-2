@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { createTable } from "../api/slots";
-import type { Table } from "../types/slot";
+import { createTable } from "../../api/slots.ts";
+import type { Table } from "../../types/slot.ts";
 
 interface AddTableFormProps {
   onCreated: (table: Table) => void;

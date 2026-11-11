@@ -1,4 +1,4 @@
-import type { MyBooking } from "../types/booking";
+import type { MyBooking } from "../types/booking.ts";
 
 const CHANGE_WINDOW_MS = 48 * 60 * 60 * 1000; // MH-06: changes within 48h of booking
 const SLOT_CUTOFF_MS = 2 * 60 * 60 * 1000; // MH-01: nothing within 2h of the slot

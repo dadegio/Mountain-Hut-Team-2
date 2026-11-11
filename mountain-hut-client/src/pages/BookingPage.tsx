@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
-import { getAllergens } from "../api/allergens";
-import { getAvailability } from "../api/availability";
-import { createBooking } from "../api/bookings";
-import { ApiError } from "../api/client";
-import { useAuth } from "../hooks/useAuth";
-import AuthShell from "../components/AuthShell";
-import RequirementsFields from "../components/RequirementsFields";
-import type { SlotAvailability } from "../types/availability";
-import type { Allergen, BookingResult } from "../types/booking";
+import { getAllergens } from "../api/allergens.ts";
+import { getAvailability } from "../api/availability.ts";
+import { createBooking } from "../api/bookings.ts";
+import { ApiError } from "../api/client.ts";
+import { useAuth } from "../hooks/useAuth.ts";
+import AuthShell from "../components/layout/AuthShell";
+import RequirementsFields from "../components/booking/RequirementsFields";
+import type { SlotAvailability } from "../types/availability.ts";
+import type { Allergen, BookingResult } from "../types/booking.ts";
 
 const MAX_PARTY_SIZE = 20; // TODO: confirm with PO (backend allows up to 1000)
 const BOOKING_DEADLINE_MS = 2 * 60 * 60 * 1000; // 2h before slot start

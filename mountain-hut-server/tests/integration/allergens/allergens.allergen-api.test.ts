@@ -65,11 +65,11 @@ describe("Allergens API & Service", () => {
     });
   });
 
-  describe("GET /api/allergens", () => {
+  describe("GET /api/v1/allergens", () => {
     it("returns 200 with the list of available allergens", async () => {
       const response = await app.inject({
         method: "GET",
-        url: "/api/allergens",
+        url: "/api/v1/allergens",
       });
 
       expect(response.statusCode).toBe(200);

@@ -210,7 +210,7 @@ test.describe('MH-05: Provide party requirements (MH-60 E2E tests)', () => {
     await expect(page.getByRole('heading', { name: 'Booking confirmed' })).toBeVisible()
 
     // Verify through backend API that the persisted booking record contains the requirements
-    const bookingsRes = await page.request.get('/api/bookings/mine')
+    const bookingsRes = await page.request.get('/api/v1/bookings/mine')
     expect(bookingsRes.status()).toBe(200)
     const bookings = await bookingsRes.json()
     expect(bookings.length).toBeGreaterThan(0)

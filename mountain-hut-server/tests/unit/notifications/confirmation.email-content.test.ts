@@ -3,7 +3,7 @@ import {
   renderBookingConfirmation,
   sendBookingConfirmation,
   type BookingConfirmation,
-} from "../../../src/booking/booking.notification.ts";
+} from "../../../src/booking/services/booking.notification.ts";
 
 const booking: BookingConfirmation = {
   reference: "MH-123",

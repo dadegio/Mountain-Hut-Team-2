@@ -5,7 +5,7 @@
   "license": "EUPL-1.2",
   "author": "group-02",
   "type": "module",
-  "main": "index.ts",
+  "main": "src/server.ts",
   "imports": {
     "#src/*": "./src/*"
   },

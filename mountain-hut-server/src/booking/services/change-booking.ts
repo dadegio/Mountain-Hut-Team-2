@@ -1,16 +1,16 @@
 import { and, eq, ne } from "drizzle-orm";
-import { db } from "../db/database.ts";
+import { db } from "../../db/database.ts";
 import {
   reservationsTable,
   tableAvailabilityTable,
   tablesTable,
   timeSlotTable,
   usersTable,
-} from "../db/schema.ts";
-import { allocateTables, type FreeTable } from "./allocation.ts";
+} from "../../db/schema.ts";
+import { allocateTables, type FreeTable } from "../rules/allocation.ts";
 import { BookingError } from "./booking.ts";
-import { isSlotBookable } from "./booking-rules.ts";
-import { isBookingChangeAllowed } from "./change-rules.ts";
+import { isSlotBookable } from "../rules/booking-rules.ts";
+import { isBookingChangeAllowed } from "../rules/change-rules.ts";
 
 export interface ChangeBookingInput {
   bookingId: number;

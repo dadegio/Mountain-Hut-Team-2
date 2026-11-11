@@ -1,7 +1,7 @@
-import { apiFetch } from "./client";
-import type { Allergen } from "../types/booking";
+import { apiFetch } from "./client.ts";
+import type { Allergen } from "../types/booking.ts";
 
-// GET /api/allergens
+// GET /api/v1/allergens
 export function getAllergens() {
   return apiFetch<Allergen[]>("/allergens");
 }

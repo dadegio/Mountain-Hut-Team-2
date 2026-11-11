@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { getMyBookings } from "../api/bookings";
-import { getTables } from "../api/slots";
-import AuthShell from "../components/AuthShell";
-import ChangeBookingPanel from "../components/ChangeBookingPanel";
-import { changeBlockReason, createdAtMs, isPast, slotStartMs } from "../utils/booking-rules";
-import type { MyBooking } from "../types/booking";
-import type { Table } from "../types/slot";
+import { getMyBookings } from "../api/bookings.ts";
+import { getTables } from "../api/slots.ts";
+import AuthShell from "../components/layout/AuthShell";
+import ChangeBookingPanel from "../components/booking/ChangeBookingPanel";
+import { changeBlockReason, createdAtMs, isPast, slotStartMs } from "../utils/booking-rules.ts";
+import type { MyBooking } from "../types/booking.ts";
+import type { Table } from "../types/slot.ts";
 
 const CHANGE_WINDOW_MS = 48 * 60 * 60 * 1000;
 const SLOT_CUTOFF_MS = 2 * 60 * 60 * 1000;

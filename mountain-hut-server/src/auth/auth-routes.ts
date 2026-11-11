@@ -8,8 +8,8 @@ import {
   registerSchema,
   loginSchema,
   userResponseSchema,
-} from "./auth.schema.ts";
-import AuthRepository from "./auth.repository.ts";
+} from "./auth-schema.ts";
+import AuthRepository from "./auth-repository.ts";
 
 const authRoutes: FastifyPluginAsync = async (server) => {
   const typed = server.withTypeProvider<ZodTypeProvider>();

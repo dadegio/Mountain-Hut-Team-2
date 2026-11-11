@@ -6,18 +6,18 @@ export interface Reservation {
   seats: number;
 }
 
-// GET /api/allergens (MH-05)
+// GET /api/v1/allergens (MH-05)
 export interface Allergen {
   id: number;
   name: string;
 }
 
-// --- POST /api/bookings (MH-18, MH-05) ---
+// --- POST /api/v1/bookings (MH-18, MH-05) ---
 
 export interface CreateBookingRequest {
   slotId: number;
   partySize: number;
-  allergenIds?: number[]; // ticked allergens, ids from GET /api/allergens
+  allergenIds?: number[]; // ticked allergens, ids from GET /api/v1/allergens
   description?: string; // free-text requirements, max 1000 chars
 }
 
@@ -34,7 +34,7 @@ export interface BookingResult {
   reservations: Reservation[];
 }
 
-// --- GET /api/bookings/mine (MH-36) ---
+// --- GET /api/v1/bookings/mine (MH-36) ---
 
 export interface MyBooking {
   id: number;
@@ -48,7 +48,7 @@ export interface MyBooking {
   reservations: Reservation[];
 }
 
-// --- PATCH /api/bookings/:id (MH-39) ---
+// --- PATCH /api/v1/bookings/:id (MH-39) ---
 
 // send only what changes, at least one field
 export interface ChangeBookingRequest {
