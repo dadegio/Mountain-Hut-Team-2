@@ -4,7 +4,7 @@ import argon2 from "argon2";
 import { todayString } from "../../../src/slots/slot-rules.ts";
 import { asc, count } from "drizzle-orm";
 import { tablesTable, timeSlotTable, tableAvailabilityTable } from "../../../src/db/schema.ts";
-import { resetTestDatabase } from "../../../src/test-support/test-database.ts";
+import { resetTestDatabase } from "../../test-database.ts";
 
 /**
  * HTTP integration tests for the table and slot API (MH-34).
@@ -14,7 +14,7 @@ import { resetTestDatabase } from "../../../src/test-support/test-database.ts";
  * not touched.
  */
 vi.mock("../../../src/db/database.ts", async () => {
-  const { createIsolatedTestDatabase } = await import("../../../src/test-support/test-database.ts");
+  const { createIsolatedTestDatabase } = await import("../../test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
   return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
 });

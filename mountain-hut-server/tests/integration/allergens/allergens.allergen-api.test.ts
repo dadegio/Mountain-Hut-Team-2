@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "@libsql/client";
 import { allergensTable } from "../../../src/db/schema.ts";
-import { resetTestDatabase } from "../../../src/test-support/test-database.ts";
+import { resetTestDatabase } from "../../test-database.ts";
 
 vi.mock("../../../src/db/database.ts", async () => {
-  const { createIsolatedTestDatabase } = await import("../../../src/test-support/test-database.ts");
+  const { createIsolatedTestDatabase } = await import("../../test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
   return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
 });

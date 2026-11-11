@@ -13,7 +13,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
-      exclude: ['src/test-support/**'],
+      exclude: ['tests/test-database.ts'],
     },
   },
 })

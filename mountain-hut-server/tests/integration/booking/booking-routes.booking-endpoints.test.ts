@@ -19,7 +19,7 @@ import {
   allergensTable,
   reservationAllergensTable,
 } from "../../../src/db/schema.ts";
-import { resetTestDatabase } from "../../../src/test-support/test-database.ts";
+import { resetTestDatabase } from "../../test-database.ts";
 
 /**
  * Real HTTP integration tests for MH-18.
@@ -30,7 +30,7 @@ import { resetTestDatabase } from "../../../src/test-support/test-database.ts";
  */
 vi.mock("../../../src/db/database.ts", async () => {
   const { createIsolatedTestDatabase } =
-    await import("../../../src/test-support/test-database.ts");
+    await import("../../test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
   return {
     db,

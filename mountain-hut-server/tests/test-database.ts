@@ -76,14 +76,14 @@ export function createIsolatedTestDatabase() {
       process.execPath,
       [
         fileURLToPath(
-          new URL("../../node_modules/drizzle-kit/bin.cjs", import.meta.url),
+          new URL("../node_modules/drizzle-kit/bin.cjs", import.meta.url),
         ),
         "push",
         "--config",
-        fileURLToPath(new URL("../../drizzle.config.ts", import.meta.url)),
+        fileURLToPath(new URL("../drizzle.config.ts", import.meta.url)),
       ],
       {
-        cwd: fileURLToPath(new URL("../../", import.meta.url)),
+        cwd: fileURLToPath(new URL("../", import.meta.url)),
         env: { ...process.env, DB_FILE_NAME: url },
         stdio: "pipe",
         timeout: 30_000,

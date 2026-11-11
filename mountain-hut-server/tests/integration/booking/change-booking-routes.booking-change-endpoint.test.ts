@@ -5,12 +5,12 @@ import { asc, eq } from "drizzle-orm";
 import {
   reservationsTable, usersTable, timeSlotTable, tablesTable, tableAvailabilityTable,
 } from "../../../src/db/schema.ts";
-import { resetTestDatabase } from "../../../src/test-support/test-database.ts";
+import { resetTestDatabase } from "../../test-database.ts";
 
 // Exercise the real PATCH HTTP route and service against an isolated SQLite DB.
 // Never touch local.db or the development seed database.
 vi.mock("../../../src/db/database.ts", async () => {
-  const { createIsolatedTestDatabase } = await import("../../../src/test-support/test-database.ts");
+  const { createIsolatedTestDatabase } = await import("../../test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
   return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
 });
