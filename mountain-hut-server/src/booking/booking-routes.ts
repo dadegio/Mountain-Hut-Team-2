@@ -3,20 +3,22 @@ import { z } from "zod";
 import { BookingError, createBooking } from "./booking.ts";
 import { hutSlotStartMs } from "./booking-rules.ts";
 import { SmtpEmailSender, type EmailSender } from "../notifications/sender.ts";
-import { sendBookingConfirmation } from "../notifications/confirmation.ts";
 import { listBookingsForUser } from "./list-bookings.ts";
+import { sendBookingConfirmation } from "./booking.notification.ts";
 
 export interface BookingRoutesOptions {
   emailSender?: EmailSender;
 }
 
-const bookingSchema = z.object({
-  slotId: z.number().int().positive(),
-  partySize: z.number().int().positive().max(1000),
-  description: z.string().max(1000).optional(),
-  allergenIds: z.array(z.number().int().positive()).optional().default([]),
-  requirements: z.string().max(1000).optional(),
-}).strict();
+const bookingSchema = z
+  .object({
+    slotId: z.number().int().positive(),
+    partySize: z.number().int().positive().max(1000),
+    description: z.string().max(1000).optional(),
+    allergenIds: z.array(z.number().int().positive()).optional().default([]),
+    requirements: z.string().max(1000).optional(),
+  })
+  .strict();
 
 export async function bookingRoutes(
   app: FastifyInstance,
@@ -60,9 +62,10 @@ export async function bookingRoutes(
     }
 
     try {
-      const effectiveDescription = parsed.data.description !== undefined
-        ? parsed.data.description
-        : parsed.data.requirements;
+      const effectiveDescription =
+        parsed.data.description !== undefined
+          ? parsed.data.description
+          : parsed.data.requirements;
 
       const booking = await createBooking({
         userId: request.user.id,

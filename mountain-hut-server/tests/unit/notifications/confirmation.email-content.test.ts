@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   renderBookingConfirmation,
+  sendBookingConfirmation,
   type BookingConfirmation,
-} from "../../../src/notifications/templates.ts";
-import { sendBookingConfirmation } from "../../../src/notifications/confirmation.ts";
+} from "../../../src/booking/booking.notification.ts";
 
 const booking: BookingConfirmation = {
   reference: "MH-123",

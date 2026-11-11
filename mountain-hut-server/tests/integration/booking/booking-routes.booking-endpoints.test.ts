@@ -29,8 +29,7 @@ import { resetTestDatabase } from "../../test-database.ts";
  * local.db, the seed database, and development reservations remain untouched.
  */
 vi.mock("../../../src/db/database.ts", async () => {
-  const { createIsolatedTestDatabase } =
-    await import("../../test-database.ts");
+  const { createIsolatedTestDatabase } = await import("../../test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
   return {
     db,
@@ -422,7 +421,8 @@ describe("POST /api/bookings — MH-18 integration", () => {
   });
 
   it("sends a confirmation email to the hiker when a booking is placed", async () => {
-    const confirmationModule = await import("../../../src/notifications/confirmation.ts");
+    const confirmationModule =
+      await import("../../../src/booking/booking.notification.ts");
     const sendSpy = vi.spyOn(confirmationModule, "sendBookingConfirmation");
 
     const response = await postBooking({ slotId: 1, partySize: 2 });
@@ -822,7 +822,8 @@ describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
   });
 
   it("201: staff can book within two hours of the slot start, while an hiker cannot", async () => {
-    const { hutSlotStartMs } = await import("../../../src/booking/booking-rules.ts");
+    const { hutSlotStartMs } =
+      await import("../../../src/booking/booking-rules.ts");
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "11:00")));
     try {
@@ -841,7 +842,8 @@ describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
   });
 
   it("201: staff can book after the slot starts but before its end", async () => {
-    const { hutSlotStartMs } = await import("../../../src/booking/booking-rules.ts");
+    const { hutSlotStartMs } =
+      await import("../../../src/booking/booking-rules.ts");
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "12:30")));
     try {
@@ -858,7 +860,8 @@ describe("POST /api/staff/bookings — MH-07 existing hiker", () => {
   });
 
   it("409: staff cannot book at the exact end of the slot", async () => {
-    const { hutSlotStartMs } = await import("../../../src/booking/booking-rules.ts");
+    const { hutSlotStartMs } =
+      await import("../../../src/booking/booking-rules.ts");
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "13:00")));
     try {
@@ -1031,8 +1034,9 @@ describe("MH-78: allergens integration (MH-05)", () => {
       expect(logout.statusCode).toBe(200);
       expect(logout.json()).toEqual({ message: "Logged out successfully" });
       const clearedCookie = logout.headers["set-cookie"];
-      const cookieHeader = (Array.isArray(clearedCookie) ? clearedCookie[0] : clearedCookie)
-        ?.split(";")[0];
+      const cookieHeader = (
+        Array.isArray(clearedCookie) ? clearedCookie[0] : clearedCookie
+      )?.split(";")[0];
 
       const me = await app.inject({
         method: "GET",
@@ -1087,7 +1091,8 @@ describe("MH-78: allergens integration (MH-05)", () => {
     });
 
     it("returns a logged internal error when listing bookings fails", async () => {
-      const bookingModule = await import("../../../src/booking/list-bookings.ts");
+      const bookingModule =
+        await import("../../../src/booking/list-bookings.ts");
       const spy = vi
         .spyOn(bookingModule, "listBookingsForUser")
         .mockRejectedValueOnce(new Error("Database disconnected"));
@@ -1122,7 +1127,8 @@ describe("MH-78: allergens integration (MH-05)", () => {
     });
 
     it("keeps a successful booking when sending its confirmation email rejects", async () => {
-      const confirmation = await import("../../../src/notifications/confirmation.ts");
+      const confirmation =
+        await import("../../../src/booking/booking.notification.ts");
       const spy = vi
         .spyOn(confirmation, "sendBookingConfirmation")
         .mockRejectedValueOnce(new Error("SMTP unavailable"));
@@ -1136,7 +1142,9 @@ describe("MH-78: allergens integration (MH-05)", () => {
     });
 
     it("uses the slot ID and hiker name fallbacks when booking data omits them", async () => {
-      await client.execute("UPDATE users SET name = '', surname = '' WHERE id = 1");
+      await client.execute(
+        "UPDATE users SET name = '', surname = '' WHERE id = 1",
+      );
       const bookingModule = await import("../../../src/booking/booking.ts");
       const createSpy = vi
         .spyOn(bookingModule, "createBooking")
@@ -1153,7 +1161,8 @@ describe("MH-78: allergens integration (MH-05)", () => {
           allergens: [],
           reservations: [],
         });
-      const confirmation = await import("../../../src/notifications/confirmation.ts");
+      const confirmation =
+        await import("../../../src/booking/booking.notification.ts");
       const emailSpy = vi
         .spyOn(confirmation, "sendBookingConfirmation")
         .mockResolvedValueOnce(true);
@@ -1325,7 +1334,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
       "passes the right requirements text for %s",
       async (_name, extra, expected) => {
         const confirmationModule =
-          await import("../../../src/notifications/confirmation.ts");
+          await import("../../../src/booking/booking.notification.ts");
         const sendSpy = vi.spyOn(confirmationModule, "sendBookingConfirmation");
         try {
           const response = await postBooking({
