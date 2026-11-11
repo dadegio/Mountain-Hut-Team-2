@@ -92,14 +92,31 @@ describe('CreateSlotForm', () => {
   })
 
   describe('time', () => {
-    it('fills both times with a preset', async () => {
+    it('fills both times with a preset and toggles off when clicked again', async () => {
       const { user } = renderForm()
+      const lunch = screen.getByRole('button', { name: /^Lunch/ })
+      const dinner = screen.getByRole('button', { name: /^Dinner/ })
 
-      await user.click(screen.getByRole('button', { name: /^Lunch/ }))
+      expect(lunch).toHaveAttribute('aria-pressed', 'false')
 
+      await user.click(lunch)
+      expect(lunch).toHaveAttribute('aria-pressed', 'true')
+      expect(lunch.className).toContain('border-green-600')
+      expect(lunch.className).toContain('bg-green-50')
       expect(screen.getByLabelText('Start')).toHaveValue('12:00')
       expect(screen.getByLabelText('End')).toHaveValue('14:00')
       expect(createButton()).toHaveTextContent('Create slot 12:00–14:00')
+
+      await user.click(dinner)
+      expect(lunch).toHaveAttribute('aria-pressed', 'false')
+      expect(dinner).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByLabelText('Start')).toHaveValue('19:00')
+      expect(screen.getByLabelText('End')).toHaveValue('21:00')
+
+      await user.click(dinner)
+      expect(dinner).toHaveAttribute('aria-pressed', 'false')
+      expect(screen.getByLabelText('Start')).toHaveValue('')
+      expect(screen.getByLabelText('End')).toHaveValue('')
     })
 
     it('tidies up a typed time when leaving the field', async () => {

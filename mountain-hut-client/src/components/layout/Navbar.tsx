@@ -5,6 +5,8 @@ import { useAuth } from "../../hooks/useAuth.ts";
 type Role = string | null; // null = guest
 
 const STAFF = ["EMPLOYEE", "MANAGER"];
+const MAIL_SERVICE_URL =
+  import.meta.env.VITE_MAIL_SERVICE_URL || "http://localhost:8025";
 
 const navItems: { path: string; label: string; end?: boolean; show: (role: Role) => boolean }[] = [
   { path: "/", label: "Home", end: true, show: () => true },
@@ -32,6 +34,7 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   const role: Role = user?.type ?? null;
+  const isStaff = role !== null && STAFF.includes(role);
   const visibleItems = navItems.filter((item) => item.show(role));
 
   async function handleLogout() {
@@ -57,6 +60,18 @@ export default function Navbar() {
 
           {user && (
             <>
+              {isStaff && (
+                <a
+                  href={MAIL_SERVICE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open Hut Email Service"
+                  className="inline-flex items-center gap-1.5 text-stone-700 hover:text-green-700 transition-colors"
+                >
+                  <span aria-hidden="true">✉️</span>
+                  <span>Hut Mail</span>
+                </a>
+              )}
               <span className="text-stone-600">{user.name}</span>
               <button
                 type="button"
@@ -116,6 +131,18 @@ export default function Navbar() {
           {user && (
             <div className="border-t border-white/50 mt-2 pt-2">
               <p className="px-3 py-1 text-sm text-stone-600">Logged in as {user.name}</p>
+              {isStaff && (
+                <a
+                  href={MAIL_SERVICE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-base text-stone-700 hover:text-green-700 hover:bg-white/60 transition-colors"
+                >
+                  <span aria-hidden="true">✉️</span>
+                  <span>Hut Mail</span>
+                </a>
+              )}
               <button
                 type="button"
                 onClick={handleLogout}

@@ -1,19 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
+import { useAuth } from "../hooks/useAuth.ts";
 import backgroundImage from "../assets/BackgroundMountainHut.jpeg";
 import foto1 from "../assets/Foto1MountainHut.jpeg";
 import foto2 from "../assets/Foto2MountainHut.jpeg";
 import foto3 from "../assets/Foto3MountainHut.jpeg";
 import videoHut from "../assets/VideoMountainHut.mp4";
-
-// TODO(MH-7): replace hard-coded role simulation with actual authentication state
-// Role types matching backend: 'GUEST' | 'HIKER' | 'EMPLOYEE' | 'MANAGER'
-type UserRole = "GUEST" | "HIKER" | "EMPLOYEE" | "MANAGER";
-
-const CURRENT_USER_ROLE: UserRole = "GUEST"; // Toggle here to test views: "GUEST", "HIKER", "EMPLOYEE", "MANAGER"
-
-const MAIL_SERVICE_URL =
-  import.meta.env.VITE_MAIL_SERVICE_URL || "http://localhost:8025";
 
 type CarouselSlide = {
   type: "image" | "video";
@@ -65,7 +57,8 @@ const carouselSlides: CarouselSlide[] = [
 ];
 
 export default function HomePage() {
-  const isStaff = CURRENT_USER_ROLE === "EMPLOYEE" || CURRENT_USER_ROLE === "MANAGER";
+  const { user } = useAuth();
+  const isStaff = user?.type === "EMPLOYEE" || user?.type === "MANAGER";
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -125,80 +118,27 @@ export default function HomePage() {
             Warm traditional meals, fresh local ingredients, and cozy shared
             tables for hikers exploring the alpine trails.
           </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            <Link
-              to="/booking"
-              className="inline-flex items-center justify-center px-7 py-3.5 text-base font-semibold text-white bg-green-600 hover:bg-green-500 active:bg-green-700 rounded-lg shadow-lg transition-colors"
-            >
-              Book a Table
-            </Link>
-            <Link
-              to="/booking"
-              className="inline-flex items-center justify-center px-6 py-3.5 text-base font-semibold text-white bg-white/20 hover:bg-white/30 backdrop-blur-xs border border-white/30 rounded-lg shadow-lg transition-colors"
-            >
-              Check Availability
-            </Link>
-          </div>
+    
+          {!isStaff && (
+            <div className="flex flex-col items-center justify-center gap-4 pt-4">
+              <Link
+                to="/booking"
+                className="inline-flex items-center justify-center px-6 py-3.5 text-base font-semibold text-white bg-white/20 hover:bg-white/30 backdrop-blur-xs border border-white/30 rounded-lg shadow-lg transition-colors"
+              >
+                {user ? "Check Availability & Book Your Table" : "Check Availability"}
+              </Link>
+              <span className="inline-flex items-center justify-center gap-1.5 px-6 py-3.5 text-base font-semibold italic text-white">
+                Easier than that it&apos;s impossible{' '}
+                <span className="not-italic">😉</span>
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
       {/* Subsequent Sections (Solid Opaque White Background that slides over the fixed hero) */}
       <div className="relative z-10 w-full bg-white shadow-2xl pt-16 pb-20 px-4 min-h-[calc(100vh-3.5rem)]">
         <div className="max-w-5xl mx-auto space-y-16">
-          {/* Staff Management Panel (Only visible to EMPLOYEE or MANAGER) */}
-          {isStaff && (
-            <section className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/70 p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">🛠️</span>
-                  <h2 className="text-lg font-bold text-amber-900">
-                    Staff Quick Portal
-                  </h2>
-                </div>
-                <a
-                  href={MAIL_SERVICE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-700 bg-white hover:bg-stone-100 border border-stone-300 rounded-md shadow-sm transition-colors"
-                  title="Open Hut Email Service"
-                >
-                  <span>✉️</span>
-                  <span>Hut Mail Inbox</span>
-                </a>
-              </div>
-              <p className="text-sm text-amber-800">
-                Quick operations for dining service and room management:
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <Link
-                  to="/employee/slots"
-                  className="block bg-white p-3.5 rounded-lg border border-amber-200 shadow-sm hover:border-amber-400 hover:shadow-md transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-stone-800 text-sm">Slot Capacity</span>
-                    <span className="text-xs text-green-700 font-medium">Manage &rarr;</span>
-                  </div>
-                  <p className="text-xs text-stone-600 mt-1">
-                    Configure table sets and seat capacity for upcoming lunch and dinner slots.
-                  </p>
-                </Link>
-                <div className="bg-white p-3.5 rounded-lg border border-amber-200 shadow-sm">
-                  <div className="font-semibold text-stone-800 text-sm">Walk-in & Phone Booking</div>
-                  <p className="text-xs text-stone-600 mt-1">
-                    Directly enter reservations on behalf of hikers arriving in person or calling.
-                  </p>
-                </div>
-                <div className="bg-white p-3.5 rounded-lg border border-amber-200 shadow-sm">
-                  <div className="font-semibold text-stone-800 text-sm">Email Dispatch</div>
-                  <p className="text-xs text-stone-600 mt-1">
-                    Monitor automatic email confirmations and deliverability status.
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
-
           {/* Interactive Image Carousel Section */}
           <section className="space-y-4">
             <div className="flex items-center justify-between">

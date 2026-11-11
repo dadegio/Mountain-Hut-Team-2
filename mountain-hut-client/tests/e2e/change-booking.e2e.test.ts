@@ -141,4 +141,36 @@ test.describe('MH-06: Change a booking E2E tests', () => {
     // Verify validation alert
     await expect(page.getByRole('alert')).toHaveText("You haven't changed anything yet.")
   })
+
+  test('hiker adds and updates allergy/intolerance notes on an existing booking', async ({ page }) => {
+    await registerAndLoginHiker(page, 'change-notes')
+    await bookTable(page, /12:00/, 2)
+
+    await page.getByRole('navigation').getByRole('link', { name: 'My bookings' }).click()
+    await expect(page).toHaveURL(/\/my-bookings/)
+
+    await page.getByRole('button', { name: 'Change' }).click()
+    const checkbox = page.getByRole('checkbox', {
+      name: /allergies, intolerances,? or special requests/i,
+    })
+    await expect(checkbox).not.toBeChecked()
+
+    await checkbox.check()
+    const textbox = page.getByLabel(/specify allergies, intolerances or notes/i)
+    await textbox.fill('Gluten intolerance')
+    await page.getByRole('button', { name: 'Save changes' }).click()
+
+    await expect(page.getByRole('status')).toHaveText('Your booking has been updated.')
+    await expect(page.getByText('Notes: Gluten intolerance')).toBeVisible()
+
+    // Re-open Change and verify the saved note is prefilled and editable
+    await page.getByRole('button', { name: 'Change' }).click()
+    await expect(checkbox).toBeChecked()
+    await expect(textbox).toHaveValue('Gluten intolerance')
+    await textbox.fill('Gluten and lactose intolerance')
+    await page.getByRole('button', { name: 'Save changes' }).click()
+
+    await expect(page.getByRole('status')).toHaveText('Your booking has been updated.')
+    await expect(page.getByText('Notes: Gluten and lactose intolerance')).toBeVisible()
+  })
 })

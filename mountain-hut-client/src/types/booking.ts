@@ -44,6 +44,8 @@ export interface MyBooking {
   to: string; // "HH:MM"
   partySize: number;
   status: "PLACED" | "FULFILLED" | "CANCELED";
+  description?: string | null;
+  allergens?: Allergen[];
   createdAt: string; // "YYYY-MM-DD HH:MM:SS" in UTC
   reservations: Reservation[];
 }
@@ -54,6 +56,7 @@ export interface MyBooking {
 export interface ChangeBookingRequest {
   slotId?: number;
   partySize?: number;
+  description?: string | null;
 }
 
 export interface ChangeBookingResult {
@@ -62,5 +65,6 @@ export interface ChangeBookingResult {
   userId: number;
   slotId: number;
   partySize: number;
+  description?: string | null;
   reservations: Reservation[];
 }

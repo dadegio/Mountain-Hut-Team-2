@@ -5,6 +5,7 @@ import { getAvailability } from "../../api/availability.ts";
 import { changeBooking } from "../../api/bookings.ts";
 import { ApiError } from "../../api/client.ts";
 import { slotStartMs } from "../../utils/booking-rules.ts";
+import RequirementsFields from "./RequirementsFields";
 import type { SlotAvailability } from "../../types/availability.ts";
 import type { ChangeBookingRequest, MyBooking } from "../../types/booking.ts";
 
@@ -47,9 +48,12 @@ interface ChangeBookingPanelProps {
 }
 
 export default function ChangeBookingPanel({ booking, onCancel, onChanged }: ChangeBookingPanelProps) {
+  const initialDescription = booking.description ?? "";
   const [date, setDate] = useState(booking.date);
   const [partySize, setPartySize] = useState(booking.partySize);
   const [slotId, setSlotId] = useState(booking.slotId);
+  const [hasRequirements, setHasRequirements] = useState(Boolean(initialDescription.trim()));
+  const [description, setDescription] = useState(initialDescription);
   const [loaded, setLoaded] = useState<LoadedAvailability | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -123,6 +127,9 @@ export default function ChangeBookingPanel({ booking, onCancel, onChanged }: Cha
     const changes: ChangeBookingRequest = {};
     if (slotId !== booking.slotId) changes.slotId = slotId;
     if (partySize !== booking.partySize) changes.partySize = partySize;
+    const originalDescription = booking.description?.trim() ? booking.description.trim() : null;
+    const nextDescription = hasRequirements && description.trim() ? description.trim() : null;
+    if (nextDescription !== originalDescription) changes.description = nextDescription;
     if (Object.keys(changes).length === 0) return setError("You haven't changed anything yet.");
 
     setError(null);
@@ -219,6 +226,20 @@ export default function ChangeBookingPanel({ booking, onCancel, onChanged }: Cha
               </div>
             )}
           </div>
+
+          <RequirementsFields
+            textareaId={`description-${booking.id}`}
+            enabled={hasRequirements}
+            onToggle={(checked) => {
+              setHasRequirements(checked);
+              setError(null);
+            }}
+            description={description}
+            onDescriptionChange={(value) => {
+              setDescription(value);
+              setError(null);
+            }}
+          />
         </div>
       </div>
 

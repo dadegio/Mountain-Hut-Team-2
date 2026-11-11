@@ -51,23 +51,34 @@ describe("Navbar", () => {
     expect(screen.getByText("Login")).toBeInTheDocument();
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
     expect(screen.queryByText("Manage slots")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /hut mail/i })).not.toBeInTheDocument();
   });
 
-  it("shows booking links and Logout to hikers, but not Manage slots", () => {
+  it("shows booking links and Logout to hikers, but not Manage slots or Hut Mail", () => {
     renderNavbarAs(fakeUser("HIKER"));
     expect(screen.getByText("Book a table")).toBeInTheDocument();
     expect(screen.getByText("My bookings")).toBeInTheDocument();
     expect(screen.getByText("Logout")).toBeInTheDocument();
     expect(screen.queryByText("Manage slots")).not.toBeInTheDocument();
     expect(screen.queryByText("Login")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /hut mail/i })).not.toBeInTheDocument();
   });
 
-  it("shows Manage slots to employees, but not booking links", () => {
+  it("shows Manage slots and Hut Mail before the user name and Logout for employees", () => {
     renderNavbarAs(fakeUser("EMPLOYEE"));
-    expect(screen.getByText("Manage slots")).toBeInTheDocument();
+    const manageSlots = screen.getByText("Manage slots");
+    expect(manageSlots).toBeInTheDocument();
     expect(screen.getByText("Logout")).toBeInTheDocument();
     expect(screen.queryByText("Book a table")).not.toBeInTheDocument();
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
+
+    const userName = screen.getByText("Test");
+    const mailLink = screen.getByRole("link", { name: /hut mail/i });
+
+    expect(mailLink).toHaveAttribute("target", "_blank");
+    expect(mailLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(manageSlots.compareDocumentPosition(mailLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(mailLink.compareDocumentPosition(userName) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("highlights Home when on home route and inactive when on another page", () => {

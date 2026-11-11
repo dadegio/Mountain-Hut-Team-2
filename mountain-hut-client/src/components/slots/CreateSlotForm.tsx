@@ -23,7 +23,7 @@ const TIME_OPTIONS = Array.from({ length: 36 }, (_, i) => {
 });
 
 const chip =
-  "px-3 py-1.5 rounded-full border border-stone-300 bg-white text-sm hover:border-green-600 hover:text-green-800";
+  "px-3 py-1.5 rounded-full border text-sm transition cursor-pointer";
 const link = "text-sm hover:underline";
 
 function Step({ number, title, actions, children }: {
@@ -116,19 +116,32 @@ export default function CreateSlotForm({ date, tables, onCreated }: CreateSlotFo
     <form onSubmit={handleSubmit} className="space-y-6">
       <Step number={1} title="Time">
         <div className="flex flex-wrap gap-2">
-          {PRESETS.map((preset) => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => {
-                setFrom(preset.from);
-                setTo(preset.to);
-              }}
-              className={chip}
-            >
-              {preset.label} {preset.from}–{preset.to}
-            </button>
-          ))}
+          {PRESETS.map((preset) => {
+            const selected = fromTime === preset.from && toTime === preset.to;
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => {
+                  if (selected) {
+                    setFrom("");
+                    setTo("");
+                  } else {
+                    setFrom(preset.from);
+                    setTo(preset.to);
+                  }
+                }}
+                className={`${chip} ${
+                  selected
+                    ? "border-green-600 bg-green-50 text-green-900"
+                    : "border-stone-300 bg-white text-stone-700 hover:border-green-600 hover:text-green-800"
+                }`}
+              >
+                {preset.label} {preset.from}–{preset.to}
+              </button>
+            );
+          })}
         </div>
         <div className="flex items-start gap-3">
           <TimeField label="Start" value={from} onChange={setFrom} listId="slot-times" />

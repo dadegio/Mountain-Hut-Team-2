@@ -152,6 +152,18 @@ export default function MyBookingsPage() {
               </p>
             )}
 
+            {b.allergens && b.allergens.length > 0 && (
+              <p className="text-sm text-stone-500">
+                Allergens: {b.allergens.map((a) => a.name).join(", ")}
+              </p>
+            )}
+
+            {b.description && (
+              <p className="text-sm text-stone-500">
+                Notes: {b.description}
+              </p>
+            )}
+
             {info && (
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <p className={`text-xs ${info.open ? "text-green-700" : "text-stone-500"}`}>{info.text}</p>

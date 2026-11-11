@@ -836,7 +836,7 @@ components:
     ChangeBookingRequest:
       type: object
       additionalProperties: false
-      description: At least one of the two fields is required
+      description: At least one of the fields is required
       minProperties: 1
       properties:
         slotId:
@@ -846,6 +846,10 @@ components:
           type: integer
           minimum: 1
           maximum: 1000
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
 
     CreatedBooking:
       type: object
@@ -896,7 +900,7 @@ components:
 
     ChangedBooking:
       type: object
-      required: [bookingId, status, userId, slotId, partySize, reservations]
+      required: [bookingId, status, userId, slotId, partySize, description, reservations]
       properties:
         bookingId:
           type: integer
@@ -909,6 +913,9 @@ components:
           type: integer
         partySize:
           type: integer
+        description:
+          type: string
+          nullable: true
         reservations:
           type: array
           items:

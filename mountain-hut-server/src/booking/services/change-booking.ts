@@ -19,6 +19,7 @@ export interface ChangeBookingInput {
   /** Select another already-configured date/time by its slot ID. */
   slotId?: number;
   partySize?: number;
+  description?: string | null;
 }
 
 /**
@@ -133,6 +134,10 @@ export async function changeBooking(input: ChangeBookingInput) {
       throw new BookingError(409, "Not enough available seats for this time slot");
     }
 
+    const description = input.description === undefined
+      ? selected.description
+      : input.description?.trim() || null;
+
     // Preserve the ID used in the PATCH URL, and reuse other IDs if possible.
     const orderedRows = [
       selected,
@@ -144,7 +149,7 @@ export async function changeBooking(input: ChangeBookingInput) {
       const assignment = allocation[index];
       if (index < orderedRows.length) {
         const [row] = await tx.update(reservationsTable)
-          .set({ slotId, tableId: assignment.tableId, partySize: assignment.seats })
+          .set({ slotId, tableId: assignment.tableId, partySize: assignment.seats, description })
           .where(eq(reservationsTable.id, orderedRows[index].id))
           .returning({
             id: reservationsTable.id,
@@ -161,6 +166,7 @@ export async function changeBooking(input: ChangeBookingInput) {
             partySize: assignment.seats,
             createdAt: originalCreatedAt,
             status: "PLACED",
+            description,
           })
           .returning({
             id: reservationsTable.id,
@@ -181,6 +187,7 @@ export async function changeBooking(input: ChangeBookingInput) {
       userId,
       slotId,
       partySize,
+      description,
       reservations: changed.map((row) => ({
         reservationId: row.id,
         tableId: row.tableId,
