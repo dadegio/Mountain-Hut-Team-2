@@ -56,9 +56,6 @@ export async function changeBooking(input: ChangeBookingInput) {
         eq(reservationsTable.slotId, selected.slotId),
         eq(reservationsTable.status, "PLACED"),
       ));
-    if (originalRows.length === 0) {
-      throw new BookingError(404, "Booking not found");
-    }
 
     const originalCreatedAt = originalRows
       .map((row) => row.createdAt)

@@ -77,9 +77,7 @@ export async function bookingRoutes(
         const slotStart = new Date(hutSlotStartMs(booking.date, booking.from));
         const slotEnd = new Date(hutSlotStartMs(booking.date, booking.to));
         const reference = `MH-${booking.reservations[0]?.reservationId ?? booking.slotId}`;
-        const hikerName =
-          `${request.user.name ?? ""} ${request.user.surname ?? ""}`.trim() ||
-          request.user.name;
+        const hikerName = `${request.user.name} ${request.user.surname}`.trim();
 
         let emailRequirements: string | undefined = undefined;
         const allergenNames = booking.allergens.map((a) => a.name);

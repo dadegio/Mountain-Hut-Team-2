@@ -104,8 +104,6 @@ export function allocateTables(
   const allocation: SeatAssignment[] = [];
 
   for (const table of selectedTables) {
-    if (remaining === 0) break;
-
     const assignedSeats = Math.min(remaining, table.freeSeats);
 
     allocation.push({

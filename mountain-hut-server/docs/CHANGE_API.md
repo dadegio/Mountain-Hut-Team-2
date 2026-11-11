@@ -38,7 +38,7 @@ From `mountain-hut-server`:
 ```sh
 npm ci
 npx tsc --noEmit
-npm test -- src/booking/change-rules.test.ts src/booking/change-booking-routes.test.ts
+npm test -- tests/unit/booking/change-rules.booking-change-window.test.ts tests/integration/booking/change-booking-routes.booking-change-endpoint.test.ts
 npm test
 ```
 

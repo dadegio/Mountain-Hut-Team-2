@@ -44,7 +44,7 @@ From `mountain-hut-server`:
 
 ```sh
 npx tsc --noEmit
-npm test -- src/booking/booking-routes.test.ts
+npm test -- tests/integration/booking/booking-routes.booking-endpoints.test.ts
 npm test
 ```
 

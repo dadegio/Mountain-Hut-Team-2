@@ -65,7 +65,7 @@ and duplicate, capacity, allocation and transaction rules remain unchanged.
 
 ## Tests
 
-The staff integration tests are appended to `booking-routes.test.ts`, using
+The staff integration tests are included in `tests/integration/booking/booking-routes.booking-endpoints.test.ts`, using
 an in-memory SQLite database and real authenticated HTTP requests. Run:
 
 ```bash

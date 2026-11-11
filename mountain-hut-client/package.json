@@ -9,9 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test tests/e2e"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -91,7 +91,7 @@ booking reference (`MH-<id>`) is generated and a confirmation email is dispatche
 asynchronously to the authenticated hiker (`request.user.email`).
 
 Integration verification:
-- Automated tests in `src/booking/booking-routes.test.ts` verify that `sendBookingConfirmation`
+- Automated tests in `tests/integration/booking/booking-routes.booking-endpoints.test.ts` verify that `sendBookingConfirmation`
   is invoked with the hiker's email, reference, party size, and slot dates.
 - Failed or invalid booking attempts do not trigger any email.
 - Real SMTP sending verified via Gmail/SMTP relay.
