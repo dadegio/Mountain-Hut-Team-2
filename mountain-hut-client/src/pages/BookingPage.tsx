@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
-import { getAllergens } from "../api/allergens.ts";
 import { getAvailability } from "../api/availability.ts";
 import { createBooking } from "../api/bookings.ts";
 import { ApiError } from "../api/client.ts";
@@ -10,7 +9,7 @@ import { useAuth } from "../hooks/useAuth.ts";
 import AuthShell from "../components/layout/AuthShell";
 import RequirementsFields from "../components/booking/RequirementsFields";
 import type { SlotAvailability } from "../types/availability.ts";
-import type { Allergen, BookingResult } from "../types/booking.ts";
+import type { BookingResult } from "../types/booking.ts";
 
 const MAX_PARTY_SIZE = 20; // TODO: confirm with PO (backend allows up to 1000)
 const BOOKING_DEADLINE_MS = 2 * 60 * 60 * 1000; // 2h before slot start
@@ -90,10 +89,8 @@ export default function BookingPage() {
 
   const [loaded, setLoaded] = useState<LoadedAvailability | null>(null);
 
-  // MH-05: allergens and free-text requirements
-  const [allergens, setAllergens] = useState<Allergen[] | null>(null);
-  const [allergensError, setAllergensError] = useState(false);
-  const [selectedAllergens, setSelectedAllergens] = useState<number[]>([]);
+  // MH-05: optional allergies, intolerances and notes
+  const [hasRequirements, setHasRequirements] = useState(false);
   const [description, setDescription] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
@@ -123,23 +120,6 @@ export default function BookingPage() {
     };
   }, [date, partySize]);
 
-  // load the allergen list once
-  useEffect(() => {
-    let ignore = false;
-
-    getAllergens()
-      .then((list) => {
-        if (!ignore) setAllergens(list);
-      })
-      .catch(() => {
-        if (!ignore) setAllergensError(true);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
   // derived from state: no extra useState needed
   const current = loaded && loaded.key === key ? loaded : null;
   const slotsLoading = key !== null && current === null;
@@ -158,15 +138,9 @@ export default function BookingPage() {
     setSlotId("");
   }
 
-  function toggleAllergen(id: number) {
-    setSelectedAllergens((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  }
-
   function startNewBooking() {
     setResult(null);
-    setSelectedAllergens([]);
+    setHasRequirements(false);
     setDescription("");
   }
 
@@ -182,8 +156,7 @@ export default function BookingPage() {
     try {
       setResult(
         await createBooking(Number(slotId), partySize, {
-          allergenIds: selectedAllergens,
-          description,
+          description: hasRequirements ? description : undefined,
         }),
       );
     } catch (err) {
@@ -403,12 +376,10 @@ export default function BookingPage() {
             )}
           </div>
 
-          {/* MH-05: allergens checkboxes + free-text requirements */}
+          {/* MH-05: checkbox to reveal free-text allergies/intolerances/notes */}
           <RequirementsFields
-            allergens={allergens}
-            loadError={allergensError}
-            selected={selectedAllergens}
-            onToggle={toggleAllergen}
+            enabled={hasRequirements}
+            onToggle={setHasRequirements}
             description={description}
             onDescriptionChange={setDescription}
           />

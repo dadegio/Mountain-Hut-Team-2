@@ -85,11 +85,16 @@ async function sessionCookie(userId: number): Promise<string> {
   return cookie;
 }
 
-async function postBooking(userId: number, slotId: number, partySize: number) {
+async function postBooking(
+  userId: number,
+  slotId: number,
+  partySize: number,
+  description?: string,
+) {
   return app.inject({
     method: "POST", url: "/api/v1/bookings",
     headers: { cookie: await sessionCookie(userId) },
-    payload: { slotId, partySize },
+    payload: description === undefined ? { slotId, partySize } : { slotId, partySize, description },
   });
 }
 
@@ -272,5 +277,40 @@ describe("MH-46: PATCH /api/v1/bookings/:bookingId", () => {
     const rows = await reservations();
     expect(rows.filter((row) => row.userId === 1).reduce((sum, row) => sum + Number(row.partySize), 0)).toBe(6);
     expect(rows.filter((row) => row.userId === 2).reduce((sum, row) => sum + Number(row.partySize), 0)).toBe(4);
+  });
+
+  it("200: adds, updates, clears, and preserves requirements description across table rows", async () => {
+    const created = await postBooking(1, 1, 5);
+    const id = created.json().reservations[0].reservationId;
+
+    // Add description without changing slot or partySize
+    const added = await patchBooking(id, { description: "  Peanut allergy  " });
+    expect(added.statusCode).toBe(200);
+    expect(added.json()).toMatchObject({ bookingId: id, description: "Peanut allergy" });
+
+    // Expanding across two tables while omitting description preserves it on all rows
+    const expanded = await patchBooking(id, { partySize: 9 });
+    expect(expanded.statusCode).toBe(200);
+    expect(expanded.json().description).toBe("Peanut allergy");
+    expect((await reservations()).every((row) => row.description === "Peanut allergy")).toBe(true);
+
+    // Clear with whitespace or null
+    const clearedWhitespace = await patchBooking(id, { description: "   " });
+    expect(clearedWhitespace.statusCode).toBe(200);
+    expect(clearedWhitespace.json().description).toBeNull();
+    expect((await reservations()).every((row) => row.description === null)).toBe(true);
+
+    const updatedAgain = await patchBooking(id, { description: "Lactose free" });
+    expect(updatedAgain.statusCode).toBe(200);
+    const clearedNull = await patchBooking(id, { description: null });
+    expect(clearedNull.statusCode).toBe(200);
+    expect(clearedNull.json().description).toBeNull();
+  });
+
+  it("400: rejects a description longer than 1000 characters", async () => {
+    const created = await postBooking(1, 1, 2);
+    const id = created.json().reservations[0].reservationId;
+    const response = await patchBooking(id, { description: "x".repeat(1001) });
+    expect(response.statusCode).toBe(400);
   });
 });

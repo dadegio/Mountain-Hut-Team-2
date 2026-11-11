@@ -53,171 +53,120 @@ async function pickFirstAvailableSlot(page: Page) {
   await firstSlot.click()
 }
 
-test.describe('MH-05: Provide party requirements (MH-60 E2E tests)', () => {
-  test('hiker books a table selecting both allergens and other requirements notes', async ({ page }) => {
+const requirementsCheckbox = (page: Page) =>
+  page.getByRole('checkbox', { name: /allergies, intolerances,? or special requests/i })
+
+const requirementsTextbox = (page: Page) =>
+  page.getByLabel(/specify allergies, intolerances or notes/i)
+
+test.describe('MH-05: Provide party requirements (E2E tests)', () => {
+  test('hiker opens the textbox via the checkbox and books with allergies and notes', async ({ page }) => {
     await registerAndLoginHiker(page)
     await pickDate(page, 1)
 
     await page.getByRole('spinbutton', { name: 'Party size' }).fill('2')
     await pickFirstAvailableSlot(page)
 
-    // Select Milk and Peanuts checkboxes
-    const milkCheckbox = page.getByRole('checkbox', { name: 'Milk', exact: true })
-    const peanutsCheckbox = page.getByRole('checkbox', { name: 'Peanuts', exact: true })
+    await expect(requirementsTextbox(page)).not.toBeVisible()
+    await requirementsCheckbox(page).check()
+    await expect(requirementsTextbox(page)).toBeVisible()
 
-    await expect(milkCheckbox).toBeVisible()
-    await milkCheckbox.check()
-    await peanutsCheckbox.check()
-
-    await expect(milkCheckbox).toBeChecked()
-    await expect(peanutsCheckbox).toBeChecked()
-
-    // Fill notes and verify character counter updates
-    const note = 'One person has severe peanut allergy, please wipe down table'
-    const notesInput = page.getByLabel('Other requirements')
-    await notesInput.fill(note)
+    const note = 'Severe peanut and milk allergy, plus one high chair please'
+    await requirementsTextbox(page).fill(note)
     await expect(page.getByText(`${note.length}/1000`)).toBeVisible()
 
-    // Submit booking
     await page.getByRole('button', { name: 'Book', exact: true }).click()
 
-    // Verify confirmation view displays both allergens and notes
     await expect(page.getByRole('heading', { name: 'Booking confirmed' })).toBeVisible()
     await expect(page.getByText('2 people')).toBeVisible()
 
     const dl = page.locator('dl')
-    await expect(dl.getByText('Allergens', { exact: true })).toBeVisible()
-    await expect(dl).toContainText('Milk')
-    await expect(dl).toContainText('Peanuts')
-
     await expect(dl.getByText('Notes', { exact: true })).toBeVisible()
     await expect(dl).toContainText(note)
+    await expect(dl.getByText('Allergens', { exact: true })).not.toBeVisible()
   })
 
-  test('hiker books a table with only dietary notes (no allergen checkboxes)', async ({ page }) => {
+  test('hiker can hide and re-open the textbox without losing written notes', async ({ page }) => {
     await registerAndLoginHiker(page)
     await pickDate(page, 1)
 
     await page.getByRole('spinbutton', { name: 'Party size' }).fill('2')
     await pickFirstAvailableSlot(page)
 
-    // Add notes only
-    const note = 'Table near the fireplace and a high chair please'
-    await page.getByLabel('Other requirements').fill(note)
+    const note = 'Lactose intolerance, table near the fireplace'
+    await requirementsCheckbox(page).check()
+    await requirementsTextbox(page).fill(note)
 
-    // Submit booking
+    await requirementsCheckbox(page).uncheck()
+    await expect(requirementsTextbox(page)).not.toBeVisible()
+
+    await requirementsCheckbox(page).check()
+    await expect(requirementsTextbox(page)).toHaveValue(note)
+
     await page.getByRole('button', { name: 'Book', exact: true }).click()
 
     await expect(page.getByRole('heading', { name: 'Booking confirmed' })).toBeVisible()
     const dl = page.locator('dl')
-
-    // Notes should be visible, Allergens should NOT be visible
     await expect(dl.getByText('Notes', { exact: true })).toBeVisible()
     await expect(dl).toContainText(note)
+  })
+
+  test('unchecking the checkbox before booking omits hidden draft notes', async ({ page }) => {
+    await registerAndLoginHiker(page)
+    await pickDate(page, 2)
+
+    await page.getByRole('spinbutton', { name: 'Party size' }).fill('2')
+    await pickFirstAvailableSlot(page)
+
+    await requirementsCheckbox(page).check()
+    await requirementsTextbox(page).fill('Temporary draft note')
+    await requirementsCheckbox(page).uncheck()
+    await expect(requirementsTextbox(page)).not.toBeVisible()
+
+    await page.getByRole('button', { name: 'Book', exact: true }).click()
+
+    await expect(page.getByRole('heading', { name: 'Booking confirmed' })).toBeVisible()
+    const dl = page.locator('dl')
+    await expect(dl.getByText('Notes', { exact: true })).not.toBeVisible()
     await expect(dl.getByText('Allergens', { exact: true })).not.toBeVisible()
   })
 
-  test('hiker books a table with only allergen checkboxes (no notes)', async ({ page }) => {
-    await registerAndLoginHiker(page)
-    await pickDate(page, 1)
-
-    await page.getByRole('spinbutton', { name: 'Party size' }).fill('2')
-    await pickFirstAvailableSlot(page)
-
-    // Select Eggs and Wheat only
-    const eggsCheckbox = page.getByRole('checkbox', { name: 'Eggs', exact: true })
-    const wheatCheckbox = page.getByRole('checkbox', { name: 'Wheat', exact: true })
-
-    await eggsCheckbox.check()
-    await wheatCheckbox.check()
-
-    await expect(eggsCheckbox).toBeChecked()
-    await expect(wheatCheckbox).toBeChecked()
-
-    // Submit booking
-    await page.getByRole('button', { name: 'Book', exact: true }).click()
-
-    await expect(page.getByRole('heading', { name: 'Booking confirmed' })).toBeVisible()
-    const dl = page.locator('dl')
-
-    // Allergens should be visible with Eggs and Wheat, Notes should NOT be visible
-    await expect(dl.getByText('Allergens', { exact: true })).toBeVisible()
-    await expect(dl).toContainText('Eggs')
-    await expect(dl).toContainText('Wheat')
-    await expect(dl.getByText('Notes', { exact: true })).not.toBeVisible()
-  })
-
-  test('hiker toggles allergen checkboxes on and off before booking', async ({ page }) => {
+  test('hiker books standard meal without opening requirements', async ({ page }) => {
     await registerAndLoginHiker(page)
     await pickDate(page, 2)
 
     await page.getByRole('spinbutton', { name: 'Party size' }).fill('2')
     await pickFirstAvailableSlot(page)
 
-    const fishCheckbox = page.getByRole('checkbox', { name: 'Fish', exact: true })
-    const peanutsCheckbox = page.getByRole('checkbox', { name: 'Peanuts', exact: true })
-
-    // Check both, then uncheck Peanuts
-    await fishCheckbox.check()
-    await peanutsCheckbox.check()
-    await expect(peanutsCheckbox).toBeChecked()
-
-    await peanutsCheckbox.uncheck()
-    await expect(peanutsCheckbox).not.toBeChecked()
-    await expect(fishCheckbox).toBeChecked()
-
-    // Submit booking
+    await expect(requirementsCheckbox(page)).not.toBeChecked()
     await page.getByRole('button', { name: 'Book', exact: true }).click()
 
     await expect(page.getByRole('heading', { name: 'Booking confirmed' })).toBeVisible()
     const dl = page.locator('dl')
 
-    await expect(dl.getByText('Allergens', { exact: true })).toBeVisible()
-    await expect(dl).toContainText('Fish')
-    await expect(dl).not.toContainText('Peanuts')
-  })
-
-  test('hiker books standard meal without any requirements', async ({ page }) => {
-    await registerAndLoginHiker(page)
-    await pickDate(page, 2)
-
-    await page.getByRole('spinbutton', { name: 'Party size' }).fill('2')
-    await pickFirstAvailableSlot(page)
-
-    // Submit booking directly without touching allergens or notes
-    await page.getByRole('button', { name: 'Book', exact: true }).click()
-
-    await expect(page.getByRole('heading', { name: 'Booking confirmed' })).toBeVisible()
-    const dl = page.locator('dl')
-
-    // Neither Allergens nor Notes row should be present
     await expect(dl.getByText('Allergens', { exact: true })).not.toBeVisible()
     await expect(dl.getByText('Notes', { exact: true })).not.toBeVisible()
   })
 
-  test('persists allergens and description in backend database across sessions', async ({ page }) => {
+  test('persists requirements description in backend database across sessions', async ({ page }) => {
     await registerAndLoginHiker(page)
     await pickDate(page, 2)
 
     await page.getByRole('spinbutton', { name: 'Party size' }).fill('2')
     await pickFirstAvailableSlot(page)
 
-    await page.getByRole('checkbox', { name: 'Soybeans', exact: true }).check()
-    const note = 'Wheelchair accessible table'
-    await page.getByLabel('Other requirements').fill(note)
+    await requirementsCheckbox(page).check()
+    const note = 'Soy allergy and wheelchair accessible table'
+    await requirementsTextbox(page).fill(note)
 
     await page.getByRole('button', { name: 'Book', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Booking confirmed' })).toBeVisible()
 
-    // Verify through backend API that the persisted booking record contains the requirements
     const bookingsRes = await page.request.get('/api/v1/bookings/mine')
     expect(bookingsRes.status()).toBe(200)
     const bookings = await bookingsRes.json()
     expect(bookings.length).toBeGreaterThan(0)
     const latest = bookings[0]
     expect(latest.description).toBe(note)
-    expect(latest.allergens).toEqual(
-      expect.arrayContaining([expect.objectContaining({ name: 'Soybeans' })]),
-    )
   })
 })

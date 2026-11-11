@@ -6,9 +6,13 @@ import { changeBooking } from "../services/change-booking.ts";
 const changeSchema = z.object({
   slotId: z.number().int().positive().optional(),
   partySize: z.number().int().positive().max(1000).optional(),
+  description: z.string().max(1000).nullable().optional(),
 }).strict().refine(
-  (value) => value.slotId !== undefined || value.partySize !== undefined,
-  { message: "At least one of slotId or partySize must be supplied" },
+  (value) =>
+    value.slotId !== undefined ||
+    value.partySize !== undefined ||
+    value.description !== undefined,
+  { message: "At least one of slotId, partySize, or description must be supplied" },
 );
 
 export async function changeBookingRoutes(app: FastifyInstance) {

@@ -1,19 +1,12 @@
+import { useState } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import RequirementsFields from '../../../src/components/booking/RequirementsFields'
 
-const allergens = [
-  { id: 9, name: 'Milk' },
-  { id: 10, name: 'Eggs' },
-  { id: 14, name: 'Wheat' },
-]
-
 function renderFields(overrides: Partial<Parameters<typeof RequirementsFields>[0]> = {}) {
   const props = {
-    allergens,
-    loadError: false,
-    selected: [] as number[],
+    enabled: false,
     onToggle: vi.fn(),
     description: '',
     onDescriptionChange: vi.fn(),
@@ -23,48 +16,79 @@ function renderFields(overrides: Partial<Parameters<typeof RequirementsFields>[0
   return props
 }
 
-describe('RequirementsFields', () => {
-  it('shows one checkbox per allergen, ticked according to selected', () => {
-    renderFields({ selected: [14] })
+function StatefulRequirementsFields() {
+  const [enabled, setEnabled] = useState(false)
+  const [description, setDescription] = useState('')
+  return (
+    <RequirementsFields
+      enabled={enabled}
+      onToggle={setEnabled}
+      description={description}
+      onDescriptionChange={setDescription}
+    />
+  )
+}
 
-    expect(screen.getByRole('checkbox', { name: 'Milk' })).not.toBeChecked()
-    expect(screen.getByRole('checkbox', { name: 'Eggs' })).not.toBeChecked()
-    expect(screen.getByRole('checkbox', { name: 'Wheat' })).toBeChecked()
+describe('RequirementsFields', () => {
+  it('renders a single unchecked checkbox and hides the textbox by default', () => {
+    renderFields()
+
+    const checkboxes = screen.getAllByRole('checkbox')
+    expect(checkboxes).toHaveLength(1)
+    expect(checkboxes[0]).not.toBeChecked()
+    expect(
+      screen.queryByLabelText(/specify allergies, intolerances or notes/i),
+    ).not.toBeInTheDocument()
   })
 
-  it('calls onToggle with the allergen id when a checkbox is clicked', async () => {
-    const props = renderFields()
+  it('calls onToggle with the new checked state when clicked', async () => {
+    const props = renderFields({ enabled: false })
+    await userEvent.click(screen.getByRole('checkbox'))
+    expect(props.onToggle).toHaveBeenCalledWith(true)
 
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Eggs' }))
+    const propsChecked = renderFields({ enabled: true })
+    await userEvent.click(screen.getAllByRole('checkbox')[1])
+    expect(propsChecked.onToggle).toHaveBeenCalledWith(false)
+  })
 
-    expect(props.onToggle).toHaveBeenCalledWith(10)
+  it('shows the textbox and character counter when enabled', () => {
+    renderFields({ enabled: true, description: 'one vegetarian' })
+
+    expect(
+      screen.getByLabelText(/specify allergies, intolerances or notes/i),
+    ).toHaveValue('one vegetarian')
+    expect(screen.getByText('14/1000')).toBeInTheDocument()
   })
 
   it('reports typing in the requirements box', async () => {
-    const props = renderFields()
+    const props = renderFields({ enabled: true })
 
-    await userEvent.type(screen.getByLabelText('Other requirements'), 'a')
+    await userEvent.type(
+      screen.getByLabelText(/specify allergies, intolerances or notes/i),
+      'a',
+    )
 
     expect(props.onDescriptionChange).toHaveBeenCalledWith('a')
   })
 
-  it('shows the character counter', () => {
-    renderFields({ description: 'one vegetarian' })
+  it('hides the textbox when unchecked while preserving the typed text', async () => {
+    render(<StatefulRequirementsFields />)
 
-    expect(screen.getByText('14/1000')).toBeInTheDocument()
-  })
+    const checkbox = screen.getByRole('checkbox')
+    await userEvent.click(checkbox)
 
-  it('shows loading placeholders while the list is loading', () => {
-    renderFields({ allergens: null })
+    const textbox = screen.getByLabelText(/specify allergies, intolerances or notes/i)
+    await userEvent.type(textbox, 'Peanut allergy')
+    expect(textbox).toHaveValue('Peanut allergy')
 
-    expect(screen.getByLabelText('Loading allergens')).toBeInTheDocument()
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
-  })
+    await userEvent.click(checkbox)
+    expect(
+      screen.queryByLabelText(/specify allergies, intolerances or notes/i),
+    ).not.toBeInTheDocument()
 
-  it('still offers the text box when the list fails to load', () => {
-    renderFields({ allergens: null, loadError: true })
-
-    expect(screen.getByText(/couldn't be loaded/i)).toBeInTheDocument()
-    expect(screen.getByLabelText('Other requirements')).toBeInTheDocument()
+    await userEvent.click(checkbox)
+    expect(
+      screen.getByLabelText(/specify allergies, intolerances or notes/i),
+    ).toHaveValue('Peanut allergy')
   })
 })
