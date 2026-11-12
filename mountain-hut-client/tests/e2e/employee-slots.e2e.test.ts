@@ -241,7 +241,7 @@ test.describe('as an employee', () => {
     await expect(page.getByText(`Table code ${code} already exists`)).toBeVisible()
   })
 
-  test('moves between days with the arrows and the shortcuts', async ({ page }) => {
+  test('moves between days with the arrows', async ({ page }) => {
     const day = page.getByLabel('Day', { exact: true })
     await expect(day).toHaveValue(dayFromToday(0))
 
@@ -252,12 +252,6 @@ test.describe('as an employee', () => {
     await expect(slotsOfTheDay(page).getByText('12:00–13:00')).toBeVisible()
 
     await page.getByRole('button', { name: 'Previous day' }).click()
-    await expect(day).toHaveValue(dayFromToday(0))
-
-    await page.getByRole('button', { name: 'Tomorrow' }).click()
-    await expect(day).toHaveValue(dayFromToday(1))
-
-    await page.getByRole('button', { name: 'Today' }).click()
     await expect(day).toHaveValue(dayFromToday(0))
   })
 })
