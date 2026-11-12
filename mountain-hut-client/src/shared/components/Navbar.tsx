@@ -15,7 +15,6 @@ const navItems: { path: string; label: string; end?: boolean; show: (role: Role)
   { path: "/hikes", label: "Register a hike", show: (role) => role === "HIKER" },
   { path: "/my-hikes", label: "My hikes", show: (role) => role === "HIKER" },
   { path: "/employee/slots", label: "Manage slots", show: (role) => role !== null && STAFF.includes(role) },
-  { path: "/employee/hikes", label: "Registered hikes", show: (role) => role !== null && STAFF.includes(role) },
   { path: "/login", label: "Login", show: (role) => role === null },
   { path: "/register", label: "Register", show: (role) => role === null },
 ];

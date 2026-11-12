@@ -9,7 +9,6 @@ import {
   nextFullHour,
   toLocalInput,
   validateHikeForm,
-  staffHikeGroup
 } from "../../../src/hikes/utils/hike-time.ts";
 
 const HOUR = 60 * 60 * 1000;
@@ -97,23 +96,6 @@ describe("MH-140 hike time helpers", () => {
       ["2030-06-16T00:00:00.000Z", "past"],
     ])("at %s the hike is %s", (now, phase) => {
       expect(hikePhase(hike, at(now))).toBe(phase);
-    });
-  });
-
-  describe("staff groups", () => {
-    const hike = {
-      departureAt: "2030-06-15T06:00:00.000Z",
-      expectedReturnAt: "2030-06-15T15:00:00.000Z",
-    };
-
-    it.each([
-      ["2030-06-15T05:00:00.000Z", "upcoming"],
-      ["2030-06-15T10:00:00.000Z", "out"],
-      ["2030-06-15T15:00:00.000Z", "overdue"],
-      ["2030-06-17T15:00:00.000Z", "overdue"], // exactly 48 h late
-      ["2030-06-17T15:01:00.000Z", "earlier"],
-    ])("at %s the hike is %s", (now, group) => {
-      expect(staffHikeGroup(hike, Date.parse(now))).toBe(group);
     });
   });
 

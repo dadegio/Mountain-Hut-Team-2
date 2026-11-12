@@ -102,20 +102,3 @@ export function validateHikeForm(values: HikeFormValues, nowMs: number): string 
   }
   return null;
 }
-
-// How long after the expected return a hike still counts as "should be back".
-// There is no "returned" check-in, so after this the hike is just "earlier".
-export const OVERDUE_WINDOW_MS = 48 * HOUR_MS;
-
-export type StaffHikeGroup = "overdue" | "out" | "upcoming" | "earlier";
-
-export function staffHikeGroup(
-  hike: { departureAt: string; expectedReturnAt: string },
-  nowMs: number,
-): StaffHikeGroup {
-  const phase = hikePhase(hike, nowMs);
-  if (phase === "upcoming") return "upcoming";
-  if (phase === "ongoing") return "out";
-  const lateMs = nowMs - Date.parse(hike.expectedReturnAt);
-  return lateMs <= OVERDUE_WINDOW_MS ? "overdue" : "earlier";
-}
