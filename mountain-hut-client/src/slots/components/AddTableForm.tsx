@@ -55,7 +55,7 @@ export default function AddTableForm({ onCreated }: AddTableFormProps) {
           />
         </label>
         <label className="flex flex-col text-sm">
-          Seats (1–{MAX_TABLE_SEATS})
+          Seats
           <input
             type="number"
             inputMode="numeric"
@@ -63,6 +63,7 @@ export default function AddTableForm({ onCreated }: AddTableFormProps) {
             min={1}
             max={MAX_TABLE_SEATS}
             step={1}
+            placeholder={`1–${MAX_TABLE_SEATS}`}
             value={seats}
             onKeyDown={(e) => {
               if (["e", "E", "+", "-", ".", ","].includes(e.key)) e.preventDefault();

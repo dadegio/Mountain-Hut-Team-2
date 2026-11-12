@@ -40,11 +40,11 @@ describe('AddTableForm', () => {
   })
 
   describe('seat limit (MH-89)', () => {
-    it('shows the allowed range in the label', () => {
+        it('shows the allowed range as a hint in the field', () => {
       renderForm()
 
       expect(seatsField()).toHaveAttribute('max', '20')
-      expect(screen.getByText(/1–20/)).toBeInTheDocument()
+      expect(seatsField()).toHaveAttribute('placeholder', '1–20')
     })
 
     it('keeps only the first two digits', async () => {
