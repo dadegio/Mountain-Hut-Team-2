@@ -21,6 +21,7 @@ const navItems: { path: string; label: string; end?: boolean; show: (role: Role)
   { path: "/employee/slots", label: "Manage slots", show: (role) => role !== null && STAFF.includes(role) },
   { path: "/employee/menus", label: "Manage menus", show: (role) => role !== null && STAFF.includes(role) },
   { path: "/employee/reservations", label: "New reservation", show: (role) => role !== null && STAFF.includes(role) },
+  { path: "/employee/hikes", label: "Registered hikes", show: (role) => role !== null && STAFF.includes(role) },
   { path: "/login", label: "Login", show: (role) => role === null },
   { path: "/register", label: "Register", show: (role) => role === null },
 ];
