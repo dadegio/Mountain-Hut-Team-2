@@ -56,7 +56,7 @@ export default function RegisterPage() {
       navigate('/booking', { replace: true })
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setError('An account with this email already exists.')
+        setError('An error occurred while trying to register your account, try with a different email')
       } else if (err instanceof ApiError && err.status === 400) {
         setError('Some fields are invalid. Please check your email, phone number and password.')
       } else {
