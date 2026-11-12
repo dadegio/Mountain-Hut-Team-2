@@ -3,7 +3,7 @@ import { Layout, HomePage, NotFoundPage } from "./shared/index.ts";
 import { AuthProvider, RequireRole, LoginPage, RegisterPage } from "./auth/index.ts";
 import { BookingPage, MyBookingsPage } from "./booking/index.ts";
 import { EmployeeSlotsPage } from "./slots/index.ts";
-
+import { RegisterHikePage, MyHikesPage } from "./hikes/index.ts";
 const STAFF = ["EMPLOYEE", "MANAGER"];
 
 function App() {
@@ -23,6 +23,8 @@ function App() {
             {/* hikers only */}
             <Route element={<RequireRole allow={["HIKER"]} />}>
               <Route path="my-bookings" element={<MyBookingsPage />} />
+              <Route path="hikes" element={<RegisterHikePage />} />
+              <Route path="my-hikes" element={<MyHikesPage />} />
             </Route>
 
             {/* employees and managers only */}
