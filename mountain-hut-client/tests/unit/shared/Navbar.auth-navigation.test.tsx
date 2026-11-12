@@ -44,23 +44,25 @@ describe("Navbar", () => {
     expect(brand.closest("a")).toHaveAttribute("href", "/");
   });
 
-  it("shows Home, Book a table and Login to guests", () => {
+  it("shows Home, Book a table, Login and Register to guests", () => {
     renderNavbarAs(null);
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Book a table")).toBeInTheDocument();
     expect(screen.getByText("Login")).toBeInTheDocument();
+    expect(screen.getByText("Register")).toBeInTheDocument();
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
     expect(screen.queryByText("Manage slots")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /hut mail/i })).not.toBeInTheDocument();
   });
 
-  it("shows booking links and Logout to hikers, but not Manage slots or Hut Mail", () => {
+  it("shows booking links and Logout to hikers, but not Manage slots, Hut Mail, Login or Register", () => {
     renderNavbarAs(fakeUser("HIKER"));
     expect(screen.getByText("Book a table")).toBeInTheDocument();
     expect(screen.getByText("My bookings")).toBeInTheDocument();
     expect(screen.getByText("Logout")).toBeInTheDocument();
     expect(screen.queryByText("Manage slots")).not.toBeInTheDocument();
     expect(screen.queryByText("Login")).not.toBeInTheDocument();
+    expect(screen.queryByText("Register")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /hut mail/i })).not.toBeInTheDocument();
   });
 
@@ -71,6 +73,8 @@ describe("Navbar", () => {
     expect(screen.getByText("Logout")).toBeInTheDocument();
     expect(screen.queryByText("Book a table")).not.toBeInTheDocument();
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
+    expect(screen.queryByText("Login")).not.toBeInTheDocument();
+    expect(screen.queryByText("Register")).not.toBeInTheDocument();
 
     const userName = screen.getByText("Test");
     const mailLink = screen.getByRole("link", { name: /hut mail/i });
