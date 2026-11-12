@@ -34,6 +34,8 @@ tags:
     description: Free seats in the slots of a day
   - name: Bookings
     description: Hikers' bookings
+  - name: Hikes
+    description: Registration of planned hikes and staff visibility
   - name: Allergens
     description: Allergens a hiker can report when booking
 
@@ -481,6 +483,76 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/v1/hikes:
+    post:
+      tags: [Hikes]
+      summary: Register my planned hike
+      description: 'Roles: `HIKER`. Departure must be in the future, return after departure. Date-times must contain Z or an explicit UTC offset.'
+      operationId: registerHike
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterHikeRequest"
+      responses:
+        "201":
+          description: Planned hike registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hike"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    get:
+      tags: [Hikes]
+      summary: List hikes for hut staff
+      description: 'Roles: `EMPLOYEE`, `MANAGER`. Ordered by expected return; includes hiker contact details.'
+      operationId: listRegisteredHikes
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Registered hikes sorted by expected return time
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffHike"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/hikes/mine:
+    get:
+      tags: [Hikes]
+      summary: List my registered hikes
+      description: 'Roles: `HIKER`. The account is determined from the session, not request parameters.'
+      operationId: listMyHikes
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Hikes belonging only to the signed-in hiker
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Hike"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /api/v1/allergens:
     get:
       tags: [Allergens]
@@ -713,6 +785,71 @@ components:
           items:
             type: integer
             minimum: 1
+
+    RegisterHikeRequest:
+      type: object
+      additionalProperties: false
+      required: [departureAt, expectedReturnAt, routeDescription]
+      properties:
+        departureAt:
+          type: string
+          format: date-time
+          description: ISO 8601 with Z or UTC offset; must be in the future
+          example: "2026-12-20T08:00:00+01:00"
+        expectedReturnAt:
+          type: string
+          format: date-time
+          description: ISO 8601 with Z or UTC offset; after departure
+          example: "2026-12-20T17:00:00+01:00"
+        routeDescription:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        emergencyContactPhone:
+          type: string
+          minLength: 3
+          maxLength: 40
+
+    Hike:
+      type: object
+      required: [id, userId, departureAt, expectedReturnAt, routeDescription, emergencyContactPhone, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        departureAt:
+          type: string
+          format: date-time
+        expectedReturnAt:
+          type: string
+          format: date-time
+        routeDescription:
+          type: string
+        emergencyContactPhone:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          description: SQLite creation timestamp (UTC)
+
+    StaffHike:
+      allOf:
+        - $ref: "#/components/schemas/Hike"
+        - type: object
+          required: [hiker]
+          properties:
+            hiker:
+              type: object
+              required: [name, surname, phoneNumber]
+              properties:
+                name:
+                  type: string
+                surname:
+                  type: string
+                phoneNumber:
+                  type: string
+                  nullable: true
 
     Availability:
       type: object
