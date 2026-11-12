@@ -4,11 +4,13 @@ import { SlotError, createSlot, getSlot, listSlots } from "./slots.ts";
 import { createTable, listTables } from "./tables.ts";
 
 const time = z.iso.time({ precision: -1 }); // "HH:MM"
+// MH-89: keep in sync with MAX_TABLE_SEATS in the client's AddTableForm
+const MAX_TABLE_SEATS = 20;
 
 const createTableSchema = z
   .object({
     code: z.string().trim().min(1).max(20),
-    seats: z.number().int().positive(),
+    seats: z.number().int().positive().max(MAX_TABLE_SEATS),
   })
   .strict();
 

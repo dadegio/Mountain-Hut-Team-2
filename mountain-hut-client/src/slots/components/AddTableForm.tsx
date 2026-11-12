@@ -6,6 +6,9 @@ interface AddTableFormProps {
   onCreated: (table: Table) => void;
 }
 
+// MH-89: keep in sync with the limit in the backend table schema
+const MAX_TABLE_SEATS = 20;
+
 const inputClass = "border border-stone-300 rounded px-2 py-1 bg-white";
 
 export default function AddTableForm({ onCreated }: AddTableFormProps) {
@@ -17,10 +20,17 @@ export default function AddTableForm({ onCreated }: AddTableFormProps) {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    const seatCount = Number(seats);
+    if (!Number.isInteger(seatCount) || seatCount < 1 || seatCount > MAX_TABLE_SEATS) {
+      setError(`Seats must be a whole number between 1 and ${MAX_TABLE_SEATS}`);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {
-      const table = await createTable({ code: code.trim(), seats: Number(seats) });
+      const table = await createTable({ code: code.trim(), seats: seatCount });
       onCreated(table);
       setCode("");
       setSeats("");
@@ -48,11 +58,17 @@ export default function AddTableForm({ onCreated }: AddTableFormProps) {
           Seats
           <input
             type="number"
+            inputMode="numeric"
             required
             min={1}
+            max={MAX_TABLE_SEATS}
             step={1}
+            placeholder={`1–${MAX_TABLE_SEATS}`}
             value={seats}
-            onChange={(e) => setSeats(e.target.value)}
+            onKeyDown={(e) => {
+              if (["e", "E", "+", "-", ".", ","].includes(e.key)) e.preventDefault();
+            }}
+            onChange={(e) => setSeats(e.target.value.replace(/\D/g, "").slice(0, 2))}
             className={`${inputClass} w-20`}
           />
         </label>

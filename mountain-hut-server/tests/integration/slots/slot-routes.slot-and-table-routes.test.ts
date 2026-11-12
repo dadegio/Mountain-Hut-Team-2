@@ -207,6 +207,8 @@ describe("POST /api/v1/tables", () => {
     ["negative seats", { code: "T4", seats: -1 }, "seats"],
     ["decimal seats", { code: "T4", seats: 2.5 }, "seats"],
     ["seats as text", { code: "T4", seats: "4" }, "seats"],
+    ["21 seats, over the limit", { code: "T4", seats: 21 }, "seats"],
+    ["an absurd number of seats", { code: "T4", seats: 56789 }, "seats"],
   ])("refuses %s", async (_description, body, field) => {
     const res = await post("/api/v1/tables", body);
 
@@ -227,6 +229,13 @@ describe("POST /api/v1/tables", () => {
     const res = await post("/api/v1/tables", { code: "T".repeat(20), seats: 4 });
 
     expect(res.statusCode).toBe(201);
+  });
+
+   it("accepts exactly 20 seats, the maximum (MH-89)", async () => {
+    const res = await post("/api/v1/tables", { code: "T4", seats: 20 });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.json().seats).toBe(20);
   });
 });
 
