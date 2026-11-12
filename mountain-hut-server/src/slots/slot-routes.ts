@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { SlotError, createSlot, getSlot, listSlots } from "./slots.ts";
+import { copyWeeklySchedule } from "./copy-week.ts";
 import { createTable, listTables } from "./tables.ts";
 
 const time = z.iso.time({ precision: -1 }); // "HH:MM"
@@ -33,6 +34,12 @@ const createSlotSchema = z
 const listSlotsQuerySchema = z.object({ date: z.iso.date() });
 
 const slotParamsSchema = z.object({ id: z.coerce.number().int().positive() });
+
+const copyWeekSchema = z.object({
+  sourceWeekStart: z.iso.date(),
+  targetWeekStart: z.iso.date(),
+  weeks: z.number().int().min(1).max(12).default(1),
+}).strict();
 
 function sendError(request: FastifyRequest, reply: FastifyReply, error: unknown) {
   if (error instanceof SlotError) {
@@ -87,6 +94,20 @@ export async function slotRoutes(app: FastifyInstance) {
     }
 
     return listSlots(parsed.data.date);
+  });
+
+  app.post("/slots/copy-week", { preHandler: requireStaff }, async (request, reply) => {
+    const parsed = copyWeekSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: "Invalid request body", details: parsed.error.issues,
+      });
+    }
+    try {
+      return reply.status(201).send(await copyWeeklySchedule(parsed.data));
+    } catch (error) {
+      return sendError(request, reply, error);
+    }
   });
 
   app.get("/slots/:id", async (request, reply) => {
