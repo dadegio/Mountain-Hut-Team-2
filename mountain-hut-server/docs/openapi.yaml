@@ -242,6 +242,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/v1/slots/copy-week:
+    post:
+      tags: [Slots]
+      summary: Repeat a week's slots and table allocations
+      description: |
+        Roles: `EMPLOYEE`, `MANAGER`. Copies slot times and existing table
+        associations from a Monday-Sunday source week into one or more
+        consecutive destination weeks. It does not copy table records,
+        reservations or menus. Existing non-overlapping destination slots are
+        preserved. If any destination slot overlaps, no changes are saved.
+        Both start dates must be Mondays; the first destination Monday must
+        not be in the past. The source and destination periods cannot overlap.
+      operationId: copyWeeklySchedule
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CopyWeekRequest"
+      responses:
+        "201":
+          description: All requested weekly copies created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CopyWeekResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The source week has no slots
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: One or more destination slots overlap existing slots
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/v1/slots/{id}:
     get:
       tags: [Slots]
@@ -713,6 +760,42 @@ components:
           items:
             type: integer
             minimum: 1
+
+    CopyWeekRequest:
+      type: object
+      additionalProperties: false
+      required: [sourceWeekStart, targetWeekStart]
+      properties:
+        sourceWeekStart:
+          description: Monday of the source week; may be in the past
+          allOf:
+            - $ref: "#/components/schemas/Date"
+        targetWeekStart:
+          description: Monday of the first destination week; today or later
+          allOf:
+            - $ref: "#/components/schemas/Date"
+        weeks:
+          type: integer
+          minimum: 1
+          maximum: 12
+          default: 1
+          description: Number of consecutive destination weeks
+
+    CopyWeekResponse:
+      type: object
+      required: [sourceWeekStart, targetWeekStart, weeks, copiedSlots]
+      properties:
+        sourceWeekStart:
+          $ref: "#/components/schemas/Date"
+        targetWeekStart:
+          $ref: "#/components/schemas/Date"
+        weeks:
+          type: integer
+          minimum: 1
+        copiedSlots:
+          type: integer
+          minimum: 0
+          description: Total created slots across all destination weeks
 
     Availability:
       type: object
