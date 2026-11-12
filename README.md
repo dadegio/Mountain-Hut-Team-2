@@ -33,8 +33,8 @@ Hikers can view real-time table availability, book meals with specific dietary n
 ```text
 Mountain-Hut-Team-2/
 ├── mountain-hut-client/     # React frontend application
-│   ├── e2e/                 # Playwright end-to-end tests
 │   ├── src/                 # Components, pages, API clients, and utilities
+│   ├── tests/               # Vitest unit tests and Playwright E2E tests
 │   └── playwright.config.ts # E2E test configuration
 ├── mountain-hut-server/     # Fastify REST API backend
 │   ├── src/
@@ -44,6 +44,7 @@ Mountain-Hut-Team-2/
 │   │   ├── allergens/       # Allergens service and routes
 │   │   ├── notifications/   # SMTP email sender, templates, confirmation logic
 │   │   └── db/              # Drizzle schema, migrations, and seed scripts
+│   ├── tests/               # Vitest unit/integration suites and Hurl scenarios
 │   └── docs/                # OpenAPI specification & API guidelines
 ├── .github/workflows/       # CI and E2E test GitHub Actions workflows
 ├── LICENSE                  # EUPL-1.2 Open Source Licence
@@ -156,12 +157,21 @@ The database seed (`npm run db:seed`) provides test accounts with different role
 
 ## Running Tests
 
+Tests are organized by project and kind under `tests/unit`, `tests/integration`,
+and (for Playwright) `tests/e2e`. Within unit and integration, subfolders group
+tests by feature; filenames describe the behavior they cover. Hurl scenarios
+remain `.hurl` files under the server's `tests/integration` tree.
+
 ### Backend Tests
 ```bash
 cd mountain-hut-server
 
 # Run unit and integration tests (Vitest)
 npm test
+
+# Run only one test category
+npm run test:unit
+npm run test:integration
 
 # Run tests in watch mode
 npm run test:watch
@@ -173,6 +183,12 @@ cd mountain-hut-client
 
 # Run Vitest unit and component tests
 npm test
+
+# Run only unit tests
+npm run test:unit
+
+# Run Playwright end-to-end tests
+npm run test:e2e
 
 # Run ESLint and TypeScript checks
 npm run lint
@@ -189,7 +205,7 @@ cd mountain-hut-client
 npx playwright install chromium
 
 # Ensure the backend server is running on port 3000, then execute:
-npx playwright test
+npm run test:e2e
 ```
 
 ---

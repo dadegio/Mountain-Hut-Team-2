@@ -5,7 +5,7 @@
   "license": "EUPL-1.2",
   "author": "group-02",
   "type": "module",
-  "main": "index.ts",
+  "main": "src/server.ts",
   "imports": {
     "#src/*": "./src/*"
   },
@@ -15,6 +15,8 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:init": "npx drizzle-kit push",
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },

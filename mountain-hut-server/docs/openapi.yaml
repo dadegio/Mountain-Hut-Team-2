@@ -134,7 +134,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Message"
 
-  /api/tables:
+  /api/v1/tables:
     get:
       tags: [Tables]
       summary: List all tables
@@ -181,7 +181,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /api/slots:
+  /api/v1/slots:
     get:
       tags: [Slots]
       summary: List the slots of a day
@@ -242,7 +242,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /api/slots/{id}:
+  /api/v1/slots/{id}:
     get:
       tags: [Slots]
       summary: Get a slot
@@ -270,7 +270,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /api/availability:
+  /api/v1/availability:
     get:
       tags: [Availability]
       summary: Check the free seats of a day
@@ -308,7 +308,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /api/bookings:
+  /api/v1/bookings:
     post:
       tags: [Bookings]
       summary: Book a slot
@@ -353,7 +353,7 @@ paths:
         "409":
           $ref: "#/components/responses/BookingConflict"
 
-  /api/bookings/mine:
+  /api/v1/bookings/mine:
     get:
       tags: [Bookings]
       summary: List my bookings
@@ -375,7 +375,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /api/bookings/{bookingId}:
+  /api/v1/bookings/{bookingId}:
     patch:
       tags: [Bookings]
       summary: Change my booking
@@ -390,7 +390,7 @@ paths:
         - name: bookingId
           in: path
           required: true
-          description: The `id` from `GET /api/bookings/mine`
+          description: The `id` from `GET /api/v1/bookings/mine`
           schema:
             type: integer
             minimum: 1
@@ -433,7 +433,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /api/staff/bookings:
+  /api/v1/staff/bookings:
     post:
       tags: [Bookings]
       summary: Book a slot for a hiker
@@ -481,7 +481,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /api/allergens:
+  /api/v1/allergens:
     get:
       tags: [Allergens]
       summary: List all allergens
@@ -836,7 +836,7 @@ components:
     ChangeBookingRequest:
       type: object
       additionalProperties: false
-      description: At least one of the two fields is required
+      description: At least one of the fields is required
       minProperties: 1
       properties:
         slotId:
@@ -846,6 +846,10 @@ components:
           type: integer
           minimum: 1
           maximum: 1000
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
 
     CreatedBooking:
       type: object
@@ -896,7 +900,7 @@ components:
 
     ChangedBooking:
       type: object
-      required: [bookingId, status, userId, slotId, partySize, reservations]
+      required: [bookingId, status, userId, slotId, partySize, description, reservations]
       properties:
         bookingId:
           type: integer
@@ -909,6 +913,9 @@ components:
           type: integer
         partySize:
           type: integer
+        description:
+          type: string
+          nullable: true
         reservations:
           type: array
           items:
@@ -931,7 +938,7 @@ components:
       properties:
         id:
           type: integer
-          description: The id to use in `PATCH /api/bookings/{bookingId}`
+          description: The id to use in `PATCH /api/v1/bookings/{bookingId}`
         date:
           $ref: "#/components/schemas/Date"
         slotId:

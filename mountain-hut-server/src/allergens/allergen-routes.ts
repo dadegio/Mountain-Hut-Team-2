@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { listAllergens } from "./allergens.ts";
 
 export async function allergenRoutes(app: FastifyInstance) {
-  app.get("/api/allergens", async (_request, reply) => {
+  app.get("/allergens", async (_request, reply) => {
     try {
       const allergens = await listAllergens();
       return reply.status(200).send(allergens);
