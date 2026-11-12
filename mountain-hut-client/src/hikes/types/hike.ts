@@ -14,3 +14,12 @@ export interface RegisterHikeRequest {
   routeDescription: string;
   emergencyContactPhone?: string;
 }
+
+// GET /hikes (staff only): a hike with the hiker's contact details
+export interface StaffHike extends Hike {
+  hiker: {
+    name: string;
+    surname: string;
+    phoneNumber: string | null;
+  };
+}

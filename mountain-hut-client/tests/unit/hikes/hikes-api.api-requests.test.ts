@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getMyHikes, registerHike } from "../../../src/hikes/api/hikes-api.ts";
+import { getMyHikes, registerHike, getRegisteredHikes } from "../../../src/hikes/api/hikes-api.ts";
 import { apiFetch } from "../../../src/shared/api/client.ts";
 
 vi.mock("../../../src/shared/api/client.ts", () => ({
@@ -48,5 +48,13 @@ describe("MH-140 hikes API client", () => {
     vi.mocked(apiFetch).mockRejectedValueOnce(new Error("Departure must be in the future"));
 
     await expect(getMyHikes()).rejects.toThrow("Departure must be in the future");
+  });
+
+  it("reads all registered hikes for staff from /hikes", async () => {
+    const staffHike = { ...hike, hiker: { name: "Mario", surname: "Rossi", phoneNumber: null } };
+    vi.mocked(apiFetch).mockResolvedValueOnce([staffHike]);
+
+    expect(await getRegisteredHikes()).toEqual([staffHike]);
+    expect(apiFetch).toHaveBeenCalledWith("/hikes");
   });
 });
