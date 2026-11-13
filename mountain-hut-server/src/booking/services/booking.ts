@@ -50,10 +50,10 @@ export async function createBooking(input: CreateBookingInput) {
     if (!slot) throw new BookingError(404, "Time slot not found");
 
     // MH-01: hikers retain the two-hour cutoff; authenticated staff can book
-    // until the end of the slot, using the hut-local Europe/Rome clock.
+    // until the start of the slot, using the hut-local Europe/Rome clock.
     if (allowStaffLateBooking) {
-      if (Date.now() >= hutSlotStartMs(slot.date, slot.to)) {
-        throw new BookingError(409, "Time slot has already ended");
+      if (Date.now() >= hutSlotStartMs(slot.date, slot.from)) {
+        throw new BookingError(409, "Time slot has already started");
       }
     } else if (!isSlotBookable(slot.date, slot.from)) {
       throw new BookingError(409, "Booking deadline has passed (2 hours before the slot)");
