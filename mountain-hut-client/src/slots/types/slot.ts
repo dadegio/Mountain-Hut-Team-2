@@ -25,3 +25,14 @@ export interface CreateSlotRequest {
   to: string;
   tableIds: number[];
 }
+
+// MH-125 weekly schedule API contract
+export interface CopyWeekRequest {
+  sourceWeekStart: string; // Monday YYYY-MM-DD
+  targetWeekStart: string; // Monday YYYY-MM-DD
+  weeks: number; // 1 to 12
+}
+
+export interface CopyWeekResult extends CopyWeekRequest {
+  copiedSlots: number;
+}
