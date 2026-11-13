@@ -1,6 +1,6 @@
 import "@fastify/secure-session";
 
-import type { UserResponse } from "../auth/auth.schema.ts";
+import type { UserResponse } from "../auth/auth-schema.ts";
 
 // data that we're storing in the session
 declare module "@fastify/secure-session" {

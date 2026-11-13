@@ -57,38 +57,31 @@ mountain-hut-client/src/
 
 ## Routes
 
-| Path           | Page         |
-| -------------- | ------------ |
-| `/`            | Home         |
-| `/booking`     | Book a table |
-| `/my-bookings` | My bookings  |
-| `/login`       | Login        |
-| `/employee/slots` | Slots and tables (employee) |
-| `*`            | Not found    |
+| Path           | Page         | Role |
+| -------------- | ------------ | ---- |
+| `/`            | Home         | Public |
+| `/booking`     | Book a table | Hiker (authenticated) |
+| `/my-bookings` | My bookings  | Hiker (authenticated) |
+| `/login`       | Login        | Public / Guest |
+| `/employee/slots` | Slots and tables | Staff (`EMPLOYEE` / `MANAGER`) |
+| `/employee/reserve` | Reserve for hiker | Staff (`EMPLOYEE` / `MANAGER`) |
+| `*`            | Not found    | Any |
 
-## Mock data vs. real backend
+## Backend Connection
 
-The backend is not available yet, so the frontend uses **mock data by default**.
-
-`mountain-hut-client/.env.development`:
-
-```
-VITE_USE_MOCKS=true
-VITE_MAIL_SERVICE_URL=http://localhost:8025
-```
-
-- `VITE_USE_MOCKS=true` — API functions in `src/api/` return mock data (with a short simulated delay). Set to `false` when the backend is ready.
-- `VITE_MAIL_SERVICE_URL` — URL of the hut's email service. In development points to [Mailpit](https://mailpit.axllent.org/) (`http://localhost:8025`). In production, set it to the real webmail URL.
-
-When using the real backend, the Vite dev server proxies `/api` to the backend (see `vite.config.ts`, default `http://localhost:3000`, the backend's default `PORT`).
+The Vite dev server automatically proxies all `/api` requests to the Fastify backend running on port 3000 (see `vite.config.ts`).
 
 To point at a different backend URL, set `VITE_API_URL` in an `.env` file.
 
-> Note: types in `src/types/` are a **draft** and will be aligned with the backend API contract.
+`mountain-hut-client/.env.development`:
+```env
+VITE_MAIL_SERVICE_URL=http://localhost:8025
+```
+- `VITE_MAIL_SERVICE_URL` — URL of the hut's email interface. In development points to [Mailpit](https://mailpit.axllent.org/) (`http://localhost:8025`). In production, set to the webmail URL.
 
 ## Git workflow
 
 - Branch per task, named after the YouTrack issue: `feature/MH-xx-short-name`
 - Include the issue ID in commit messages: `MH-22: add booking form validation`
-- Merge into `main` through a pull request
+- Merge into `dev` through a pull request
 - Line endings are normalized via `.gitattributes` in the repo root

@@ -14,6 +14,12 @@ npm run dev
 
 To initialize and seed the database, you can use `npm run db:init` and `npm run db:seed`.
 
+## API documentation
+
+With the server running, open `http://localhost:3000/docs`.
+
+The page shows [`docs/openapi.yaml`](docs/openapi.yaml), which is written by hand. When you add or change a route, update that file too: `tests/integration/openapi/openapi.route-specification.test.ts` fails if a route is missing from it.
+
 ## Email Notifications
 
 The server sends booking confirmation emails via SMTP using [Nodemailer](https://nodemailer.com/).
@@ -61,10 +67,7 @@ MAIL_REPLY_TO=prenotazioni@mountain-hut.example
 
 ```
 src/notifications/
-├── index.ts               # Singleton emailSender instance
-├── sender.ts              # SmtpEmailSender (EmailSender interface + Nodemailer)
-├── templates.ts           # renderBookingConfirmation — builds subject/text/html
-└── booking-confirmation.ts # sendBookingConfirmation — domain-level send function
+├── sender.ts         # SmtpEmailSender & emailSender singleton instance
+├── templates.ts      # renderBookingConfirmation — builds subject/text/html
+└── confirmation.ts   # sendBookingConfirmation — domain-level send function
 ```
-
-> `send-test.ts` is a dev-only script to manually verify the SMTP connection: `npx tsx src/notifications/send-test.ts`
