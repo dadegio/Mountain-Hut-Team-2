@@ -30,7 +30,7 @@ export async function staffBookingRoutes(app: FastifyInstance) {
     const { hikerId, slotId, partySize } = parsed.data;
     try {
       // Only authenticated staff can bypass the hiker two-hour cutoff.
-      // The slot must still not have ended; all other booking rules remain.
+      // The slot must not have started; all other booking rules remain.
       const booking = await createBooking({
         userId: hikerId, slotId, partySize, allowStaffLateBooking: true,
       });
