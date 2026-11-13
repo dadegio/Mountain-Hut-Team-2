@@ -5,7 +5,7 @@ import { mondayOf } from "../utils/week-date.ts";
 
 interface CopyWeekFormProps {
   selectedDate: string;
-  onCopied: (targetWeekStart: string) => void;
+  onCopied: (targetWeekStart: string, copiedSlots: number, weeks: number) => void;
 }
 
 function addDays(date: string, days: number): string {
@@ -18,16 +18,19 @@ function addDays(date: string, days: number): string {
 export default function CopyWeekForm({ selectedDate, onCopied }: CopyWeekFormProps) {
   const [sourceDate, setSourceDate] = useState(selectedDate);
   const [targetDate, setTargetDate] = useState(addDays(mondayOf(selectedDate), 7));
-  const [weeks, setWeeks] = useState(1);
+  const [weeks, setWeeks] = useState("1");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sourceWeekStart = mondayOf(sourceDate);
   const targetWeekStart = mondayOf(targetDate);
   const sourceWeekEnd = addDays(sourceWeekStart, 6);
-  const targetEnd = addDays(targetWeekStart, weeks * 7 - 1);
-  const overlaps = sourceWeekStart <= targetEnd && targetWeekStart <= sourceWeekEnd;
-  const invalid = !sourceWeekStart || !targetWeekStart || !Number.isInteger(weeks) || weeks < 1 || weeks > 12 ||
+  const weeksNumber = Number(weeks);
+  const validWeeks = weeks.trim() !== "" && Number.isInteger(weeksNumber) &&
+    weeksNumber >= 1 && weeksNumber <= 12;
+  const targetEnd = validWeeks ? addDays(targetWeekStart, weeksNumber * 7 - 1) : "";
+  const overlaps = !!targetEnd && sourceWeekStart <= targetEnd && targetWeekStart <= sourceWeekEnd;
+  const invalid = !sourceWeekStart || !targetWeekStart || !validWeeks ||
     targetWeekStart < todayString() || overlaps;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -36,8 +39,8 @@ export default function CopyWeekForm({ selectedDate, onCopied }: CopyWeekFormPro
     setError(null);
     setSubmitting(true);
     try {
-      await copyWeek({ sourceWeekStart, targetWeekStart, weeks });
-      onCopied(targetWeekStart);
+      const result = await copyWeek({ sourceWeekStart, targetWeekStart, weeks: weeksNumber });
+      onCopied(targetWeekStart, result.copiedSlots, weeksNumber);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not copy the schedule");
     } finally {
@@ -84,7 +87,7 @@ export default function CopyWeekForm({ selectedDate, onCopied }: CopyWeekFormPro
             max={12}
             step={1}
             value={weeks}
-            onChange={(event) => { setWeeks(event.target.valueAsNumber); setError(null); }}
+            onChange={(event) => { setWeeks(event.target.value); setError(null); }}
             className="mt-1 block w-full rounded border border-stone-300 bg-white p-2"
             required
           />

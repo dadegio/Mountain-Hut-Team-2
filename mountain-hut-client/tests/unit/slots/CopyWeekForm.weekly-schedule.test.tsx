@@ -28,12 +28,19 @@ describe("MH-129 weekly schedule copy", () => {
     expect(copyWeek).toHaveBeenCalledWith({
       sourceWeekStart: "2099-01-12", targetWeekStart: "2099-01-19", weeks: 1,
     });
-    expect(onCopied).toHaveBeenCalledWith("2099-01-19");
+    expect(onCopied).toHaveBeenCalledWith("2099-01-19", 2, 1);
   });
 
   it("refuses an overlapping destination week before the request", async () => {
     render(<CopyWeekForm selectedDate={SOURCE} onCopied={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("First destination week"), { target: { value: "2099-01-15" } });
+    expect(screen.getByRole("button", { name: "Copy week" })).toBeDisabled();
+    expect(copyWeek).not.toHaveBeenCalled();
+  });
+
+  it("does not crash when the number of weeks is cleared", () => {
+    render(<CopyWeekForm selectedDate={SOURCE} onCopied={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Number of weeks"), { target: { value: "" } });
     expect(screen.getByRole("button", { name: "Copy week" })).toBeDisabled();
     expect(copyWeek).not.toHaveBeenCalled();
   });

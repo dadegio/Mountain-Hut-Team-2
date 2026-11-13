@@ -28,6 +28,7 @@ export default function EmployeeSlotsPage() {
   // the slots of the newly chosen day are still loading
   const [slotsResult, setSlotsResult] = useState<SlotsResult | null>(null);
   const [reloadSlots, setReloadSlots] = useState(0);
+  const [copyNotice, setCopyNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -72,7 +73,8 @@ export default function EmployeeSlotsPage() {
     );
   }
 
-  function handleWeekCopied(targetWeekStart: string) {
+  function handleWeekCopied(targetWeekStart: string, copiedSlots: number, weeks: number) {
+    setCopyNotice(`Copied ${copiedSlots} slots into ${weeks} ${weeks === 1 ? "week" : "weeks"}`);
     setSlotsResult(null);
     setDate(targetWeekStart);
     setReloadSlots((previous) => previous + 1);
@@ -142,6 +144,7 @@ export default function EmployeeSlotsPage() {
           <section className={`${card} space-y-4`}>
             <h2 className="text-lg font-semibold">Copy weekly schedule</h2>
             <CopyWeekForm key={date} selectedDate={date} onCopied={handleWeekCopied} />
+            {copyNotice && <p role="status" className="text-sm text-green-800">{copyNotice}</p>}
           </section>
 
           <section className={`${card} space-y-4`}>
