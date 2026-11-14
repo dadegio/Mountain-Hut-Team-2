@@ -35,25 +35,25 @@ export class UserRepository {
   static async getUsersByName(
     name: string = "",
     surname: string = "",
-  ): Promise<User[]> {
-    const conditions: SQL[] = [];
+  ): Promise<User[] | null> {
+    const cleanName = name.trim().toLowerCase();
+    const cleanSurname = surname.trim().toLowerCase();
 
-    if (name.trim() !== "") {
-      conditions.push(eq(sql`LOWER(${usersTable.name})`, name.toLowerCase()));
+    const conditions: SQL[] = [
+      ...(cleanName ? [eq(sql`LOWER(${usersTable.name})`, cleanName)] : []),
+      ...(cleanSurname
+        ? [eq(sql`LOWER(${usersTable.surname})`, cleanSurname)]
+        : []),
+    ];
+
+    if (conditions.length === 0) {
+      return null;
     }
 
-    if (surname.trim() !== "") {
-      conditions.push(
-        eq(sql`LOWER(${usersTable.surname})`, surname.toLowerCase()),
-      );
-    }
-
-    const rows = await db
+    return db
       .select()
       .from(usersTable)
       .where(and(...conditions));
-
-    return rows;
   }
 
   static async getUserByPhoneNumber(phoneNumber: string): Promise<User | null> {
