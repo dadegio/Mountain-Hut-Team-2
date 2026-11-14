@@ -1,5 +1,8 @@
 import Fastify, { type FastifyServerOptions } from "fastify";
 import secureSession from "@fastify/secure-session";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
+import { fileURLToPath } from "node:url";
 import {
   serializerCompiler,
   validatorCompiler,
@@ -7,12 +10,14 @@ import {
 
 import { env } from "./config.ts";
 import { slotRoutes } from "./slots/slot-routes.ts";
-import { availabilityRoutes } from "./booking/availability-routes.ts";
-import { bookingRoutes } from "./booking/booking-routes.ts";
-import { changeBookingRoutes } from "./booking/change-booking-routes.ts";
-import { authRoutes } from "./auth/auth.route.ts";
 import { userRoutes } from "./users/user.route.ts";
 import UserRepository from "./users/user.repository.ts";
+import { availabilityRoutes } from "./booking/routes/availability-routes.ts";
+import { bookingRoutes } from "./booking/routes/booking-routes.ts";
+import { staffBookingRoutes } from "./booking/routes/staff-booking-routes.ts";
+import { changeBookingRoutes } from "./booking/routes/change-booking-routes.ts";
+import { allergenRoutes } from "./allergens/allergen-routes.ts";
+import { authRoutes } from "./auth/auth-routes.ts";
 
 export function buildApp(opts: FastifyServerOptions = {}) {
   const server = Fastify({
@@ -46,14 +51,26 @@ export function buildApp(opts: FastifyServerOptions = {}) {
     }
   });
 
+  // The routes have no schemas yet, so the docs come from a handwritten file
+  server.register(swagger, {
+    mode: "static",
+    specification: {
+      path: fileURLToPath(new URL("../docs/openapi.yaml", import.meta.url)),
+      baseDir: fileURLToPath(new URL("../docs", import.meta.url)),
+    },
+  });
+  server.register(swaggerUi, { routePrefix: "/docs" });
+
   server.get("/", async () => ({ hello: "world" }));
 
-  server.register(slotRoutes);
-  server.register(availabilityRoutes);
-  server.register(bookingRoutes);
-  server.register(changeBookingRoutes);
-
   const BASE_URL = "/api/v1";
+
+  server.register(slotRoutes, { prefix: BASE_URL });
+  server.register(availabilityRoutes, { prefix: BASE_URL });
+  server.register(bookingRoutes, { prefix: BASE_URL });
+  server.register(staffBookingRoutes, { prefix: BASE_URL });
+  server.register(changeBookingRoutes, { prefix: BASE_URL });
+  server.register(allergenRoutes, { prefix: BASE_URL });
   server.register(authRoutes, {
     prefix: `${BASE_URL}/auth`,
   });

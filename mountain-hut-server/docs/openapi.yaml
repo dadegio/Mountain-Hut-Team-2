@@ -1,0 +1,969 @@
+openapi: 3.0.3
+info:
+  title: Mountain Hut API
+  version: 1.0.0
+  description: |
+    Backend API of the Mountain Hut booking system.
+
+    **Sign in:** `POST /api/v1/auth/login` sets a session cookie. The browser
+    sends it with the next requests, also from this page.
+
+    **Roles:** `HIKER`, `EMPLOYEE` and `MANAGER`. Each endpoint says which roles
+    can use it. Without a line about roles, it is open to everyone.
+
+    **Times:** dates are `YYYY-MM-DD` and times are `HH:MM`, in the hut's local
+    time (Europe/Rome).
+
+    **Errors:** any endpoint can also answer `500` with an `Error` body.
+  license:
+    name: EUPL-1.2
+    url: https://eupl.eu/1.2/en/
+
+servers:
+  - url: /
+    description: The server showing this page
+
+tags:
+  - name: Auth
+    description: Accounts and sessions
+  - name: Tables
+    description: The tables of the hut
+  - name: Slots
+    description: The time slots of each day
+  - name: Availability
+    description: Free seats in the slots of a day
+  - name: Bookings
+    description: Hikers' bookings
+  - name: Allergens
+    description: Allergens a hiker can report when booking
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Create a hiker account
+      description: The new account is always a `HIKER`. It does not sign the user in.
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/AuthValidationError"
+        "409":
+          description: An account with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Sign in
+      description: On success, the response sets the session cookie.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Signed in
+          headers:
+            Set-Cookie:
+              description: The encrypted session cookie
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/AuthValidationError"
+        "401":
+          description: Wrong email or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Sign out
+      description: Clears the session cookie. It also answers `200` when nobody is signed in.
+      operationId: logout
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the signed-in user
+      operationId: getCurrentUser
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: The signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Nobody is signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /api/v1/tables:
+    get:
+      tags: [Tables]
+      summary: List all tables
+      operationId: listTables
+      responses:
+        "200":
+          description: All tables, by id
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Table"
+    post:
+      tags: [Tables]
+      summary: Create a table
+      description: "Roles: `EMPLOYEE`, `MANAGER`."
+      operationId: createTable
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTableRequest"
+      responses:
+        "201":
+          description: Table created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Table"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: A table with this code already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/slots:
+    get:
+      tags: [Slots]
+      summary: List the slots of a day
+      operationId: listSlots
+      parameters:
+        - $ref: "#/components/parameters/RequiredDate"
+      responses:
+        "200":
+          description: The slots of that day, by start time. A slot without tables has 0 seats.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Slot"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+    post:
+      tags: [Slots]
+      summary: Create a slot
+      description: "Roles: `EMPLOYEE`, `MANAGER`."
+      operationId: createSlot
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSlotRequest"
+      responses:
+        "201":
+          description: Slot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Slot"
+        "400":
+          description: Invalid body, or the date is in the past
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: One of the tables does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: The slot overlaps with another slot of that day
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/slots/{id}:
+    get:
+      tags: [Slots]
+      summary: Get a slot
+      operationId: getSlot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: The slot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Slot"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          description: The slot does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/availability:
+    get:
+      tags: [Availability]
+      summary: Check the free seats of a day
+      description: A day with no slots answers `200` with an empty `slots` list.
+      operationId: getAvailability
+      parameters:
+        - $ref: "#/components/parameters/RequiredDate"
+        - name: partySize
+          in: query
+          description: How many people need a seat
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 1
+        - name: slotId
+          in: query
+          description: Answer only about this slot
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: The slots of that day, by start time
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Availability"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          description: "`slotId` is not a slot of that day"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/bookings:
+    post:
+      tags: [Bookings]
+      summary: Book a slot
+      description: |
+        Roles: `HIKER`. The booking is for the signed-in hiker, who then gets a
+        confirmation email.
+
+        A booking must be made at least 2 hours before the slot starts, and a
+        hiker can have one active booking per slot.
+      operationId: createBooking
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBookingRequest"
+      responses:
+        "201":
+          description: Booking placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedBooking"
+        "400":
+          description: Invalid body, or an allergen does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The slot does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          $ref: "#/components/responses/BookingConflict"
+
+  /api/v1/bookings/mine:
+    get:
+      tags: [Bookings]
+      summary: List my bookings
+      description: "Roles: `HIKER`. Newest slot first, including past and canceled bookings."
+      operationId: listMyBookings
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: The bookings of the signed-in hiker
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MyBooking"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/bookings/{bookingId}:
+    patch:
+      tags: [Bookings]
+      summary: Change my booking
+      description: |
+        Roles: `HIKER`. Moves a booking to another slot, changes the party size,
+        or both. It is allowed within 48 hours of creating the booking, and the
+        new slot must still start at least 2 hours later.
+      operationId: changeBooking
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          description: The `id` from `GET /api/v1/bookings/mine`
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeBookingRequest"
+      responses:
+        "200":
+          description: Booking changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangedBooking"
+        "400":
+          description: Invalid booking id or body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The slot does not exist, or the booking does not exist or belongs to someone else
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: |
+            The booking is not `PLACED`, the 48 hours are over, the 2-hour limit
+            has passed, the hiker already has a booking in that slot, or there
+            are not enough seats.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/staff/bookings:
+    post:
+      tags: [Bookings]
+      summary: Book a slot for a hiker
+      description: |
+        Roles: `EMPLOYEE`, `MANAGER`. Books for an existing hiker. Unlike hikers,
+        staff can book until the slot ends. No confirmation email is sent.
+      operationId: createStaffBooking
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaffBookingRequest"
+      responses:
+        "201":
+          description: Booking placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedBooking"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          description: The signed-in user is not staff, or `hikerId` is not a hiker
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: The hiker or the slot does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: |
+            The slot has ended, the hiker already has a booking in it, or there
+            are not enough seats.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/allergens:
+    get:
+      tags: [Allergens]
+      summary: List all allergens
+      operationId: listAllergens
+      responses:
+        "200":
+          description: All allergens, by id
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Allergen"
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Set by `POST /api/v1/auth/login`
+
+  parameters:
+    RequiredDate:
+      name: date
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/Date"
+
+  responses:
+    InvalidRequest:
+      description: The request is not valid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    AuthValidationError:
+      description: The body is not valid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AuthValidationError"
+    AuthenticationRequired:
+      description: Nobody is signed in
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: The signed-in user does not have the right role
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BookingConflict:
+      description: |
+        The 2-hour limit has passed, the hiker already has a booking in this
+        slot, or there are not enough seats.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Date:
+      type: string
+      format: date
+      example: "2026-12-24"
+
+    Time:
+      type: string
+      pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+      example: "12:30"
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: Authentication required
+        details:
+          type: array
+          description: Which fields are wrong, when the request is not valid
+          items:
+            type: object
+
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    AuthValidationError:
+      type: object
+      description: The format used by the auth endpoints when the body is not valid
+      required: [statusCode, code, error, message]
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        code:
+          type: string
+          example: FST_ERR_VALIDATION
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
+
+    User:
+      type: object
+      required: [id, email, name, surname, type]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        surname:
+          type: string
+        phone_number:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [HIKER, EMPLOYEE, MANAGER]
+
+    RegisterRequest:
+      type: object
+      required: [email, password, name, surname]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        name:
+          type: string
+          minLength: 1
+        surname:
+          type: string
+          minLength: 1
+        phone_number:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 1
+
+    Table:
+      type: object
+      required: [id, code, seats]
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+          example: T1
+        seats:
+          type: integer
+
+    CreateTableRequest:
+      type: object
+      additionalProperties: false
+      required: [code, seats]
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: Must be unique. Spaces at the start and end are removed.
+          example: T1
+        seats:
+          type: integer
+          minimum: 1
+
+    Slot:
+      type: object
+      required: [id, date, from, to, totalSeats, tables]
+      properties:
+        id:
+          type: integer
+        date:
+          $ref: "#/components/schemas/Date"
+        from:
+          $ref: "#/components/schemas/Time"
+        to:
+          $ref: "#/components/schemas/Time"
+        totalSeats:
+          type: integer
+        tables:
+          type: array
+          items:
+            $ref: "#/components/schemas/Table"
+
+    CreateSlotRequest:
+      type: object
+      additionalProperties: false
+      required: [date, from, to]
+      properties:
+        date:
+          $ref: "#/components/schemas/Date"
+        from:
+          $ref: "#/components/schemas/Time"
+        to:
+          description: Must be after `from`
+          allOf:
+            - $ref: "#/components/schemas/Time"
+        tableIds:
+          type: array
+          description: Without tables, the slot has 0 seats
+          uniqueItems: true
+          default: []
+          items:
+            type: integer
+            minimum: 1
+
+    Availability:
+      type: object
+      required: [date, partySize, slots]
+      properties:
+        date:
+          $ref: "#/components/schemas/Date"
+        partySize:
+          type: integer
+        slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/SlotAvailability"
+
+    SlotAvailability:
+      type: object
+      required: [slotId, from, to, availableSeats, available, tables, allocation]
+      properties:
+        slotId:
+          type: integer
+        from:
+          $ref: "#/components/schemas/Time"
+        to:
+          $ref: "#/components/schemas/Time"
+        availableSeats:
+          type: integer
+          description: Free seats in the whole slot
+        available:
+          type: boolean
+          description: Whether the party fits in this slot
+        tables:
+          type: array
+          items:
+            type: object
+            required: [tableId, code, freeSeats]
+            properties:
+              tableId:
+                type: integer
+              code:
+                type: string
+              freeSeats:
+                type: integer
+        allocation:
+          type: array
+          nullable: true
+          description: The tables the party would get, or `null` if it does not fit
+          items:
+            type: object
+            required: [tableId, code, seats]
+            properties:
+              tableId:
+                type: integer
+              code:
+                type: string
+              seats:
+                type: integer
+
+    Allergen:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    Reservation:
+      type: object
+      description: The part of a booking on one table. A big group can use several tables.
+      required: [reservationId, tableId, seats]
+      properties:
+        reservationId:
+          type: integer
+        tableId:
+          type: integer
+        seats:
+          type: integer
+
+    CreateBookingRequest:
+      type: object
+      additionalProperties: false
+      required: [slotId, partySize]
+      properties:
+        slotId:
+          type: integer
+          minimum: 1
+        partySize:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        description:
+          type: string
+          maxLength: 1000
+        allergenIds:
+          type: array
+          default: []
+          items:
+            type: integer
+            minimum: 1
+        requirements:
+          type: string
+          maxLength: 1000
+          description: Used as the description when `description` is missing
+
+    CreateStaffBookingRequest:
+      type: object
+      additionalProperties: false
+      required: [hikerId, slotId, partySize]
+      properties:
+        hikerId:
+          type: integer
+          minimum: 1
+        slotId:
+          type: integer
+          minimum: 1
+        partySize:
+          type: integer
+          minimum: 1
+          maximum: 1000
+
+    ChangeBookingRequest:
+      type: object
+      additionalProperties: false
+      description: At least one of the fields is required
+      minProperties: 1
+      properties:
+        slotId:
+          type: integer
+          minimum: 1
+        partySize:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+
+    CreatedBooking:
+      type: object
+      required:
+        - status
+        - userId
+        - slotId
+        - date
+        - from
+        - to
+        - partySize
+        - description
+        - allergenIds
+        - allergens
+        - reservations
+      properties:
+        status:
+          type: string
+          enum: [PLACED]
+        userId:
+          type: integer
+          description: The hiker the booking is for
+        slotId:
+          type: integer
+        date:
+          $ref: "#/components/schemas/Date"
+        from:
+          $ref: "#/components/schemas/Time"
+        to:
+          $ref: "#/components/schemas/Time"
+        partySize:
+          type: integer
+        description:
+          type: string
+          nullable: true
+        allergenIds:
+          type: array
+          items:
+            type: integer
+        allergens:
+          type: array
+          items:
+            $ref: "#/components/schemas/Allergen"
+        reservations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reservation"
+
+    ChangedBooking:
+      type: object
+      required: [bookingId, status, userId, slotId, partySize, description, reservations]
+      properties:
+        bookingId:
+          type: integer
+        status:
+          type: string
+          enum: [PLACED]
+        userId:
+          type: integer
+        slotId:
+          type: integer
+        partySize:
+          type: integer
+        description:
+          type: string
+          nullable: true
+        reservations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reservation"
+
+    MyBooking:
+      type: object
+      required:
+        - id
+        - date
+        - slotId
+        - from
+        - to
+        - partySize
+        - status
+        - description
+        - allergens
+        - createdAt
+        - reservations
+      properties:
+        id:
+          type: integer
+          description: The id to use in `PATCH /api/v1/bookings/{bookingId}`
+        date:
+          $ref: "#/components/schemas/Date"
+        slotId:
+          type: integer
+        from:
+          $ref: "#/components/schemas/Time"
+        to:
+          $ref: "#/components/schemas/Time"
+        partySize:
+          type: integer
+        status:
+          type: string
+          enum: [PLACED, FULFILLED, CANCELED]
+        description:
+          type: string
+          nullable: true
+        allergens:
+          type: array
+          items:
+            $ref: "#/components/schemas/Allergen"
+        createdAt:
+          type: string
+          description: UTC, in the format `YYYY-MM-DD HH:MM:SS`
+          example: "2026-11-05 10:30:00"
+        reservations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reservation"
