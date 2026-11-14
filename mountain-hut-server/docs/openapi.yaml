@@ -439,7 +439,7 @@ paths:
       summary: Book a slot for a hiker
       description: |
         Roles: `EMPLOYEE`, `MANAGER`. Books for an existing hiker. Unlike hikers,
-        staff can book until the slot ends. No confirmation email is sent.
+        staff can book until the slot starts. No confirmation email is sent.
       operationId: createStaffBooking
       security:
         - sessionCookie: []

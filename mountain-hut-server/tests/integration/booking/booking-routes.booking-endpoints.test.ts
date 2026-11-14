@@ -841,11 +841,11 @@ describe("POST /api/v1/staff/bookings — MH-07 existing hiker", () => {
     }
   });
 
-  it("201: staff can book after the slot starts but before its end", async () => {
+  it("201: staff can book immediately before the slot starts", async () => {
     const { hutSlotStartMs } =
       await import("../../../src/booking/rules/booking-rules.ts");
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "12:30")));
+    vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "12:00") - 1));
     try {
       const response = await postStaffBooking({
         hikerId: 1,
@@ -859,11 +859,11 @@ describe("POST /api/v1/staff/bookings — MH-07 existing hiker", () => {
     }
   });
 
-  it("409: staff cannot book at the exact end of the slot", async () => {
+  it("409: staff cannot book after the slot starts but before its end", async () => {
     const { hutSlotStartMs } =
       await import("../../../src/booking/rules/booking-rules.ts");
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "13:00")));
+    vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "12:30")));
     try {
       const response = await postStaffBooking({
         hikerId: 1,
@@ -872,7 +872,28 @@ describe("POST /api/v1/staff/bookings — MH-07 existing hiker", () => {
       });
       expect(response.statusCode).toBe(409);
       expect(response.json()).toMatchObject({
-        error: "Time slot has already ended",
+        error: "Time slot has already started",
+      });
+      expect(await reservationRows()).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("409: staff cannot book at the exact start of the slot", async () => {
+    const { hutSlotStartMs } =
+      await import("../../../src/booking/rules/booking-rules.ts");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(hutSlotStartMs(futureDate, "12:00")));
+    try {
+      const response = await postStaffBooking({
+        hikerId: 1,
+        slotId: 1,
+        partySize: 1,
+      });
+      expect(response.statusCode).toBe(409);
+      expect(response.json()).toMatchObject({
+        error: "Time slot has already started",
       });
       expect(await reservationRows()).toHaveLength(0);
     } finally {
