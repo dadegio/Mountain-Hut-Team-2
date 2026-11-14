@@ -42,7 +42,9 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
         type: "HIKER",
       });
 
-      return reply.code(StatusCodes.CREATED).send(user);
+      return reply
+        .code(StatusCodes.CREATED)
+        .send(userResponseSchema.parse(user));
     },
   );
 
@@ -78,14 +80,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
       // save user ID directly into the encrypted cookie
       request.session.set("userId", user.id);
 
-      return reply.code(StatusCodes.OK).send({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        surname: user.surname,
-        phoneNumber: user.phoneNumber,
-        type: user.type,
-      });
+      return reply.code(StatusCodes.OK).send(userResponseSchema.parse(user));
     },
   );
 
@@ -104,6 +99,8 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
         .send({ message: "Not authenticated" });
     }
 
-    return reply.code(StatusCodes.OK).send(request.user);
+    return reply
+      .code(StatusCodes.OK)
+      .send(userResponseSchema.parse(request.user));
   });
 };

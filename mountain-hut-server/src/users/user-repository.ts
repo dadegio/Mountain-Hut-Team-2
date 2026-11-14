@@ -1,7 +1,6 @@
 import { db } from "../db/database.ts";
 import { eq, and, SQL, type InferSelectModel, sql } from "drizzle-orm";
 import { usersTable, type UserType } from "../db/schema.ts";
-import type { UserResponse } from "./user-schema.ts";
 
 export interface CreateUserData {
   email: string;
@@ -66,7 +65,7 @@ export class UserRepository {
     return user ?? null;
   }
 
-  static async createUser(data: CreateUserData): Promise<UserResponse> {
+  static async createUser(data: CreateUserData): Promise<User> {
     const [newUser] = await db.insert(usersTable).values(data).returning();
     return newUser;
   }

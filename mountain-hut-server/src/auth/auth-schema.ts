@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { USER_TYPES } from "../db/schema.ts";
 
 export const registerSchema = z.object({
   email: z.email("Invalid email format"),
