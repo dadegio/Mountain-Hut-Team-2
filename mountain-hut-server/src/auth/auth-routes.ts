@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import UserRepository from "../users/user.repository.ts";
 import { userResponseSchema } from "../users/user.schema.ts";
-import { registerSchema, loginSchema } from "./auth.schema.ts";
+import { registerSchema, loginSchema } from "./auth-schema.ts";
 
 export const authRoutes: FastifyPluginAsync = async (server) => {
   const typed = server.withTypeProvider<ZodTypeProvider>();
