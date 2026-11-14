@@ -11,7 +11,7 @@ import {
 import { env } from "./config.ts";
 import { slotRoutes } from "./slots/slot-routes.ts";
 import { userRoutes } from "./users/user-routes.ts";
-import UserRepository from "./users/user-repository.ts";
+import { UserRepository } from "./users/user-repository.ts";
 import { availabilityRoutes } from "./booking/routes/availability-routes.ts";
 import { bookingRoutes } from "./booking/routes/booking-routes.ts";
 import { staffBookingRoutes } from "./booking/routes/staff-booking-routes.ts";

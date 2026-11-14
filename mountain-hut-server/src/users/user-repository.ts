@@ -1,5 +1,5 @@
 import { db } from "../db/database.ts";
-import { eq, and, SQL, type InferSelectModel, ilike, sql } from "drizzle-orm";
+import { eq, and, SQL, type InferSelectModel, sql } from "drizzle-orm";
 import { usersTable, type UserType } from "../db/schema.ts";
 
 export interface CreateUserData {
@@ -13,7 +13,7 @@ export interface CreateUserData {
 
 export type User = InferSelectModel<typeof usersTable>;
 
-export default class UserRepository {
+export class UserRepository {
   static async getUserByEmail(email: string): Promise<User | null> {
     const [user] = await db
       .select()
