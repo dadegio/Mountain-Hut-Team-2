@@ -1,4 +1,3 @@
-
 import Fastify, { type FastifyServerOptions } from "fastify";
 import secureSession from "@fastify/secure-session";
 import swagger from "@fastify/swagger";
@@ -11,13 +10,14 @@ import {
 
 import { env } from "./config.ts";
 import { slotRoutes } from "./slots/slot-routes.ts";
+import { userRoutes } from "./users/user-routes.ts";
+import { UserRepository } from "./users/user-repository.ts";
 import { availabilityRoutes } from "./booking/routes/availability-routes.ts";
 import { bookingRoutes } from "./booking/routes/booking-routes.ts";
 import { staffBookingRoutes } from "./booking/routes/staff-booking-routes.ts";
 import { changeBookingRoutes } from "./booking/routes/change-booking-routes.ts";
 import { allergenRoutes } from "./allergens/allergen-routes.ts";
-import authRoutes from "./auth/auth-routes.ts";
-import AuthRepository from "./auth/auth-repository.ts";
+import { authRoutes } from "./auth/auth-routes.ts";
 
 export function buildApp(opts: FastifyServerOptions = {}) {
   const server = Fastify({
@@ -44,7 +44,7 @@ export function buildApp(opts: FastifyServerOptions = {}) {
     const userId = request.session.get("userId");
 
     if (userId) {
-      const user = await AuthRepository.getUserById(userId);
+      const user = await UserRepository.getUserById(userId);
       request.user = user ?? null;
     } else {
       request.user = null;
@@ -73,6 +73,9 @@ export function buildApp(opts: FastifyServerOptions = {}) {
   server.register(allergenRoutes, { prefix: BASE_URL });
   server.register(authRoutes, {
     prefix: `${BASE_URL}/auth`,
+  });
+  server.register(userRoutes, {
+    prefix: `${BASE_URL}/users`,
   });
 
   return server;

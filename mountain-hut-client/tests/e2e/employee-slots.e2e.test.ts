@@ -64,7 +64,7 @@ test.describe('who can open the page', () => {
     const email = `e2e.hiker.${randomUUID()}@example.com`
     const password = 'Password123!'
     const res = await page.request.post('/api/v1/auth/register', {
-      data: { email, password, name: 'E2E', surname: 'Hiker', phone_number: '+393330000000' },
+      data: { email, password, name: 'E2E', surname: 'Hiker', phoneNumber: '+393330000000' },
     })
     expect(res.status()).toBe(201)
 

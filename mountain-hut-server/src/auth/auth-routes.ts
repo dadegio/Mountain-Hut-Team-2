@@ -4,14 +4,11 @@ import { StatusCodes } from "http-status-codes";
 import argon2 from "argon2";
 import { z } from "zod";
 
-import {
-  registerSchema,
-  loginSchema,
-  userResponseSchema,
-} from "./auth-schema.ts";
-import AuthRepository from "./auth-repository.ts";
+import { UserRepository } from "../users/user-repository.ts";
+import { userResponseSchema } from "../users/user-schema.ts";
+import { registerSchema, loginSchema } from "./auth-schema.ts";
 
-const authRoutes: FastifyPluginAsync = async (server) => {
+export const authRoutes: FastifyPluginAsync = async (server) => {
   const typed = server.withTypeProvider<ZodTypeProvider>();
 
   typed.post(
@@ -26,7 +23,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
       },
     },
     async (request, reply) => {
-      const existingUser = await AuthRepository.getUserByEmail(
+      const existingUser = await UserRepository.getUserByEmail(
         request.body.email,
       );
       if (existingUser) {
@@ -36,16 +33,18 @@ const authRoutes: FastifyPluginAsync = async (server) => {
       }
 
       const passwordHash = await argon2.hash(request.body.password);
-      const user = await AuthRepository.createUser({
+      const user = await UserRepository.createUser({
         email: request.body.email,
         passwordHash,
         name: request.body.name,
         surname: request.body.surname,
-        phoneNumber: request.body.phone_number,
+        phoneNumber: request.body.phoneNumber,
         type: "HIKER",
       });
 
-      return reply.code(StatusCodes.CREATED).send(user);
+      return reply
+        .code(StatusCodes.CREATED)
+        .send(userResponseSchema.parse(user));
     },
   );
 
@@ -61,7 +60,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
       },
     },
     async (request, reply) => {
-      const user = await AuthRepository.getUserByEmail(request.body.email);
+      const user = await UserRepository.getUserByEmail(request.body.email);
       if (!user) {
         return reply
           .code(StatusCodes.UNAUTHORIZED)
@@ -81,14 +80,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
       // save user ID directly into the encrypted cookie
       request.session.set("userId", user.id);
 
-      return reply.code(StatusCodes.OK).send({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        surname: user.surname,
-        phone_number: user.phoneNumber,
-        type: user.type,
-      });
+      return reply.code(StatusCodes.OK).send(userResponseSchema.parse(user));
     },
   );
 
@@ -107,8 +99,8 @@ const authRoutes: FastifyPluginAsync = async (server) => {
         .send({ message: "Not authenticated" });
     }
 
-    return reply.code(StatusCodes.OK).send(request.user);
+    return reply
+      .code(StatusCodes.OK)
+      .send(userResponseSchema.parse(request.user));
   });
 };
-
-export default authRoutes;

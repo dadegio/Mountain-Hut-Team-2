@@ -34,6 +34,14 @@ export interface BookingResult {
   reservations: Reservation[];
 }
 
+// --- POST /api/v1/staff/bookings (MH-07) ---
+
+export interface CreateStaffBookingRequest {
+  hikerId: number;
+  slotId: number;
+  partySize: number;
+}
+
 // --- GET /api/v1/bookings/mine (MH-36) ---
 
 export interface MyBooking {

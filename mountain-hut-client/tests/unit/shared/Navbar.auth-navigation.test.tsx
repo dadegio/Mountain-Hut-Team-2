@@ -28,7 +28,7 @@ const fakeUser = (type: User['type']): User => ({
   email: 'test@example.com',
   name: 'Test',
   surname: 'User',
-  phone_number: '+390000000000',
+  phoneNumber: '+390000000000',
   type,
 })
 
@@ -70,6 +70,7 @@ describe("Navbar", () => {
     renderNavbarAs(fakeUser("EMPLOYEE"));
     const manageSlots = screen.getByText("Manage slots");
     expect(manageSlots).toBeInTheDocument();
+    expect(screen.getByText("New reservation")).toBeInTheDocument();
     expect(screen.getByText("Logout")).toBeInTheDocument();
     expect(screen.queryByText("Book a table")).not.toBeInTheDocument();
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();

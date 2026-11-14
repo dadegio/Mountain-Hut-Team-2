@@ -27,13 +27,16 @@ vi.mock("../../../src/config.ts", () => ({
     PORT: 3000,
     SESSION_SECRET: "a".repeat(32),
     SESSION_SALT: "1234567890123456",
+    DB_FILE_NAME: ":memory:",
   },
 }));
 vi.mock("../../../src/slots/slot-routes.ts", () => ({ slotRoutes: vi.fn() }));
 vi.mock("../../../src/booking/routes/availability-routes.ts", () => ({
   availabilityRoutes: vi.fn(),
 }));
-vi.mock("../../../src/booking/routes/booking-routes.ts", () => ({ bookingRoutes: vi.fn() }));
+vi.mock("../../../src/booking/routes/booking-routes.ts", () => ({
+  bookingRoutes: vi.fn(),
+}));
 vi.mock("../../../src/booking/routes/staff-booking-routes.ts", () => ({
   staffBookingRoutes: vi.fn(),
 }));
@@ -43,10 +46,11 @@ vi.mock("../../../src/booking/routes/change-booking-routes.ts", () => ({
 vi.mock("../../../src/allergens/allergen-routes.ts", () => ({
   allergenRoutes: vi.fn(),
 }));
-vi.mock("../../../src/auth/auth-routes.ts", () => ({ default: vi.fn() }));
-vi.mock("../../../src/auth/auth-repository.ts", () => ({
+vi.mock("../../../src/auth/auth-routes.ts", () => ({ authRoutes: vi.fn() }));
+vi.mock("../../../src/users/user-repository.ts", () => ({
   default: { getUserById: vi.fn() },
 }));
+vi.mock("../../../src/users/user-routes.ts", () => ({ userRoutes: vi.fn() }));
 
 async function loadAsEntrypoint() {
   const previousArgv = process.argv[1];
@@ -70,11 +74,8 @@ describe("server app startup", () => {
 
     expect(mocks.server.listen).toHaveBeenCalledTimes(1);
     expect(mocks.server.listen.mock.calls[0][0]).toEqual({ port: 3000 });
-    expect(mocks.server.register).toHaveBeenCalledTimes(10);
-    expect(mocks.server.get).toHaveBeenCalledWith(
-      "/",
-      expect.any(Function),
-    );
+    expect(mocks.server.register).toHaveBeenCalledTimes(11);
+    expect(mocks.server.get).toHaveBeenCalledWith("/", expect.any(Function));
 
     const callback = mocks.server.listen.mock.calls[0][1] as (
       error: Error | null,

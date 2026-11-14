@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router";
 import { Layout, HomePage, NotFoundPage } from "./shared/index.ts";
 import { AuthProvider, RequireRole, LoginPage, RegisterPage } from "./auth/index.ts";
-import { BookingPage, MyBookingsPage } from "./booking/index.ts";
+import { BookingPage, EmployeeReservationPage, MyBookingsPage } from "./booking/index.ts";
 import { EmployeeSlotsPage } from "./slots/index.ts";
 
 const STAFF = ["EMPLOYEE", "MANAGER"];
@@ -28,6 +28,7 @@ function App() {
             {/* employees and managers only */}
             <Route element={<RequireRole allow={STAFF} />}>
               <Route path="employee/slots" element={<EmployeeSlotsPage />} />
+              <Route path="employee/reservations" element={<EmployeeReservationPage />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />
