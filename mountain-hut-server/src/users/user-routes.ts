@@ -3,8 +3,8 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 
-import UserRepository, { type User } from "./user.repository.ts";
-import { getUserQuerySchema, userResponseSchema } from "./user.schema.ts";
+import UserRepository, { type User } from "./user-repository.ts";
+import { getUserQuerySchema, userResponseSchema } from "./user-schema.ts";
 
 export const userRoutes: FastifyPluginAsync = async (server) => {
   const typed = server.withTypeProvider<ZodTypeProvider>();

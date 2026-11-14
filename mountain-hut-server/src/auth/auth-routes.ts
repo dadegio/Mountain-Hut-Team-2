@@ -4,8 +4,8 @@ import { StatusCodes } from "http-status-codes";
 import argon2 from "argon2";
 import { z } from "zod";
 
-import UserRepository from "../users/user.repository.ts";
-import { userResponseSchema } from "../users/user.schema.ts";
+import UserRepository from "../users/user-repository.ts";
+import { userResponseSchema } from "../users/user-schema.ts";
 import { registerSchema, loginSchema } from "./auth-schema.ts";
 
 export const authRoutes: FastifyPluginAsync = async (server) => {

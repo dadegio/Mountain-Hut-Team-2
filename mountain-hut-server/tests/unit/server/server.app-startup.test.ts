@@ -47,10 +47,10 @@ vi.mock("../../../src/allergens/allergen-routes.ts", () => ({
   allergenRoutes: vi.fn(),
 }));
 vi.mock("../../../src/auth/auth-routes.ts", () => ({ authRoutes: vi.fn() }));
-vi.mock("../../../src/users/user.repository.ts", () => ({
+vi.mock("../../../src/users/user-repository.ts", () => ({
   default: { getUserById: vi.fn() },
 }));
-vi.mock("../../../src/users/user.route.ts", () => ({ userRoutes: vi.fn() }));
+vi.mock("../../../src/users/user-routes.ts", () => ({ userRoutes: vi.fn() }));
 
 async function loadAsEntrypoint() {
   const previousArgv = process.argv[1];
