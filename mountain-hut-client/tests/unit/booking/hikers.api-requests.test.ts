@@ -6,7 +6,7 @@ const mario = {
   name: 'Mario',
   surname: 'Rossi',
   email: 'mario.rossi@example.com',
-  phone_number: '+393331234567',
+  phoneNumber: '+393331234567',
   type: 'HIKER',
 }
 const luca = { ...mario, id: 2, name: 'Luca', email: 'luca.rossi@example.com', type: 'EMPLOYEE' }
@@ -46,8 +46,8 @@ describe('searchHikers', () => {
 
   it.each([
     ['an email', 'mario.rossi@example.com', ['/api/v1/users?email=mario.rossi%40example.com']],
-    ['a phone number', '+39 333 1234567', ['/api/v1/users?phone_number=%2B393331234567']],
-    ['a phone number without prefix', '3331234567', ['/api/v1/users?phone_number=3331234567']],
+    ['a phone number', '+39 333 1234567', ['/api/v1/users?phoneNumber=%2B393331234567']],
+    ['a phone number without prefix', '3331234567', ['/api/v1/users?phoneNumber=3331234567']],
     ['one word, as name and as surname', 'rossi', [
       '/api/v1/users?name=rossi',
       '/api/v1/users?surname=rossi',

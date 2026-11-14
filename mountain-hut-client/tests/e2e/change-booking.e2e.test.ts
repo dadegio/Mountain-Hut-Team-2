@@ -25,7 +25,7 @@ async function registerAndLoginHiker(page: Page, testName: string) {
       password,
       name: 'E2E',
       surname: 'Tester',
-      phone_number: `+39333${String(id).slice(-7)}`,
+      phoneNumber: `+39333${String(id).slice(-7)}`,
       type: 'HIKER',
     },
   })

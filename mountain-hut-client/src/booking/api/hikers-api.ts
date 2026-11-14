@@ -8,7 +8,7 @@ type UserMatch = HikerMatch & { type: UserType };
 // depends on what was typed. "Mario Rossi" could also be typed "Rossi Mario"
 function queriesFor(text: string): Record<string, string>[] {
   if (text.includes("@")) return [{ email: text }];
-  if (/^\+?[\d\s]+$/.test(text)) return [{ phone_number: text.replace(/\s/g, "") }];
+  if (/^\+?[\d\s]+$/.test(text)) return [{ phoneNumber: text.replace(/\s/g, "") }];
 
   const [first, ...others] = text.split(/\s+/);
   const rest = others.join(" ");

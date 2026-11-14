@@ -278,7 +278,7 @@ export default function EmployeeReservationPage() {
                       </p>
                       <p className="text-sm text-stone-600">
                         {hiker.email}
-                        {hiker.phone_number && ` · ${hiker.phone_number}`}
+                        {hiker.phoneNumber && ` · ${hiker.phoneNumber}`}
                       </p>
                     </div>
                     <button

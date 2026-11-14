@@ -19,7 +19,7 @@ test('hiker logs in and books a table', async ({ page }) => {
       password,
       name: 'E2E',
       surname: 'Hiker',
-      phone_number: `+39333${String(id).slice(-7)}`,
+      phoneNumber: `+39333${String(id).slice(-7)}`,
       type: 'HIKER',
     },
   })

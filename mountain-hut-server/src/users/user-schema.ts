@@ -5,7 +5,7 @@ export const getUserQuerySchema = z.object({
   email: z.string().optional(),
   name: z.string().optional(),
   surname: z.string().optional(),
-  phone_number: z.string().optional(),
+  phoneNumber: z.string().optional(),
 });
 
 export const userResponseSchema = z.object({

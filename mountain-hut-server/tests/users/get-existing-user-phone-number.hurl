@@ -1,6 +1,6 @@
 GET {{base_url}}/api/v1/users
 [QueryStringParams]
-phone_number: +393335554433
+phoneNumber: +393335554433
 HTTP 200
 [Asserts]
 jsonpath "$[0].email" == "luca.neri@example.com"

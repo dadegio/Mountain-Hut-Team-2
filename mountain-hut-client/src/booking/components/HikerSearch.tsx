@@ -77,7 +77,7 @@ export default function HikerSearch({ onSelect }: HikerSearchProps) {
                 </span>
                 <span className="block text-sm text-stone-600">
                   {hiker.email}
-                  {hiker.phone_number && ` · ${hiker.phone_number}`}
+                  {hiker.phoneNumber && ` · ${hiker.phoneNumber}`}
                 </span>
               </button>
             </li>

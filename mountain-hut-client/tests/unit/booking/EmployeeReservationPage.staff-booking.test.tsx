@@ -23,7 +23,7 @@ const mario: HikerMatch = {
   name: 'Mario',
   surname: 'Rossi',
   email: 'mario.rossi@example.com',
-  phone_number: '+393331234567',
+  phoneNumber: '+393331234567',
 }
 
 const booking: BookingResult = {

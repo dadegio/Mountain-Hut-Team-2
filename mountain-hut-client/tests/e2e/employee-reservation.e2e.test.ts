@@ -62,7 +62,7 @@ async function registerHiker(request: APIRequestContext): Promise<Hiker> {
       password: PASSWORD,
       name: hiker.name,
       surname: hiker.surname,
-      phone_number: hiker.phone,
+      phoneNumber: hiker.phone,
     },
   })
   expect(res.status()).toBe(201)

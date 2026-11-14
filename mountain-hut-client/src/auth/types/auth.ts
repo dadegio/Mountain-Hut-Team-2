@@ -6,7 +6,7 @@ export interface User {
   email: string;
   name: string;
   surname: string;
-  phone_number: number | string;
+  phoneNumber: number | string;
   type: UserType;
 }
 
@@ -15,6 +15,6 @@ export interface RegisterRequest {
   password: string;
   name: string;
   surname: string;
-  phone_number: string;
+  phoneNumber: string;
   type: "HIKER";
 }

@@ -28,7 +28,7 @@ const fakeUser = (type: User['type']): User => ({
   email: 'test@example.com',
   name: 'Test',
   surname: 'User',
-  phone_number: '+390000000000',
+  phoneNumber: '+390000000000',
   type,
 })
 

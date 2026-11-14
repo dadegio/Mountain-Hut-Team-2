@@ -3,5 +3,5 @@ export interface HikerMatch {
   name: string;
   surname: string;
   email: string;
-  phone_number: string | null;
+  phoneNumber: string | null;
 }

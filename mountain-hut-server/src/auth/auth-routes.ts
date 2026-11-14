@@ -38,7 +38,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
         passwordHash,
         name: request.body.name,
         surname: request.body.surname,
-        phoneNumber: request.body.phone_number,
+        phoneNumber: request.body.phoneNumber,
         type: "HIKER",
       });
 
@@ -83,7 +83,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
         email: user.email,
         name: user.name,
         surname: user.surname,
-        phone_number: user.phoneNumber,
+        phoneNumber: user.phoneNumber,
         type: user.type,
       });
     },

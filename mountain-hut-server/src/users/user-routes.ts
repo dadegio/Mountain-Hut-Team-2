@@ -41,7 +41,7 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
       },
     },
     async (request, reply) => {
-      const { email, name, surname, phone_number } = request.query;
+      const { email, name, surname, phoneNumber } = request.query;
 
       let users: User[] | null = null;
       if (name || surname) {
@@ -49,8 +49,8 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
       } else if (email) {
         const user = await UserRepository.getUserByEmail(email);
         users = user ? [user] : null;
-      } else if (phone_number) {
-        const user = await UserRepository.getUserByPhoneNumber(phone_number);
+      } else if (phoneNumber) {
+        const user = await UserRepository.getUserByPhoneNumber(phoneNumber);
         users = user ? [user] : null;
       }
 
