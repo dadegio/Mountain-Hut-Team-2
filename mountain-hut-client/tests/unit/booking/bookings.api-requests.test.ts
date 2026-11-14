@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { changeBooking, createBooking, getMyBookings } from '../../../src/booking/api/bookings-api.ts'
+import { changeBooking, createBooking, createStaffBooking, getMyBookings } from '../../../src/booking/api/bookings-api.ts'
 import { ApiError } from '../../../src/shared/api/client.ts'
 
 // Minimal fake of a fetch Response
@@ -40,6 +40,26 @@ describe('bookings API', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/bookings/mine')
     expect(bookings).toEqual(data)
+  })
+
+  it('createStaffBooking sends POST /api/v1/staff/bookings with the hiker, slot and party', async () => {
+    const result = {
+      status: 'PLACED',
+      userId: 7,
+      slotId: 3,
+      partySize: 4,
+      reservations: [{ reservationId: 1, tableId: 3, seats: 4 }],
+    }
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(201, result))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const booking = await createStaffBooking({ hikerId: 7, slotId: 3, partySize: 4 })
+
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/staff/bookings')
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body)).toEqual({ hikerId: 7, slotId: 3, partySize: 4 })
+    expect(booking).toEqual(result)
   })
 
   it('createBooking sends POST /api/v1/bookings with slotId and partySize', async () => {
