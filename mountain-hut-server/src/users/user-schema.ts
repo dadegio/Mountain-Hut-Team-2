@@ -13,7 +13,7 @@ export const userResponseSchema = z.object({
   email: z.string(),
   name: z.string(),
   surname: z.string().default(""),
-  phone_number: z.string().nullable().optional(),
+  phoneNumber: z.string().nullable().optional(),
   type: z.enum(USER_TYPES),
 });
 
