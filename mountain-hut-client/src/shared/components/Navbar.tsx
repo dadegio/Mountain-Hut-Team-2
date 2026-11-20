@@ -11,6 +11,7 @@ const MAIL_SERVICE_URL =
 
 const navItems: { path: string; label: string; end?: boolean; show: (role: Role) => boolean }[] = [
   { path: "/", label: "Home", end: true, show: () => true },
+  { path: "/meals", label: "Meals", show: () => true },
   { path: "/booking", label: "Book a table", show: (role) => role === null || role === "HIKER" },
   { path: "/my-bookings", label: "My bookings", show: (role) => role === "HIKER" },
   { path: "/hikes", label: "Register a hike", show: (role) => role === "HIKER" },

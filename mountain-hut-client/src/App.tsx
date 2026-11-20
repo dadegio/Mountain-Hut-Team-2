@@ -4,6 +4,7 @@ import { AuthProvider, RequireRole, LoginPage, RegisterPage } from "./auth/index
 import { BookingPage, EmployeeReservationPage, MyBookingsPage } from "./booking/index.ts";
 import { EmployeeSlotsPage } from "./slots/index.ts";
 import { RegisterHikePage, MyHikesPage } from "./hikes/index.ts";
+import { MealsPage } from "./meals/index.ts";
 const STAFF = ["EMPLOYEE", "MANAGER"];
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
+            <Route path="meals" element={<MealsPage />} />
             {/* guests can browse availability, hikers can book, staff can't */}
             <Route element={<RequireRole allow={["HIKER"]} guestAllowed />}>
               <Route path="booking" element={<BookingPage />} />

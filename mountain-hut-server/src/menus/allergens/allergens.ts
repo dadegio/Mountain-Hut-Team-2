@@ -1,6 +1,6 @@
 import { asc } from "drizzle-orm";
-import { db } from "../db/database.ts";
-import { allergensTable } from "../db/schema.ts";
+import { db } from "#src/db/database";
+import { allergensTable } from "#src/db/schema";
 
 export interface Allergen {
   id: number;

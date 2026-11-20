@@ -3,6 +3,7 @@ import { db } from "../db/database.ts";
 import {
   tableAvailabilityTable,
   tablesTable,
+  timeSlotMenuTable,
   timeSlotTable,
 } from "../db/schema.ts";
 import {
@@ -11,12 +12,14 @@ import {
   todayString,
   totalSeats,
 } from "./slot-rules.ts";
+import { MenuRepository } from "#src/menus/menu-repository";
 
 export interface CreateSlotInput {
   date: string;
   from: string;
   to: string;
   tableIds: number[];
+  menuIds: number[];
 }
 
 interface SlotTable {
@@ -106,7 +109,7 @@ export async function getSlot(id: number) {
 }
 
 export async function createSlot(input: CreateSlotInput, now = new Date()) {
-  const { date, from, to, tableIds } = input;
+  const { date, from, to, tableIds, menuIds } = input;
 
   if (isPastDate(date, todayString(now))) {
     throw new SlotError(400, "Cannot create a slot in the past");
@@ -153,7 +156,24 @@ export async function createSlot(input: CreateSlotInput, now = new Date()) {
       if (tables.length > 0) {
         await tx
           .insert(tableAvailabilityTable)
-          .values(tables.map((table) => ({ slotId: slot.id, tableId: table.id })));
+          .values(
+            tables.map((table) => ({ slotId: slot.id, tableId: table.id })),
+          );
+      }
+
+      if (menuIds.length > 0) {
+        let invalidMenuIds = await MenuRepository.verifyIds(menuIds, tx);
+        if (invalidMenuIds.length > 0) {
+          throw new SlotError(
+            404,
+            `Invalid menus: ${invalidMenuIds.join(", ")}`,
+          );
+        }
+        await tx
+          .insert(timeSlotMenuTable)
+          .values(
+            menuIds.map((menuId) => ({ slotId: slot.id, menuId: menuId })),
+          );
       }
 
       return toSlotResponse(slot, tables);

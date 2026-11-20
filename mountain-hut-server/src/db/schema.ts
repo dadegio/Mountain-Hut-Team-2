@@ -11,6 +11,23 @@ export const USER_TYPES = ["HIKER", "EMPLOYEE", "MANAGER"] as const;
 export type UserType = (typeof USER_TYPES)[number];
 
 export const RESERVATION_STATUS = ["PLACED", "FULFILLED", "CANCELED"] as const;
+export type ReservationStatusType = (typeof RESERVATION_STATUS)[number];
+
+export const MENU_TYPES = [
+  "TEMPLATE", // "regular" menus offered by the Hut.
+  "MODIFIED", // template menu with some added/removed dishes.
+  "CANCELED", // menus that the Hut doesn't serve anymore.
+] as const;
+export type MenuType = (typeof MENU_TYPES)[number];
+
+export const DISH_TYPE = [
+  "APPETIZER",
+  "MAIN",
+  "SIDE",
+  "DESSERT",
+  "BEVERAGE",
+] as const;
+export type DishType = (typeof DISH_TYPE)[number];
 
 export const usersTable = sqliteTable("users", {
   id: int().primaryKey({ autoIncrement: true }),
@@ -40,11 +57,7 @@ export const tablesTable = sqliteTable("tables", {
   seats: int().notNull(),
 });
 
-export const allergensTable = sqliteTable("allergens", {
-  id: int().primaryKey({ autoIncrement: true }),
-  name: text().notNull().unique(),
-});
-
+// TODO: remove, since now allergens are associated to dishes rather than reservations.
 export const reservationAllergensTable = sqliteTable(
   "reservation_allergens",
   {
@@ -78,10 +91,7 @@ export const reservationsTable = sqliteTable("reservations", {
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
   partySize: int("party_size").notNull().default(1),
-  status: text()
-    .notNull()
-    .default(RESERVATION_STATUS[0])
-    .$type<(typeof RESERVATION_STATUS)[number]>(),
+  status: text().notNull().$type<ReservationStatusType>().default("PLACED"),
   description: text(),
 });
 
@@ -101,10 +111,12 @@ export const hikesTable = sqliteTable("hikes", {
     .notNull()
     .default(sql`'[]'`),
   emergencyContactPhone: text("emergency_contact_phone"),
-  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
-// Which tables are available in a slot
+// Defines which tables are available in a slot
 export const tableAvailabilityTable = sqliteTable(
   "table_availability",
   {
@@ -121,4 +133,73 @@ export const tableAvailabilityTable = sqliteTable(
       }),
   },
   (t) => [primaryKey({ columns: [t.slotId, t.tableId] })],
+);
+
+export const menusTable = sqliteTable("menus", {
+  id: int().primaryKey({ autoIncrement: true }),
+  name: text().notNull().unique(),
+  type: text().notNull().$type<MenuType>().default("MODIFIED"),
+});
+
+export const dishesTable = sqliteTable("dishes", {
+  id: int().primaryKey({ autoIncrement: true }),
+  name: text().notNull().unique(),
+  description: text(),
+  course: text().notNull().$type<DishType>(),
+});
+
+export const allergensTable = sqliteTable("allergens", {
+  id: int().primaryKey({ autoIncrement: true }),
+  name: text().notNull().unique(),
+});
+
+export const timeSlotMenuTable = sqliteTable(
+  "timeslot_menu",
+  {
+    slotId: int("slot_id")
+      .notNull()
+      .references(() => timeSlotTable.id, {
+        onDelete: "cascade",
+      }),
+    menuId: int("menu_id")
+      .notNull()
+      .references(() => menusTable.id, {
+        onDelete: "cascade",
+      }),
+  },
+  (t) => [primaryKey({ columns: [t.slotId, t.menuId] })],
+);
+
+export const menuDishesTable = sqliteTable(
+  "menu_dishes",
+  {
+    menuId: int("menu_id")
+      .notNull()
+      .references(() => menusTable.id, {
+        onDelete: "cascade",
+      }),
+    dishId: int("dish_id")
+      .notNull()
+      .references(() => dishesTable.id, {
+        onDelete: "cascade",
+      }),
+  },
+  (t) => [primaryKey({ columns: [t.menuId, t.dishId] })],
+);
+
+export const dishAllergenTable = sqliteTable(
+  "dish_allergen",
+  {
+    dishId: int("dish_id")
+      .notNull()
+      .references(() => dishesTable.id, {
+        onDelete: "cascade",
+      }),
+    allergenId: int("allergen_id")
+      .notNull()
+      .references(() => allergensTable.id, {
+        onDelete: "cascade",
+      }),
+  },
+  (t) => [primaryKey({ columns: [t.dishId, t.allergenId] })],
 );
