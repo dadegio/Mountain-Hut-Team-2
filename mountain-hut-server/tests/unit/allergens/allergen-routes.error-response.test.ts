@@ -1,12 +1,12 @@
 import Fastify from "fastify";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../src/allergens/allergens.ts", () => ({
+import { listAllergens } from "#src/menus/allergens/allergens";
+import { allergenRoutes } from "#src/menus/allergens/allergen-routes";
+
+vi.mock("#src/menus/allergens/allergens", () => ({
   listAllergens: vi.fn(),
 }));
-
-import { listAllergens } from "../../../src/allergens/allergens.ts";
-import { allergenRoutes } from "../../../src/allergens/allergen-routes.ts";
 
 afterEach(() => {
   vi.resetAllMocks();
@@ -14,7 +14,9 @@ afterEach(() => {
 
 describe("allergen-routes error response", () => {
   it("logs the service error and responds with 500", async () => {
-    vi.mocked(listAllergens).mockRejectedValue(new Error("Database unavailable"));
+    vi.mocked(listAllergens).mockRejectedValue(
+      new Error("Database unavailable"),
+    );
     const app = Fastify({ logger: false });
     const logError = vi.spyOn(app.log, "error");
     await app.register(allergenRoutes);

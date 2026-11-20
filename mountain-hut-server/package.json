@@ -7,7 +7,7 @@
   "type": "module",
   "main": "src/server.ts",
   "imports": {
-    "#src/*": "./src/*"
+    "#src/*": "./src/*.ts"
   },
   "scripts": {
     "start": "node src/server.ts",

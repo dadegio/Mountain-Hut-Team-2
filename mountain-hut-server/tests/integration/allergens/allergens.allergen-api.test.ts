@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { Client } from "@libsql/client";
 import { allergensTable } from "../../../src/db/schema.ts";
 import { resetTestDatabase } from "../../test-database.ts";
@@ -6,7 +14,11 @@ import { resetTestDatabase } from "../../test-database.ts";
 vi.mock("../../../src/db/database.ts", async () => {
   const { createIsolatedTestDatabase } = await import("../../test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
-  return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
+  return {
+    db,
+    __integrationTestClient: client,
+    __integrationTestCleanup: cleanup,
+  };
 });
 
 const { db: testDb } = await import("../../../src/db/database.ts");
@@ -16,7 +28,8 @@ const { __integrationTestClient: client, __integrationTestCleanup: cleanup } =
     __integrationTestCleanup: () => void;
   };
 const { buildApp } = await import("../../../src/server.ts");
-const { listAllergens } = await import("../../../src/allergens/allergens.ts");
+const { listAllergens } =
+  await import("../../../src/menus/allergens/allergens.ts");
 
 const app = buildApp({ logger: false });
 

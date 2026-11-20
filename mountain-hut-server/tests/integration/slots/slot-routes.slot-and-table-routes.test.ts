@@ -1,9 +1,23 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { Client } from "@libsql/client";
 import argon2 from "argon2";
 import { todayString } from "../../../src/slots/slot-rules.ts";
 import { asc, count } from "drizzle-orm";
-import { tablesTable, timeSlotTable, tableAvailabilityTable } from "../../../src/db/schema.ts";
+import {
+  tablesTable,
+  timeSlotTable,
+  tableAvailabilityTable,
+  menusTable,
+  timeSlotMenuTable,
+} from "../../../src/db/schema.ts";
 import { resetTestDatabase } from "../../test-database.ts";
 
 /**
@@ -16,7 +30,11 @@ import { resetTestDatabase } from "../../test-database.ts";
 vi.mock("../../../src/db/database.ts", async () => {
   const { createIsolatedTestDatabase } = await import("../../test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
-  return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
+  return {
+    db,
+    __integrationTestClient: client,
+    __integrationTestCleanup: cleanup,
+  };
 });
 
 // Imported after vi.mock, so that the routes use the temporary SQLite database
@@ -32,6 +50,9 @@ const app = buildApp({ logger: false });
 const T1 = { id: 1, code: "T1", seats: 2 };
 const T2 = { id: 2, code: "T2", seats: 4 };
 const T3 = { id: 3, code: "T3", seats: 6 };
+
+const M1 = { id: 1, name: "Standard Menu", type: "TEMPLATE" as const };
+const M2 = { id: 2, name: "Vegetarian Menu", type: "TEMPLATE" as const };
 
 // Relative to today, so that the tests do not expire
 function dayFromToday(offset: number): string {
@@ -106,11 +127,20 @@ function createSlot(overrides: Record<string, unknown> = {}, cookie?: string) {
   );
 }
 
-async function countRows(table: "tables" | "time_slots" | "table_availability") {
+async function countRows(
+  table: "tables" | "time_slots" | "table_availability" | "timeslot_menu",
+) {
   switch (table) {
-    case "tables": return (await testDb.select({ n: count() }).from(tablesTable))[0].n;
-    case "time_slots": return (await testDb.select({ n: count() }).from(timeSlotTable))[0].n;
-    case "table_availability": return (await testDb.select({ n: count() }).from(tableAvailabilityTable))[0].n;
+    case "tables":
+      return (await testDb.select({ n: count() }).from(tablesTable))[0].n;
+    case "time_slots":
+      return (await testDb.select({ n: count() }).from(timeSlotTable))[0].n;
+    case "table_availability":
+      return (
+        await testDb.select({ n: count() }).from(tableAvailabilityTable)
+      )[0].n;
+    case "timeslot_menu":
+      return (await testDb.select({ n: count() }).from(timeSlotMenuTable))[0].n;
   }
 }
 
@@ -136,11 +166,12 @@ beforeEach(async () => {
   await resetTestDatabase(client);
   await insertUsers();
   await testDb.insert(tablesTable).values([T1, T2, T3]);
+  await testDb.insert(menusTable).values([M1, M2]);
 });
 
 afterAll(async () => {
   await app.close();
-  await client.close();
+  client.close();
   cleanup();
 });
 
@@ -167,7 +198,11 @@ describe("POST /api/v1/tables", () => {
     const res = await post("/api/v1/tables", { code: "T4", seats: 8 });
 
     expect(res.statusCode).toBe(201);
-    expect(res.json()).toEqual({ id: expect.any(Number), code: "T4", seats: 8 });
+    expect(res.json()).toEqual({
+      id: expect.any(Number),
+      code: "T4",
+      seats: 8,
+    });
 
     const list = await get("/api/v1/tables");
     expect(list.json()).toContainEqual(res.json());
@@ -219,19 +254,26 @@ describe("POST /api/v1/tables", () => {
   });
 
   it("refuses unknown fields", async () => {
-    const res = await post("/api/v1/tables", { code: "T4", seats: 4, extra: true });
+    const res = await post("/api/v1/tables", {
+      code: "T4",
+      seats: 4,
+      extra: true,
+    });
 
     expect(res.statusCode).toBe(400);
     expect(await countRows("tables")).toBe(3);
   });
 
   it("accepts a code of exactly 20 characters", async () => {
-    const res = await post("/api/v1/tables", { code: "T".repeat(20), seats: 4 });
+    const res = await post("/api/v1/tables", {
+      code: "T".repeat(20),
+      seats: 4,
+    });
 
     expect(res.statusCode).toBe(201);
   });
 
-   it("accepts exactly 20 seats, the maximum (MH-89)", async () => {
+  it("accepts exactly 20 seats, the maximum (MH-89)", async () => {
     const res = await post("/api/v1/tables", { code: "T4", seats: 20 });
 
     expect(res.statusCode).toBe(201);
@@ -261,7 +303,9 @@ describe("POST /api/v1/slots", () => {
     expect(slots).toHaveLength(1);
     expect(slots[0]).toMatchObject({ date: DAY, from: "12:00", to: "13:00" });
 
-    const links = await testDb.select().from(tableAvailabilityTable)
+    const links = await testDb
+      .select()
+      .from(tableAvailabilityTable)
       .orderBy(asc(tableAvailabilityTable.tableId));
     expect(links.map((row) => [row.slotId, row.tableId])).toEqual([
       [id, 1],
@@ -272,13 +316,16 @@ describe("POST /api/v1/slots", () => {
   it.each([
     ["an empty list", { tableIds: [] }],
     ["no list", { tableIds: undefined }],
-  ])("allows a slot without tables (%s), with 0 seats", async (_description, body) => {
-    const res = await createSlot(body);
+  ])(
+    "allows a slot without tables (%s), with 0 seats",
+    async (_description, body) => {
+      const res = await createSlot(body);
 
-    expect(res.statusCode).toBe(201);
-    expect(res.json()).toMatchObject({ totalSeats: 0, tables: [] });
-    expect(await countRows("table_availability")).toBe(0);
-  });
+      expect(res.statusCode).toBe(201);
+      expect(res.json()).toMatchObject({ totalSeats: 0, tables: [] });
+      expect(await countRows("table_availability")).toBe(0);
+    },
+  );
 
   describe("dates", () => {
     it("allows today", async () => {
@@ -333,7 +380,9 @@ describe("POST /api/v1/slots", () => {
       const res = await createSlot({ [field]: value });
 
       expect(res.statusCode).toBe(400);
-      expect(res.json().details.map((d: { path: string[] }) => d.path[0])).toContain(field);
+      expect(
+        res.json().details.map((d: { path: string[] }) => d.path[0]),
+      ).toContain(field);
       expect(await countRows("time_slots")).toBe(0);
     });
 
@@ -356,12 +405,17 @@ describe("POST /api/v1/slots", () => {
   });
 
   describe("required fields", () => {
-    it.each([["date"], ["from"], ["to"]])("refuses a slot without %s", async (field) => {
-      const res = await createSlot({ [field]: undefined });
+    it.each([["date"], ["from"], ["to"]])(
+      "refuses a slot without %s",
+      async (field) => {
+        const res = await createSlot({ [field]: undefined });
 
-      expect(res.statusCode).toBe(400);
-      expect(res.json().details.map((d: { path: string[] }) => d.path[0])).toContain(field);
-    });
+        expect(res.statusCode).toBe(400);
+        expect(
+          res.json().details.map((d: { path: string[] }) => d.path[0]),
+        ).toContain(field);
+      },
+    );
 
     it("refuses unknown fields", async () => {
       const res = await createSlot({ seats: 100 });
@@ -401,7 +455,9 @@ describe("POST /api/v1/slots", () => {
       const res = await createSlot({ tableIds: [1, 1] });
 
       expect(res.statusCode).toBe(400);
-      expect(res.json().details[0].message).toBe("tableIds must not contain duplicates");
+      expect(res.json().details[0].message).toBe(
+        "tableIds must not contain duplicates",
+      );
     });
 
     it("refuses unknown tables, naming them, and saves nothing", async () => {
@@ -415,15 +471,78 @@ describe("POST /api/v1/slots", () => {
 
     it("allows the same table in different slots", async () => {
       await createSlot({ from: "12:00", to: "13:00", tableIds: [1] });
-      const res = await createSlot({ from: "13:00", to: "14:00", tableIds: [1] });
+      const res = await createSlot({
+        from: "13:00",
+        to: "14:00",
+        tableIds: [1],
+      });
 
       expect(res.statusCode).toBe(201);
     });
   });
 
+  describe("menus", () => {
+    it("saves the slot and its menu ids in the database", async () => {
+      const { id } = (await createSlot({ menuIds: [2, 1] })).json();
+
+      const links = await testDb
+        .select()
+        .from(timeSlotMenuTable)
+        .orderBy(asc(timeSlotMenuTable.menuId));
+      expect(links.map((row) => [row.slotId, row.menuId])).toEqual([
+        [id, 1],
+        [id, 2],
+      ]);
+    });
+
+    it("allows a slot without menuIds (default empty list), saving no menu associations", async () => {
+      await createSlot({ menuIds: [] });
+
+      expect(await countRows("timeslot_menu")).toBe(0);
+    });
+
+    it("allows the same menu in different slots", async () => {
+      await createSlot({ from: "12:00", to: "13:00", menuIds: [1] });
+      const res = await createSlot({
+        from: "13:00",
+        to: "14:00",
+        menuIds: [1],
+      });
+
+      expect(res.statusCode).toBe(201);
+      expect(await countRows("timeslot_menu")).toBe(2);
+    });
+
+    it.each([
+      ["not a list", 1],
+      ["a list of text", ["1"]],
+      ["with a decimal id", [1.5]],
+      ["with id 0", [0]],
+      ["with a negative id", [-1]],
+    ])("refuses menuIds %s", async (_description, menuIds) => {
+      const res = await createSlot({ menuIds });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json().details[0].path[0]).toBe("menuIds");
+      expect(await countRows("time_slots")).toBe(0);
+      expect(await countRows("timeslot_menu")).toBe(0);
+    });
+
+    it("refuses unknown menus, naming them, and saves nothing", async () => {
+      const res = await createSlot({ menuIds: [1, 98, 99] });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.json()).toEqual({ error: "Invalid menus: 98, 99" });
+      expect(await countRows("time_slots")).toBe(0);
+      expect(await countRows("timeslot_menu")).toBe(0);
+    });
+  });
+
   describe("overlapping slots", () => {
     beforeEach(async () => {
-      expect((await createSlot({ from: "12:00", to: "14:00" })).statusCode).toBe(201);
+      expect(
+        (await createSlot({ from: "12:00", to: "14:00" })).statusCode,
+      ).toBe(201);
     });
 
     it.each([
@@ -432,14 +551,19 @@ describe("POST /api/v1/slots", () => {
       ["ending during it", "11:00", "13:00"],
       ["inside it", "12:30", "13:30"],
       ["containing it", "11:00", "15:00"],
-    ])("refuses a slot %s, naming the existing one", async (_description, from, to) => {
-      const res = await createSlot({ from, to, tableIds: [3] });
+    ])(
+      "refuses a slot %s, naming the existing one",
+      async (_description, from, to) => {
+        const res = await createSlot({ from, to, tableIds: [3] });
 
-      expect(res.statusCode).toBe(409);
-      expect(res.json()).toEqual({ error: "Slot overlaps with existing slot 12:00-14:00" });
-      expect(await countRows("time_slots")).toBe(1);
-      expect(await countRows("table_availability")).toBe(2);
-    });
+        expect(res.statusCode).toBe(409);
+        expect(res.json()).toEqual({
+          error: "Slot overlaps with existing slot 12:00-14:00",
+        });
+        expect(await countRows("time_slots")).toBe(1);
+        expect(await countRows("table_availability")).toBe(2);
+      },
+    );
 
     it.each([
       ["right after it", "14:00", "15:00"],
@@ -452,7 +576,11 @@ describe("POST /api/v1/slots", () => {
     });
 
     it("allows the same time on another day", async () => {
-      const res = await createSlot({ date: OTHER_DAY, from: "12:00", to: "14:00" });
+      const res = await createSlot({
+        date: OTHER_DAY,
+        from: "12:00",
+        to: "14:00",
+      });
 
       expect(res.statusCode).toBe(201);
     });
@@ -508,9 +636,19 @@ describe("who can create tables and slots", () => {
   });
 
   describe.each([
-    ["a hiker", () => hikerCookie, 403, "Only employees and managers can create tables and slots"],
+    [
+      "a hiker",
+      () => hikerCookie,
+      403,
+      "Only employees and managers can create tables and slots",
+    ],
     ["someone not logged in", () => "", 401, "Authentication required"],
-    ["someone with an invalid session", () => "session=not-a-real-session", 401, "Authentication required"],
+    [
+      "someone with an invalid session",
+      () => "session=not-a-real-session",
+      401,
+      "Authentication required",
+    ],
   ])("%s", (_who, cookie, status, error) => {
     it("cannot create a table", async () => {
       const res = await post("/api/v1/tables", newTable, cookie());
@@ -540,7 +678,11 @@ describe("who can create tables and slots", () => {
       const headers = cookie() ? { cookie: cookie() } : {};
       const created = (await createSlot()).json();
 
-      for (const url of ["/api/v1/tables", `/api/v1/slots?date=${DAY}`, `/api/v1/slots/${created.id}`]) {
+      for (const url of [
+        "/api/v1/tables",
+        `/api/v1/slots?date=${DAY}`,
+        `/api/v1/slots/${created.id}`,
+      ]) {
         const res = await app.inject({ method: "GET", url, headers });
         expect(res.statusCode).toBe(200);
       }
@@ -550,7 +692,9 @@ describe("who can create tables and slots", () => {
   it("refuses a user that no longer exists, even with a valid session", async () => {
     await insertUser("former@example.com", "EMPLOYEE");
     const cookie = await login("former@example.com");
-    await client.execute("DELETE FROM users WHERE email = 'former@example.com'");
+    await client.execute(
+      "DELETE FROM users WHERE email = 'former@example.com'",
+    );
 
     const res = await createSlot({}, cookie);
 
@@ -570,12 +714,20 @@ describe("GET /api/v1/slots", () => {
   it("returns only the slots of that day, ordered by start time", async () => {
     await createSlot({ from: "19:00", to: "21:00", tableIds: [1] });
     await createSlot({ from: "12:00", to: "13:00", tableIds: [2] });
-    await createSlot({ date: OTHER_DAY, from: "08:00", to: "09:00", tableIds: [3] });
+    await createSlot({
+      date: OTHER_DAY,
+      from: "08:00",
+      to: "09:00",
+      tableIds: [3],
+    });
 
     const res = await get(`/api/v1/slots?date=${DAY}`);
 
     expect(res.statusCode).toBe(200);
-    expect(res.json().map((slot: { from: string }) => slot.from)).toEqual(["12:00", "19:00"]);
+    expect(res.json().map((slot: { from: string }) => slot.from)).toEqual([
+      "12:00",
+      "19:00",
+    ]);
   });
 
   it("gives each slot its own tables and seats", async () => {
@@ -631,12 +783,15 @@ describe("GET /api/v1/slots/:id", () => {
     expect(res.json()).toEqual({ error: "Time slot not found" });
   });
 
-  it.each([["abc"], ["0"], ["-1"], ["1.5"]])("refuses the id %s", async (id) => {
-    const res = await get(`/api/v1/slots/${id}`);
+  it.each([["abc"], ["0"], ["-1"], ["1.5"]])(
+    "refuses the id %s",
+    async (id) => {
+      const res = await get(`/api/v1/slots/${id}`);
 
-    expect(res.statusCode).toBe(400);
-    expect(res.json().error).toBe("Invalid path parameters");
-  });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error).toBe("Invalid path parameters");
+    },
+  );
 });
 
 // What the employee defines here is what hikers can then book
@@ -657,7 +812,9 @@ describe("slots and availability", () => {
 
     const res = await get(`/api/v1/availability?date=${DAY}&partySize=7`);
 
-    expect(res.json().slots).toMatchObject([{ availableSeats: 6, available: false }]);
+    expect(res.json().slots).toMatchObject([
+      { availableSeats: 6, available: false },
+    ]);
   });
 
   it("offers no seats in a slot without tables", async () => {
@@ -665,6 +822,8 @@ describe("slots and availability", () => {
 
     const res = await get(`/api/v1/availability?date=${DAY}`);
 
-    expect(res.json().slots).toMatchObject([{ availableSeats: 0, available: false }]);
+    expect(res.json().slots).toMatchObject([
+      { availableSeats: 0, available: false },
+    ]);
   });
 });
