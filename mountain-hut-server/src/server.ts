@@ -8,18 +8,20 @@ import {
   validatorCompiler,
 } from "fastify-type-provider-zod";
 
-import { env } from "./config.ts";
-import { slotRoutes } from "./slots/slot-routes.ts";
-import { userRoutes } from "./users/user-routes.ts";
-import { UserRepository } from "./users/user-repository.ts";
-import { availabilityRoutes } from "./booking/routes/availability-routes.ts";
-import { bookingRoutes } from "./booking/routes/booking-routes.ts";
-import { staffBookingRoutes } from "./booking/routes/staff-booking-routes.ts";
-import { changeBookingRoutes } from "./booking/routes/change-booking-routes.ts";
-import { cancelBookingRoutes } from "./booking/routes/cancel-booking-routes.ts";
-import { allergenRoutes } from "./allergens/allergen-routes.ts";
-import { authRoutes } from "./auth/auth-routes.ts";
-import { hikeRoutes } from "./hikes/hike-routes.ts";
+import { UserRepository } from "#src/users/user-repository";
+import { allergenRoutes } from "#src/menus/allergens/allergen-routes";
+import { authRoutes } from "#src/auth/auth-routes";
+import { availabilityRoutes } from "#src/booking/routes/availability-routes";
+import { bookingRoutes } from "#src/booking/routes/booking-routes";
+import { cancelBookingRoutes } from "#src/booking/routes/cancel-booking-routes";
+import { changeBookingRoutes } from "#src/booking/routes/change-booking-routes";
+import { dishRoutes } from "#src/menus/dishes/dish-routes";
+import { env } from "#src/config";
+import { hikeRoutes } from "#src/hikes/hike-routes";
+import { menuRoutes } from "#src/menus/menu-routes";
+import { slotRoutes } from "#src/slots/slot-routes";
+import { staffBookingRoutes } from "#src/booking/routes/staff-booking-routes";
+import { userRoutes } from "#src/users/user-routes";
 
 export function buildApp(opts: FastifyServerOptions = {}) {
   const server = Fastify({
@@ -70,17 +72,18 @@ export function buildApp(opts: FastifyServerOptions = {}) {
   server.register(slotRoutes, { prefix: BASE_URL });
   server.register(availabilityRoutes, { prefix: BASE_URL });
   server.register(bookingRoutes, { prefix: BASE_URL });
-  server.register(staffBookingRoutes, { prefix: BASE_URL });
   server.register(changeBookingRoutes, { prefix: BASE_URL });
+  server.register(staffBookingRoutes, { prefix: BASE_URL });
   server.register(cancelBookingRoutes, { prefix: BASE_URL });
+
   server.register(hikeRoutes, { prefix: BASE_URL });
+
+  server.register(authRoutes, { prefix: `${BASE_URL}/auth` });
+  server.register(userRoutes, { prefix: `${BASE_URL}/users` });
+
   server.register(allergenRoutes, { prefix: BASE_URL });
-  server.register(authRoutes, {
-    prefix: `${BASE_URL}/auth`,
-  });
-  server.register(userRoutes, {
-    prefix: `${BASE_URL}/users`,
-  });
+  server.register(dishRoutes, { prefix: `${BASE_URL}/dishes` });
+  server.register(menuRoutes, { prefix: `${BASE_URL}/menus` });
 
   return server;
 }

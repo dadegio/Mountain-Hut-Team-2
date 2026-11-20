@@ -224,6 +224,24 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
       expect(slot1After.availableSeats).toBe(8);
     });
 
+    it("stores the staff-selected menu in the existing booking description", async () => {
+      const res = await postStaffBooking({
+        hikerId: 1,
+        slotId: 1,
+        partySize: 2,
+        description: "Menu: Hut Lunch",
+      });
+
+      expect(res.statusCode).toBe(201);
+      expect(res.json().description).toBe("Menu: Hut Lunch");
+      const rows = await reservationRows();
+      expect(rows).toHaveLength(1);
+      expect(rows[0].description).toBe("Menu: Hut Lunch");
+      const mine = await getMyBookings(1);
+      expect(mine.statusCode).toBe(200);
+      expect(mine.json()[0].description).toBe("Menu: Hut Lunch");
+    });
+
     it("MANAGER reserves for a registered HIKER; follows the same lifecycle", async () => {
       const res = await postStaffBooking(
         { hikerId: 2, slotId: 1, partySize: 2 },
@@ -435,6 +453,7 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
       ["negative partySize", { hikerId: 1, slotId: 1, partySize: -4 }],
       ["exceeds max party size 1000", { hikerId: 1, slotId: 1, partySize: 1001 }],
       ["unexpected extra keys (strict schema)", { hikerId: 1, slotId: 1, partySize: 2, extra: true }],
+      ["menu notes over 1000 chars", { hikerId: 1, slotId: 1, partySize: 2, description: "x".repeat(1001) }],
     ])("400: rejects invalid payload (%s)", async (_description, payload) => {
       const res = await postStaffBooking(payload);
       expect(res.statusCode).toBe(400);

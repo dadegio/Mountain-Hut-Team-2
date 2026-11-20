@@ -68,6 +68,24 @@ describe('bookings API', () => {
     expect(booking).toEqual(result)
   })
 
+  it('createStaffBooking forwards an optional menu note without changing the endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(fakeResponse(201, { status: 'PLACED' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createStaffBooking({
+      hikerId: 7,
+      slotId: 3,
+      partySize: 2,
+      description: 'Menu: Hut Lunch',
+    })
+
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/staff/bookings')
+    expect(JSON.parse(options.body)).toEqual({
+      hikerId: 7, slotId: 3, partySize: 2, description: 'Menu: Hut Lunch',
+    })
+  })
+
   it('createBooking sends POST /api/v1/bookings with slotId and partySize', async () => {
     const result = {
       status: 'PLACED',

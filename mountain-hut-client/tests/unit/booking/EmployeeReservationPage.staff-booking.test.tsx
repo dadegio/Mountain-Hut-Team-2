@@ -347,6 +347,41 @@ describe('EmployeeReservationPage', () => {
       expect(screen.getByText(/Mario Rossi · 2 people/)).toBeInTheDocument()
     })
 
+    it('lets staff enter a menu, persists it in the request and confirms the choice', async () => {
+      mockSlots(slot())
+      vi.mocked(createStaffBooking).mockResolvedValue({ ...booking, description: 'Menu: Hut Lunch' })
+      const user = renderPage()
+
+      await user.click(await dinner())
+      await pickMario(user)
+      await user.type(screen.getByLabelText('Menu (optional)'), '  Hut Lunch  ')
+      await user.click(reserveButton())
+
+      expect(createStaffBooking).toHaveBeenCalledWith({
+        hikerId: 7,
+        slotId: 1,
+        partySize: 2,
+        description: 'Menu: Hut Lunch',
+      })
+      expect(await screen.findByText('✓ Reservation confirmed')).toBeInTheDocument()
+      expect(screen.getByText('Menu: Hut Lunch')).toBeInTheDocument()
+    })
+
+    it('clears the previous menu when starting a new staff reservation', async () => {
+      mockSlots(slot())
+      vi.mocked(createStaffBooking).mockResolvedValue(booking)
+      const user = renderPage()
+
+      await user.click(await dinner())
+      await pickMario(user)
+      await user.type(screen.getByLabelText('Menu (optional)'), 'Menu A')
+      await user.click(reserveButton())
+      await user.click(await screen.findByRole('button', { name: 'New reservation' }))
+      await user.click(await dinner())
+
+      expect(screen.getByLabelText('Menu (optional)')).toHaveValue('')
+    })
+
     it('starts over with fresh seats after a confirmed reservation', async () => {
       mockSlots(slot())
       vi.mocked(createStaffBooking).mockResolvedValue(booking)

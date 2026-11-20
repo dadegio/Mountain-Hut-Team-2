@@ -40,6 +40,10 @@ tags:
     description: Allergens a hiker can report when booking
   - name: Users
     description: User search and management
+  - name: Dishes
+    description: Dishes offered by the hut
+  - name: Menus
+    description: Menus offered by the hut
 
 paths:
   /api/v1/auth/register:
@@ -715,6 +719,82 @@ paths:
                 items:
                   $ref: "#/components/schemas/Allergen"
 
+  /api/v1/dishes:
+    get:
+      tags: [Dishes]
+      summary: Get all dishes
+      operationId: getDishes
+      responses:
+        "200":
+          description: A list of all dishes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Dish"
+
+  /api/v1/menus:
+    get:
+      tags: [Menus]
+      summary: Get all menus, with the respective dishes.
+      operationId: getMenus
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/MenuType"
+      responses:
+        "200":
+          description: A list of menus
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Menu"
+    post:
+      tags: [Menus]
+      summary: Creates a new menu.
+      operationId: createMenu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuRequest"
+      responses:
+        "201":
+          description: Menu created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateMenuResponse"
+
+  /api/v1/menus/{id}:
+    delete:
+      tags: [Menus]
+      summary: Deletes a menu.
+      description: "This is a soft delete: the menu isn't completely deleted from the database, just its type is set as CANCELED."
+      operationId: deleteMenu
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "204":
+          description: Menu deleted successfully
+        "404":
+          description: Menu not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -1172,6 +1252,10 @@ components:
           type: integer
           minimum: 1
           maximum: 1000
+        description:
+          type: string
+          maxLength: 1000
+          description: Optional staff-entered menu choice stored in reservation notes (MH-116)
 
     ChangeBookingRequest:
       type: object
@@ -1317,3 +1401,62 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Reservation"
+
+    DishCourse:
+      type: string
+      enum: [APPETIZER, MAIN, SIDE, DESSERT, BEVERAGE]
+
+    Dish:
+      type: object
+      required: [id, name, description, course]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        course:
+          $ref: "#/components/schemas/DishCourse"
+
+    MenuType:
+      type: string
+      enum: [TEMPLATE, MODIFIED, CANCELED]
+
+    Menu:
+      type: object
+      required: [id, name, type, dishes]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/MenuType"
+        dishes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Dish"
+
+    CreateMenuRequest:
+      type: object
+      required: [name, type, dishes]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        type:
+          $ref: "#/components/schemas/MenuType"
+        dishes:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+
+    CreateMenuResponse:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
