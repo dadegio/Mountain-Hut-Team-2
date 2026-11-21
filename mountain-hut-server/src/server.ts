@@ -2,6 +2,7 @@ import Fastify, { type FastifyServerOptions } from "fastify";
 import secureSession from "@fastify/secure-session";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import fastifyJwt from "@fastify/jwt";
 import { fileURLToPath } from "node:url";
 import {
   serializerCompiler,
@@ -20,6 +21,7 @@ import { cancelBookingRoutes } from "./booking/routes/cancel-booking-routes.ts";
 import { allergenRoutes } from "./allergens/allergen-routes.ts";
 import { authRoutes } from "./auth/auth-routes.ts";
 import { hikeRoutes } from "./hikes/hike-routes.ts";
+import { userResponseSchema } from "./users/user-schema.ts";
 
 export function buildApp(opts: FastifyServerOptions = {}) {
   const server = Fastify({
@@ -29,6 +31,7 @@ export function buildApp(opts: FastifyServerOptions = {}) {
 
   server.setValidatorCompiler(validatorCompiler);
   server.setSerializerCompiler(serializerCompiler);
+  server.register(fastifyJwt, { secret: env.SESSION_SECRET });
 
   server.register(secureSession, {
     secret: env.SESSION_SECRET,
@@ -44,12 +47,9 @@ export function buildApp(opts: FastifyServerOptions = {}) {
 
   server.addHook("preHandler", async (request) => {
     const userId = request.session.get("userId");
-
     if (userId) {
-      const user = await UserRepository.getUserById(userId);
-      request.user = user ?? null;
-    } else {
-      request.user = null;
+      const rawUser = await UserRepository.getUserById(userId);
+      request.user = rawUser ? userResponseSchema.parse(rawUser) : null;
     }
   });
 
@@ -75,12 +75,8 @@ export function buildApp(opts: FastifyServerOptions = {}) {
   server.register(cancelBookingRoutes, { prefix: BASE_URL });
   server.register(hikeRoutes, { prefix: BASE_URL });
   server.register(allergenRoutes, { prefix: BASE_URL });
-  server.register(authRoutes, {
-    prefix: `${BASE_URL}/auth`,
-  });
-  server.register(userRoutes, {
-    prefix: `${BASE_URL}/users`,
-  });
+  server.register(authRoutes, { prefix: `${BASE_URL}/auth` });
+  server.register(userRoutes, { prefix: `${BASE_URL}/users` });
 
   return server;
 }

@@ -408,7 +408,8 @@ describe("POST /api/v1/bookings — MH-18 integration", () => {
   });
 
   it("500: returns internal server error on unexpected database failure", async () => {
-    const bookingModule = await import("../../../src/booking/services/booking.ts");
+    const bookingModule =
+      await import("../../../src/booking/services/booking.ts");
     const spy = vi
       .spyOn(bookingModule, "createBooking")
       .mockRejectedValueOnce(new Error("Database disconnected"));
@@ -927,7 +928,8 @@ describe("POST /api/v1/staff/bookings — MH-07 existing hiker", () => {
   });
 
   it("500: does not expose unexpected server errors", async () => {
-    const bookingModule = await import("../../../src/booking/services/booking.ts");
+    const bookingModule =
+      await import("../../../src/booking/services/booking.ts");
     const spy = vi
       .spyOn(bookingModule, "createBooking")
       .mockRejectedValueOnce(new Error("DB unavailable"));
@@ -988,6 +990,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
         password: "a-secure-password",
         name: "New",
         surname: "Hiker",
+        phoneNumber: "+393141592653",
       };
 
       const registered = await app.inject({
@@ -1166,7 +1169,8 @@ describe("MH-78: allergens integration (MH-05)", () => {
       await client.execute(
         "UPDATE users SET name = '', surname = '' WHERE id = 1",
       );
-      const bookingModule = await import("../../../src/booking/services/booking.ts");
+      const bookingModule =
+        await import("../../../src/booking/services/booking.ts");
       const createSpy = vi
         .spyOn(bookingModule, "createBooking")
         .mockResolvedValueOnce({

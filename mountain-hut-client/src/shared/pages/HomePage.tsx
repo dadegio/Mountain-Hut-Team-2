@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../auth/hooks/useAuth.ts";
+import { forgotPassword } from "../../auth/api/auth-api.ts";
 import backgroundImage from "../assets/BackgroundMountainHut.jpeg";
 import foto1 from "../assets/Foto1MountainHut.jpeg";
 import foto2 from "../assets/Foto2MountainHut.jpeg";
@@ -57,10 +58,74 @@ const carouselSlides: CarouselSlide[] = [
 ];
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
+  const navigate = useNavigate();
   const isStaff = user?.type === "EMPLOYEE" || user?.type === "MANAGER";
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendStatus, setResendStatus] = useState<string | null>(null);
+
+  const wasTemporaryRef = useRef(user?.type === "TEMPORARY");
+
+  useEffect(() => {
+    if (user?.type === "TEMPORARY") {
+      wasTemporaryRef.current = true;
+    }
+  }, [user?.type]);
+
+  // Poll for account status change while the user is TEMPORARY, or redirect to login when password reset completes
+  useEffect(() => {
+    if (!wasTemporaryRef.current) return;
+
+    if (!user || user.type !== "TEMPORARY") {
+      logout().catch(() => {});
+      navigate("/login", {
+        state: { message: "Password updated successfully. Please log in with your new password." },
+        replace: true,
+      });
+      return;
+    }
+
+    let cancelled = false;
+
+    async function checkStatus() {
+      try {
+        const u = await refreshUser();
+        if (cancelled) return;
+        if (!u || u.type !== "TEMPORARY") {
+          await logout();
+          navigate("/login", {
+            state: { message: "Password updated successfully. Please log in with your new password." },
+            replace: true,
+          });
+        }
+      } catch {
+        // ignore background refresh errors
+      }
+    }
+
+    const interval = setInterval(checkStatus, 3000);
+
+    const onFocus = () => {
+      checkStatus();
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "mountain_hut_auth_password_reset" || e.key === "mountain_hut_auth_changed") {
+        checkStatus();
+      }
+    };
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [user, refreshUser, logout, navigate]);
 
   // Auto-scroll every 10 seconds, resets whenever currentSlide changes (manual or automatic), paused on hover or user toggle
   useEffect(() => {
@@ -80,6 +145,103 @@ export default function HomePage() {
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev === carouselSlides.length - 1 ? 0 : prev + 1));
   };
+
+  if (user?.type === "TEMPORARY") {
+    return (
+      <div className="flex flex-col min-h-[calc(100vh-3.5rem)] relative">
+        <div
+          className="fixed inset-0 top-14 w-full h-[calc(100vh-3.5rem)] pointer-events-none z-0"
+          aria-hidden="true"
+        >
+          <img
+            src={backgroundImage}
+            alt=""
+            className="w-full h-full object-cover object-center"
+          />
+          <div
+            className="absolute inset-0"
+            style={{ backgroundColor: "var(--hero-overlay-color, rgba(0, 0, 0, 0.5))" }}
+          />
+        </div>
+
+        <div className="relative z-10 flex-1 flex items-center justify-center px-4 py-12">
+          <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/20 text-center space-y-6">
+            <div>
+              <span className="inline-block px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-amber-800 bg-amber-100 rounded-full border border-amber-300">
+                Temporary Account • Action Required
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="text-2xl font-extrabold text-stone-900">
+                Welcome, {user.name}!
+              </h1>
+              <p className="text-sm text-stone-600">
+                Please check your email to activate your account.
+              </p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left text-sm text-amber-900 space-y-2">
+              <div className="flex items-start gap-2.5">
+                <span className="text-xl leading-none">✉️</span>
+                <div>
+                  <p className="font-semibold text-amber-950">Password change required</p>
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    An employee registered your temporary account. We sent a secure link to{" "}
+                    <strong>{user.email}</strong>. You must set a permanent password before booking.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-xs text-stone-500 py-1">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+              <span>Waiting for password change… this page will update automatically.</span>
+            </div>
+
+            {resendStatus && (
+              <div
+                role="status"
+                className="text-xs rounded-lg p-2.5 bg-green-50 text-green-800 border border-green-200"
+              >
+                {resendStatus}
+              </div>
+            )}
+
+            <div className="space-y-3 pt-2">
+              <button
+                type="button"
+                disabled={resending}
+                onClick={async () => {
+                  if (!user.email) return;
+                  setResending(true);
+                  try {
+                    await forgotPassword(user.email);
+                    setResendStatus("A new reset link has been sent to your email.");
+                  } catch {
+                    setResendStatus("Failed to resend email. Please try again shortly.");
+                  } finally {
+                    setResending(false);
+                  }
+                }}
+                className="w-full inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 rounded-lg border border-green-300 transition-colors cursor-pointer"
+              >
+                {resending ? "Sending…" : "Resend email link"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="w-full text-xs text-stone-500 hover:text-stone-800 underline cursor-pointer"
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const slide = carouselSlides[currentSlide];
 

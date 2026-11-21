@@ -25,6 +25,28 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  async function refreshUser() {
+    try {
+      const u = await getMe()
+      setUser(u)
+      return u
+    } catch {
+      setUser(null)
+      return null
+    }
+  }
+
+  // Cross-tab synchronization when auth state changes (e.g. password reset in another tab)
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key === 'mountain_hut_auth_changed') {
+        refreshUser()
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
   async function login(email: string, password: string) {
     const u = await apiLogin(email, password)
     setUser(u)
@@ -37,7 +59,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

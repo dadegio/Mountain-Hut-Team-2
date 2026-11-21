@@ -57,10 +57,13 @@ export default function RegisterPage() {
       await login(email.trim(), password)
       navigate(from ?? '/booking', { replace: true })
     } catch (err) {
+      console.error('Registration error:', err)
       if (err instanceof ApiError && err.status === 409) {
         setError('An error occurred while trying to register your account, try with a different email')
       } else if (err instanceof ApiError && err.status === 400) {
         setError('Some fields are invalid. Please check your email, phone number and password.')
+      } else if (err instanceof ApiError && err.message) {
+        setError(err.message)
       } else {
         setError('Something went wrong. Please try again.')
       }

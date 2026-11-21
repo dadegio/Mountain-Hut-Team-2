@@ -17,6 +17,7 @@ services:
       - DB_SEED=true
       - SESSION_SECRET=gristle9-flagship-savior-starting-charting
       - SESSION_SALT=5Mk0vhGuVqBXYSdH
+      - APP_URL=${APP_URL:-http://localhost}
     volumes:
       - server_data:/app/data
 

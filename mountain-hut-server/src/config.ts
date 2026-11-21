@@ -1,6 +1,10 @@
 import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
+const serverDir = path.resolve(fileURLToPath(import.meta.url), "../..");
+dotenv.config({ path: path.resolve(serverDir, ".env") });
 dotenv.config();
 
 const envSchema = z.object({
@@ -20,12 +24,22 @@ const envSchema = z.object({
 
   SMTP_HOST: z.string().default("localhost"),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
-  SMTP_SECURE: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
-  SMTP_USER: z.string().optional().transform((v) => v || undefined),
-  SMTP_PASS: z.string().optional().transform((v) => v || undefined),
+  SMTP_SECURE: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+  SMTP_USER: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  SMTP_PASS: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
   MAIL_FROM_NAME: z.string().default("Mountain Hut"),
   MAIL_FROM_ADDRESS: z.email().default("booking@mountain-hut.test"),
   MAIL_REPLY_TO: z.string().optional().transform((v) => v || undefined),
+  APP_URL: z.url().default("http://localhost:5173"),
 });
 
 const _env = envSchema.safeParse(process.env);

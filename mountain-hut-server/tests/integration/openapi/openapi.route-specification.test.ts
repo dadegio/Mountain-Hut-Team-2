@@ -21,7 +21,8 @@ app.addHook("onRoute", (route) => {
   // "/api/v1/slots/:id" in Fastify is "/api/v1/slots/{id}" in OpenAPI
   const path = route.url.replace(/:(\w+)/g, "{$1}");
   for (const method of [route.method].flat()) {
-    if (HTTP_METHODS.includes(method)) registeredRoutes.push(`${method} ${path}`);
+    if (HTTP_METHODS.includes(method))
+      registeredRoutes.push(`${method} ${path}`);
   }
 });
 

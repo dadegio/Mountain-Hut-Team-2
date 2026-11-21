@@ -1,15 +1,20 @@
 import "@fastify/secure-session";
+import "@fastify/jwt";
 
-import type { UserResponse } from "../auth/auth-schema.ts";
+import type { UserResponse } from "../users/user-schema.ts";
 
-// data that we're storing in the session
 declare module "@fastify/secure-session" {
   interface SessionData {
     userId: number;
   }
 }
 
-// tell Fastify that request can have a `user` property
+declare module "@fastify/jwt" {
+  interface FastifyJWT {
+    user: UserResponse | null;
+  }
+}
+
 declare module "fastify" {
   interface FastifyRequest {
     user?: UserResponse | null;

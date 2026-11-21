@@ -4,6 +4,7 @@ import {
   sendBookingConfirmation,
   type BookingConfirmation,
 } from "../../../src/booking/services/booking-notification.ts";
+import { renderTemporaryAccountEmail } from "../../../src/notifications/utils.ts";
 
 const booking: BookingConfirmation = {
   reference: "MH-123",
@@ -149,6 +150,28 @@ describe("MH-79 — sendBookingConfirmation", () => {
     expect(log).toHaveBeenCalledWith(
       "Confirmation email failed for booking MH-123:",
       "SMTP failure",
+    );
+  });
+});
+
+describe("renderTemporaryAccountEmail", () => {
+  it("renders temporary password and reset link in text and HTML", () => {
+    const { text, html } = renderTemporaryAccountEmail(
+      "Luigi Verdi",
+      "LuigiVerdi842",
+      "http://localhost:5173/reset-password?token=abc123token",
+    );
+
+    expect(text).toContain("Hi Luigi Verdi,");
+    expect(text).toContain("Your temporary password is: LuigiVerdi842");
+    expect(text).toContain(
+      "http://localhost:5173/reset-password?token=abc123token",
+    );
+
+    expect(html).toContain("Hi Luigi Verdi,");
+    expect(html).toContain("<strong>LuigiVerdi842</strong>");
+    expect(html).toContain(
+      'href="http://localhost:5173/reset-password?token=abc123token"',
     );
   });
 });

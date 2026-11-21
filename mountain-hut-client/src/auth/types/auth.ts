@@ -1,4 +1,4 @@
-export const USER_TYPES = ["HIKER", "EMPLOYEE", "MANAGER"] as const;
+export const USER_TYPES = ["HIKER", "EMPLOYEE", "MANAGER", "TEMPORARY"] as const;
 export type UserType = (typeof USER_TYPES)[number];
 
 export interface User {
@@ -8,6 +8,7 @@ export interface User {
   surname: string;
   phoneNumber: number | string;
   type: UserType;
+  temporaryPassword?: string;
 }
 
 export interface RegisterRequest {

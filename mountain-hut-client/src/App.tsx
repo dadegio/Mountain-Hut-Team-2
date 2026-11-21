@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router";
 import { Layout, HomePage, NotFoundPage } from "./shared/index.ts";
-import { AuthProvider, RequireRole, LoginPage, RegisterPage } from "./auth/index.ts";
+import { AuthProvider, RequireRole, LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage } from "./auth/index.ts";
 import { BookingPage, EmployeeReservationPage, MyBookingsPage } from "./booking/index.ts";
 import { EmployeeSlotsPage } from "./slots/index.ts";
 import { RegisterHikePage, MyHikesPage } from "./hikes/index.ts";
@@ -15,6 +15,8 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
+            <Route path="forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="reset-password" element={<ResetPasswordPage />} />
             {/* guests can browse availability, hikers can book, staff can't */}
             <Route element={<RequireRole allow={["HIKER"]} guestAllowed />}>
               <Route path="booking" element={<BookingPage />} />

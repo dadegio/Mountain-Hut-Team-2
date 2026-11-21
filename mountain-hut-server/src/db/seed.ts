@@ -7,6 +7,7 @@ import {
   reservationsTable,
   allergensTable,
   reservationAllergensTable,
+  passwordResetTokensTable,
 } from "./schema.ts";
 import { db } from "./database.ts";
 
@@ -28,6 +29,7 @@ async function main() {
   await db.delete(tableAvailabilityTable);
   await db.delete(timeSlotTable);
   await db.delete(tablesTable);
+  await db.delete(passwordResetTokensTable);
   await db.delete(usersTable);
   await db.delete(allergensTable);
 
@@ -66,6 +68,20 @@ async function main() {
       },
     ])
     .returning();
+
+  const tempUser = insertedUsers.find((u) => u.type === "TEMPORARY");
+  if (tempUser && tempUser.email) {
+    const plainToken = "temp-hiker-reset-token-12345";
+    const tokenHash = await argon2.hash(plainToken);
+    const expiresAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    ).toISOString();
+    await db.insert(passwordResetTokensTable).values({
+      userId: tempUser.id,
+      tokenHash,
+      expiresAt,
+    });
+  }
 
   console.log(`Successfully inserted ${insertedUsers.length} users.`);
 

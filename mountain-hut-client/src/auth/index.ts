@@ -5,5 +5,7 @@ export { default as RequireRole } from "./components/RequireRole.tsx";
 export { default as AuthField } from "./components/AuthField.tsx";
 export { default as LoginPage } from "./pages/LoginPage.tsx";
 export { default as RegisterPage } from "./pages/RegisterPage.tsx";
+export { default as ForgotPasswordPage } from "./pages/ForgotPasswordPage.tsx";
+export { default as ResetPasswordPage } from "./pages/ResetPasswordPage.tsx";
 export * from "./types/auth.ts";
 export * from "./api/auth-api.ts";

@@ -6,6 +6,7 @@ export interface AuthContextValue {
   loading: boolean // true while checking /me on page load
   login: (email: string, password: string) => Promise<User>
   logout: () => Promise<void>
+  refreshUser: () => Promise<User | null>
 }
 
 // default = "not logged in", so components (and tests) work without a provider
@@ -16,4 +17,5 @@ export const AuthContext = createContext<AuthContextValue>({
     throw new Error('AuthProvider is missing')
   },
   logout: async () => {},
+  refreshUser: async () => null,
 })

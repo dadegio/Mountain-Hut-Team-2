@@ -60,7 +60,9 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
           .send({ message: "User Not Found" });
       }
 
-      return reply.code(StatusCodes.OK).send(users);
+      return reply
+        .code(StatusCodes.OK)
+        .send(users.map((rawUser) => userResponseSchema.parse(rawUser)));
     },
   );
 };

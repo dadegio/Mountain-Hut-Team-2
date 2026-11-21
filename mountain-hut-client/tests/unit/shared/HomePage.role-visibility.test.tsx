@@ -1,18 +1,19 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import HomePage from '../../../src/shared/pages/HomePage'
 import { AuthContext, type AuthContextValue } from '../../../src/auth/context/auth-context.ts'
 import type { User } from '../../../src/auth/types/auth.ts'
 
-function renderHomeAs(user: User | null) {
+function renderHomeAs(user: User | null, refreshUser = vi.fn().mockResolvedValue(user), logout = vi.fn().mockResolvedValue(undefined)) {
   const auth: AuthContextValue = {
     user,
     loading: false,
     login: async () => {
       throw new Error('not used')
     },
-    logout: async () => {},
+    logout,
+    refreshUser,
   }
   return render(
     <AuthContext.Provider value={auth}>
@@ -68,4 +69,30 @@ describe('HomePage role-based views', () => {
       expect(screen.queryByText(/Easier than that it's impossible/i)).not.toBeInTheDocument()
     },
   )
+
+  it('displays replacement view for TEMPORARY users and polls refreshUser', () => {
+    const refreshUser = vi.fn().mockResolvedValue(fakeUser('TEMPORARY'))
+    renderHomeAs(fakeUser('TEMPORARY'), refreshUser)
+
+    expect(screen.getByText(/Temporary Account • Action Required/i)).toBeInTheDocument()
+    expect(screen.getByText(/Welcome, Test!/i)).toBeInTheDocument()
+    expect(screen.getByText(/Password change required/i)).toBeInTheDocument()
+    expect(screen.getByText(/test@example.com/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Resend email link/i })).toBeInTheDocument()
+
+    // Does not show the normal public hero / booking CTAs
+    expect(screen.queryByRole('link', { name: /Check Availability/i })).not.toBeInTheDocument()
+  })
+
+  it('logs out and redirects when temporary user password reset is detected', async () => {
+    const logout = vi.fn().mockResolvedValue(undefined)
+    const refreshUser = vi.fn().mockResolvedValue(fakeUser('HIKER'))
+    renderHomeAs(fakeUser('TEMPORARY'), refreshUser, logout)
+
+    window.dispatchEvent(new StorageEvent('storage', { key: 'mountain_hut_auth_password_reset' }))
+
+    await waitFor(() => {
+      expect(logout).toHaveBeenCalled()
+    })
+  })
 })

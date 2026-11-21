@@ -21,6 +21,7 @@
           # Testing
           hurl
           mailpit
+          playwright-driver.browsers
 
           # DB Management + SQL formatter
           sqlitebrowser
@@ -30,6 +31,12 @@
           # HTML
           djlint
         ];
+
+        shellHook = ''
+          export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+          export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+          export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+        '';
       };
     };
 }

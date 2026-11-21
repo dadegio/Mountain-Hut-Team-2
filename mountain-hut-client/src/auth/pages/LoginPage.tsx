@@ -10,7 +10,9 @@ const primaryButton =
 
 // where each role lands after login
 function homeFor(type: string): string {
-  return type === 'HIKER' ? '/booking' : '/employee/slots'
+  if (type === 'HIKER') return '/booking'
+  if (type === 'TEMPORARY') return '/'
+  return '/employee/slots'
 }
 
 export default function LoginPage() {
@@ -18,6 +20,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from
+  const notice = (location.state as { message?: string } | null)?.message
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -49,7 +52,7 @@ export default function LoginPage() {
       <AuthShell badge="Mountain Hut" title={`Welcome back, ${user.name}`} subtitle="You're already logged in.">
         <div className="space-y-4">
           <Link to={homeFor(user.type)} className={primaryButton}>
-            {user.type === 'HIKER' ? 'Book a table' : 'Manage slots'}
+            {user.type === 'HIKER' ? 'Book a table' : user.type === 'TEMPORARY' ? 'Go to Home' : 'Manage slots'}
           </Link>
           <button
             type="button"
@@ -78,6 +81,11 @@ export default function LoginPage() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        {notice && (
+          <div role="status" className="rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-sm text-green-800">
+            {notice}
+          </div>
+        )}
         <AuthField
           id="email"
           label="Email"
@@ -95,6 +103,15 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+
+        <div className="flex justify-end">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-medium text-stone-600 hover:text-green-700 underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
 
         {error && (
           <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">

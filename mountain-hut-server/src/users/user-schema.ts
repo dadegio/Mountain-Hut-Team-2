@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { USER_TYPES } from "../db/schema.ts";
 
 export const getUserQuerySchema = z.object({
   email: z.string().optional(),
@@ -8,14 +7,32 @@ export const getUserQuerySchema = z.object({
   phoneNumber: z.string().optional(),
 });
 
-export const userResponseSchema = z.object({
+export type GetUserQuery = z.infer<typeof getUserQuerySchema>;
+
+const baseUser = {
   id: z.number(),
-  email: z.string(),
   name: z.string(),
-  surname: z.string().default(""),
-  phoneNumber: z.string().nullable().optional(),
-  type: z.enum(USER_TYPES),
+  phoneNumber: z.string().nullable(),
+};
+
+const standardUserSchema = z.object({
+  ...baseUser,
+  email: z.string(),
+  surname: z.string(),
+  type: z.enum(["HIKER", "EMPLOYEE", "MANAGER", "TEMPORARY"]),
+  temporaryPassword: z.string().optional(),
 });
 
-export type GetUserQuery = z.infer<typeof getUserQuerySchema>;
+const throwawayUserSchema = z.object({
+  ...baseUser,
+  email: z.string().nullable(),
+  surname: z.string().nullable(),
+  type: z.literal("THROWAWAY"),
+});
+
+export const userResponseSchema = z.discriminatedUnion("type", [
+  standardUserSchema,
+  throwawayUserSchema,
+]);
+
 export type UserResponse = z.infer<typeof userResponseSchema>;
