@@ -1172,6 +1172,10 @@ components:
           type: integer
           minimum: 1
           maximum: 1000
+        description:
+          type: string
+          maxLength: 1000
+          description: Optional staff-entered menu choice stored in reservation notes (MH-116)
 
     ChangeBookingRequest:
       type: object
