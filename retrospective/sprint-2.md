@@ -52,7 +52,7 @@ Our Definition of Done:
 #### 1.2.2 Total task estimation error ratio
 
 $$
-    \frac{\sum_i \text{spent}_{\text{task}_i}}{\sum_i \text{estimation}_{\text{task}_i}} - 1 = \frac{\text{98h 59m}}{\text{95h 00m}} - 1 = 0,042
+    \frac{\sum_i \text{spent}_{\text{task}_i}}{\sum_i \text{estimation}_{\text{task}_i}} - 1 = \frac{\text{93h 12m}}{\text{95h 00m}} - 1 = -0,019
 $$
 
 #### 1.2.3 Absolute relative task estimation error
