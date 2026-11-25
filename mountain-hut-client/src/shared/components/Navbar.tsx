@@ -21,14 +21,14 @@ const navItems: { path: string; label: string; end?: boolean; show: (role: Role)
   { path: "/employee/slots", label: "Manage slots", show: (role) => role !== null && STAFF.includes(role) },
   { path: "/employee/menus", label: "Manage menus", show: (role) => role !== null && STAFF.includes(role) },
   { path: "/employee/reservations", label: "New reservation", show: (role) => role !== null && STAFF.includes(role) },
-  { path: "/employee/hikes", label: "Registered hikes", show: (role) => role !== null && STAFF.includes(role) },
+  { path: "/employee/hikes", label: "Active hikes", show: (role) => role !== null && STAFF.includes(role) },
   { path: "/login", label: "Login", show: (role) => role === null },
   { path: "/register", label: "Register", show: (role) => role === null },
 ];
 
 // The green bar under the link grows in on hover and stays on the current page
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `relative py-1 transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-green-600 after:transition-transform after:duration-300 ${
+  `relative py-1 transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-green-600 after:transition-transform after:duration-300 whitespace-nowrap ${
     isActive
       ? "font-semibold text-green-700 after:scale-x-100"
       : "text-stone-700 hover:text-green-700 after:scale-x-0 hover:after:scale-x-100"
@@ -82,13 +82,12 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-lg backdrop-saturate-150 border-b border-white/50 shadow-sm">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <NavLink to="/" className="group -ml-5 flex translate-y-0.5 items-center">
+      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-8">        <NavLink to="/" className="group -ml-5 flex translate-y-0.5 items-center">
           <Logo className="h-8" />
         </NavLink>
 
         {/* Desktop navigation */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden lg:flex items-center gap-6">
           {visibleItems.map((item) => (
             <NavLink key={item.path} to={item.path} end={item.end} className={linkClass}>
               {item.label}
@@ -103,7 +102,7 @@ export default function Navbar() {
                   target="_blank"
                   rel="noopener noreferrer"
                   title="Open Hut Email Service"
-                  className="inline-flex items-center gap-1.5 text-stone-700 hover:text-green-700 transition-colors"
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap text-stone-700 hover:text-green-700 transition-colors"
                 >
                   <Icon name="mail" className="w-5 h-5" />
                   <span>Hut Mail</span>
@@ -179,7 +178,7 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-stone-700 hover:text-stone-900 hover:bg-white/60 focus:outline-hidden focus:ring-2 focus:ring-green-700 cursor-pointer"
+          className="lg:hidden inline-flex items-center justify-center p-2 rounded-md text-stone-700 hover:text-stone-900 hover:bg-white/60 focus:outline-hidden focus:ring-2 focus:ring-green-700 cursor-pointer"
           aria-expanded={isOpen}
           aria-label="Toggle navigation menu"
         >
@@ -206,7 +205,7 @@ export default function Navbar() {
 
       {/* Mobile navigation panel */}
       {isOpen && (
-        <div className="md:hidden border-t border-white/40 bg-white/80 backdrop-blur-md px-4 pt-2 pb-3 space-y-1 shadow-lg animate-fade-up">
+        <div className="lg:hidden border-t border-white/40 bg-white/80 backdrop-blur-md px-4 pt-2 pb-3 space-y-1 shadow-lg animate-fade-up">
           {visibleItems.map((item) => (
             <NavLink
               key={item.path}

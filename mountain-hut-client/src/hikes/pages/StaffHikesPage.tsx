@@ -1,67 +1,40 @@
 import { useEffect, useState } from "react";
-import AuthShell from "../../shared/components/AuthShell.tsx";
 import { getRegisteredHikes } from "../api/hikes-api.ts";
 import type { StaffHike } from "../types/hike.ts";
-import {
-  formatDuration,
-  formatHikeRange,
-  formatHikeTime,
-  staffHikeGroup,
-  type StaffHikeGroup,
-} from "../utils/hike-time.ts";
+import { formatHikeTime, staffHikeGroup } from "../utils/hike-time.ts";
+import PageHeader from "../../shared/components/PageHeader.tsx";
+import SectionTitle from "../../shared/components/SectionTitle.tsx";
+import Icon from "../../shared/components/Icon.tsx";
+import { primaryButton, sectionCard as card } from "../../shared/styles.ts";
 
-type ListedStaffHike = StaffHike & { group: StaffHikeGroup; lateMs: number };
+// MH-21 is about who is on the mountain now; upcoming and past hikes are extra context
+type Group = "active" | "upcoming" | "past";
 
-// The hikes of the last load, already grouped. Groups and delays are worked
-// out when the data arrives, so that rendering never needs the current time.
+// The hikes of the last load, already grouped and sorted. This is worked out
+// when the data arrives, so that rendering never needs the current time.
 interface LoadedStaffHikes {
-  groups: Record<StaffHikeGroup, ListedStaffHike[]>;
+  groups: Record<Group, StaffHike[]>;
   updatedAt: string;
-  error: string | null;
 }
 
-interface Section {
-  group: StaffHikeGroup;
-  title: string;
-  badge: string;
-  badgeClass: string;
-  cardClass: string;
+function emptyGroups(): Record<Group, StaffHike[]> {
+  return { active: [], upcoming: [], past: [] };
 }
 
-// Most urgent first
-const SECTIONS: Section[] = [
-  {
-    group: "overdue",
-    title: "Should be back",
-    badge: "Overdue",
-    badgeClass: "bg-red-100 text-red-800",
-    cardClass: "border-red-300 bg-red-50/70",
-  },
-  {
-    group: "out",
-    title: "Out now",
-    badge: "Out now",
-    badgeClass: "bg-amber-100 text-amber-800",
-    cardClass: "border-amber-200 bg-white shadow-xs",
-  },
-  {
-    group: "upcoming",
-    title: "Upcoming",
-    badge: "Upcoming",
-    badgeClass: "bg-green-100 text-green-800",
-    cardClass: "border-stone-200 bg-white shadow-xs",
-  },
-  {
-    group: "earlier",
-    title: "Earlier",
-    badge: "Past",
-    badgeClass: "bg-stone-200 text-stone-600",
-    cardClass: "border-stone-200 bg-stone-50/60",
-  },
-];
+function groupOf(hike: StaffHike, now: number): Group {
+  const group = staffHikeGroup(hike, now);
+  if (group === "out" || group === "overdue") return "active";
+  if (group === "upcoming") return "upcoming";
+  return "past";
+}
 
-function emptyGroups(): Record<StaffHikeGroup, ListedStaffHike[]> {
-  return { overdue: [], out: [], upcoming: [], earlier: [] };
+const time = (iso: string) => Date.parse(iso);
+
+// On a hike: back soonest first · upcoming: leaving soonest first · past: newest first
+function sortGroups(groups: Record<Group, StaffHike[]>) {
+  groups.active.sort((a, b) => time(a.expectedReturnAt) - time(b.expectedReturnAt));
+  groups.upcoming.sort((a, b) => time(a.departureAt) - time(b.departureAt));
+  groups.past.sort((a, b) => time(b.departureAt) - time(a.departureAt));
 }
 
 function clock(ms: number): string {
@@ -72,37 +45,40 @@ function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, "")}`;
 }
 
-function StaffHikeCard({ hike, section }: { hike: ListedStaffHike; section: Section }) {
-  const durationMs = Date.parse(hike.expectedReturnAt) - Date.parse(hike.departureAt);
-
+function StaffHikeCard({ hike, group }: { hike: StaffHike; group: Group }) {
   return (
-    <li className={`rounded-lg border px-4 py-3 ${section.cardClass}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-stone-900">
-            {hike.hiker.name} {hike.hiker.surname}
-          </p>
-          <p className="text-sm text-stone-600">
-            {formatHikeRange(hike.departureAt, hike.expectedReturnAt)} · out for{" "}
-            {formatDuration(durationMs)}
-          </p>
+    <li
+      className={`rounded-xl border px-4 py-3 ${
+        group === "past" ? "border-stone-200 bg-stone-50" : "border-stone-200 bg-white shadow-sm"
+      }`}
+    >
+      <p className="font-semibold text-stone-900">
+        {hike.hiker.name} {hike.hiker.surname}
+      </p>
+      <p className="text-base font-medium text-green-800">→ {hike.destination}</p>
+
+      <dl className="mt-2 space-y-1 text-sm">
+        <div className="flex gap-2">
+          <dt className="w-28 shrink-0 text-stone-500">{group === "upcoming" ? "Leaves" : "Left"}</dt>
+          <dd className="text-stone-800">{formatHikeTime(hike.departureAt)}</dd>
         </div>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${section.badgeClass}`}
-        >
-          {section.badge}
-        </span>
-      </div>
+        <div className="flex gap-2">
+          <dt className="w-28 shrink-0 text-stone-500">Expected back</dt>
+          <dd className="font-semibold text-stone-900">{formatHikeTime(hike.expectedReturnAt)}</dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-28 shrink-0 text-stone-500">Route</dt>
+          <dd className="whitespace-pre-line text-stone-800">{hike.routeDescription}</dd>
+        </div>
+        {hike.intermediatePoints.length > 0 && (
+          <div className="flex gap-2">
+            <dt className="w-28 shrink-0 text-stone-500">Passage points</dt>
+            <dd className="text-stone-800">{hike.intermediatePoints.join(" → ")}</dd>
+          </div>
+        )}
+      </dl>
 
-      {hike.group === "overdue" && (
-        <p className="mt-2 text-sm font-semibold text-red-700">
-          Expected back {formatHikeTime(hike.expectedReturnAt)} · {formatDuration(hike.lateMs)} late
-        </p>
-      )}
-
-      <p className="mt-2 whitespace-pre-line text-sm text-stone-700">{hike.routeDescription}</p>
-
-      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 border-t border-stone-200 pt-2 text-sm">
         {hike.hiker.phoneNumber ? (
           <a
             href={telHref(hike.hiker.phoneNumber)}
@@ -126,119 +102,161 @@ function StaffHikeCard({ hike, section }: { hike: ListedStaffHike; section: Sect
   );
 }
 
-export default function RegisteredHikesPage() {
-  const [hikes, setHikes] = useState<LoadedStaffHikes | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
+// A list that scrolls inside its card, or a dashed box when it is empty
+function HikeList({
+  hikes,
+  group,
+  label,
+  empty,
+  maxHeight,
+}: {
+  hikes: StaffHike[];
+  group: Group;
+  label: string;
+  empty: string;
+  maxHeight: string;
+}) {
+  if (hikes.length === 0) {
+    return (
+      <p className="rounded-xl border-2 border-dashed border-stone-300 px-4 py-4 text-center text-sm text-stone-500">
+        {empty}
+      </p>
+    );
+  }
+  return (
+    <ul aria-label={label} className={`space-y-2 overflow-y-auto pr-1 ${maxHeight}`}>
+      {hikes.map((hike) => (
+        <StaffHikeCard key={hike.id} hike={hike} group={group} />
+      ))}
+    </ul>
+  );
+}
+
+export default function StaffHikesPage() {
+  const [loaded, setLoaded] = useState<LoadedStaffHikes | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
-    let ignore = false;
+    let active = true;
     getRegisteredHikes()
       .then((list) => {
-        if (ignore) return;
+        if (!active) return;
         const now = Date.now();
         const groups = emptyGroups();
-        // The API sorts by expected return: right for every group but "earlier"
-        for (const hike of list) {
-          const group = staffHikeGroup(hike, now);
-          const lateMs = Math.max(0, now - Date.parse(hike.expectedReturnAt));
-          groups[group].push({ ...hike, group, lateMs });
-        }
-        groups.earlier.reverse(); // the most recent first
-        setHikes({ groups, updatedAt: clock(now), error: null });
+        for (const hike of list) groups[groupOf(hike, now)].push(hike);
+        sortGroups(groups);
+        setLoaded({ groups, updatedAt: clock(now) });
+        setLoadError(null);
       })
-      .catch((err) => {
-        if (ignore) return;
-        setHikes({
-          groups: emptyGroups(),
-          updatedAt: "",
-          error: err instanceof Error ? err.message : "Could not load the hikes",
-        });
+      .catch((err: Error) => {
+        if (active) setLoadError(err.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
     return () => {
-      ignore = true;
+      active = false;
     };
-  }, [reloadKey]);
+  }, [reload]);
 
   function refresh() {
-    setHikes(null);
-    setReloadKey((key) => key + 1);
+    setLoading(true);
+    setReload((value) => value + 1);
   }
 
-  const total = hikes
-    ? Object.values(hikes.groups).reduce((sum, list) => sum + list.length, 0)
-    : 0;
+  const groups = loaded?.groups;
 
   return (
-    <AuthShell
-      width="4xl"
-      badge="Hut staff"
-      title="Registered hikes"
-      subtitle="Who is out on the mountain, and who should already be back."
-    >
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {hikes && !hikes.error ? (
-            <p className="text-sm text-stone-600">
-              <span className={hikes.groups.overdue.length > 0 ? "font-semibold text-red-700" : ""}>
-                {hikes.groups.overdue.length} should be back
-              </span>
-              {" · "}
-              {hikes.groups.out.length} out now
-              {" · "}
-              {hikes.groups.upcoming.length} upcoming
-              <span className="text-stone-400"> · updated {hikes.updatedAt}</span>
-            </p>
-          ) : (
-            <span />
-          )}
-          <button
-            type="button"
-            onClick={refresh}
-            disabled={hikes === null}
-            className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-50 cursor-pointer"
-          >
-            Refresh
+    <div className="relative left-1/2 w-[min(80rem,calc(100vw-2rem))] -translate-x-1/2 space-y-6">
+      <PageHeader
+        icon="map"
+        eyebrow="Staff · Hikes"
+        title="Active hikes"
+        subtitle="Who is out on the mountain right now, and when they are expected back."
+      />
+
+      {loading && !groups ? (
+        <p role="status" className={`${card} flex items-center gap-3 text-stone-500`}>
+          <span
+            className="w-5 h-5 rounded-full border-2 border-green-600 border-t-transparent animate-spin"
+            aria-hidden="true"
+          />
+          Loading hikes…
+        </p>
+      ) : loadError ? (
+        <div role="alert" className={`${card} space-y-3`}>
+          <p className="flex items-center gap-2 text-red-700">
+            <Icon name="warning" className="w-5 h-5" />
+            Could not load the hikes: {loadError}
+          </p>
+          <button type="button" onClick={refresh} className={primaryButton}>
+            <Icon name="repeat" className="w-5 h-5" />
+            Retry
           </button>
         </div>
+      ) : groups ? (
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(15rem,1fr)_minmax(0,2fr)]">
+          {/* Right on wide screens, first on phones: this is MH-21 */}
+          <section aria-label="On a hike now" className={`${card} space-y-4 lg:order-2`}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <SectionTitle
+                icon="clock"
+                title={`On a hike now (${groups.active.length})`}
+              />
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-stone-400">Updated {loaded?.updatedAt}</span>
+                <button
+                  type="button"
+                  onClick={refresh}
+                  disabled={loading}
+                  className="inline-flex items-center gap-2 rounded-xl border border-green-600 bg-white px-4 py-2 text-sm font-semibold text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50 cursor-pointer"
+                >
+                  <Icon name="repeat" className="w-4 h-4" />
+                  Refresh
+                </button>
+              </div>
+            </div>
+            <HikeList
+              hikes={groups.active}
+              group="active"
+              label="Hikers on a hike now"
+              empty="Nobody is out on a hike right now"
+              maxHeight="max-h-[70vh]"
+            />
+          </section>
 
-        {hikes === null && (
-          <div className="space-y-2" aria-label="Loading hikes">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-28 rounded-lg bg-stone-200 animate-pulse" />
-            ))}
-          </div>
-        )}
-
-        {hikes?.error && (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700"
-          >
-            Could not load the hikes: {hikes.error}
-          </div>
-        )}
-
-        {hikes && !hikes.error && total === 0 && (
-          <p className="rounded-lg border border-dashed border-stone-300 px-4 py-8 text-center text-sm text-stone-500">
-            No hikes registered yet.
-          </p>
-        )}
-
-        {hikes &&
-          SECTIONS.filter((section) => hikes.groups[section.group].length > 0).map((section) => (
-            <section key={section.group} aria-label={section.title}>
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-green-700">
-                {section.title}{" "}
-                <span className="text-stone-400">({hikes.groups[section.group].length})</span>
-              </h2>
-              <ul className="space-y-2">
-                {hikes.groups[section.group].map((hike) => (
-                  <StaffHikeCard key={hike.id} hike={hike} section={section} />
-                ))}
-              </ul>
+          <aside className={`${card} space-y-6 lg:order-1 lg:sticky lg:top-20`} aria-label="Other hikes">
+            <section aria-label="Upcoming" className="space-y-4">
+              <SectionTitle
+                icon="calendar"
+                title={`Upcoming (${groups.upcoming.length})`}
+              />
+              <HikeList
+                hikes={groups.upcoming}
+                group="upcoming"
+                label="Upcoming hikes"
+                empty="No upcoming hikes"
+                maxHeight="max-h-[30vh]"
+              />
             </section>
-          ))}
-      </div>
-    </AuthShell>
+            <div className="border-t border-stone-200" />
+            <section aria-label="Past" className="space-y-4">
+              <SectionTitle icon="archive" 
+              title={`Past (${groups.past.length})`} 
+              />
+              <HikeList
+                hikes={groups.past}
+                group="past"
+                label="Past hikes"
+                empty="No past hikes"
+                maxHeight="max-h-[30vh]"
+              />
+            </section>
+          </aside>
+        </div>
+      ) : null}
+    </div>
   );
 }
