@@ -104,24 +104,76 @@ function HikeCard({ hike, index }: { hike: ListedHike; index: number }) {
             Emergency contact: {hike.emergencyContactPhone}
           </p>
         )}
+
+        {hike.phase === "ongoing" && (
+          <div className="pt-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 active:bg-violet-700 transition-colors cursor-pointer shadow-xs"
+              onClick={() => {
+                // TODO: for Alice, insert here the onClick action that updates the status of an hike
+                // I was thinking that an hike should not go inside the "Past" box before the hiker
+                // presses on the "Hike Completed" button. There is some rework of the logic that has to
+                // be done but if i don't have the backend i can't do it
+                alert(`Hike #${hike.id} marked as completed! (Test mock)`);
+              }}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              Hike completed
+            </button>
+          </div>
+        )}
       </div>
     </li>
   );
 }
 
+// Approximate height of ~3 cards (each ~180px) + gaps
+const CARD_APPROX_HEIGHT = 196; // px per card
+const MAX_VISIBLE = 2;
+
+function ChevronDown({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
 function HikeSection({ title, label, icon, hikes }: { title: string; label: string; icon: IconName; hikes: ListedHike[] }) {
+  const [open, setOpen] = useState(false);
   if (hikes.length === 0) return null;
+
+  const maxHeight = MAX_VISIBLE * CARD_APPROX_HEIGHT + (MAX_VISIBLE - 1) * 16; // 16px = gap-4
+
   return (
     <section aria-label={label}>
-      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-green-700">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="mb-3 flex w-full items-center gap-2 text-left text-sm font-semibold uppercase tracking-wider text-green-700 hover:text-green-600 transition-colors"
+        aria-expanded={open}
+      >
+        <ChevronDown
+          className={`w-4 h-4 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+        <span className="text-stone-400">({hikes.length})</span>
         <Icon name={icon} className="w-5 h-5" />
-        {title} <span className="text-stone-400">({hikes.length})</span>
-      </h2>
-      <ul className="space-y-4">
-        {hikes.map((hike, index) => (
-          <HikeCard key={hike.id} hike={hike} index={index} />
-        ))}
-      </ul>
+        {title}
+      </button>
+
+      {open && (
+        <ul
+          className="space-y-4 overflow-y-auto pr-1"
+          style={{ maxHeight: `${maxHeight}px` }}
+        >
+          {hikes.map((hike, index) => (
+            <HikeCard key={hike.id} hike={hike} index={index} />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
@@ -212,8 +264,8 @@ export default function MyHikesPage() {
 
         {hikes && !hikes.error && (
           <>
-            <HikeSection title="In progress" label="Hikes in progress" icon="map" hikes={hikes.ongoing} />
             <HikeSection title="Upcoming" label="Upcoming hikes" icon="calendar" hikes={hikes.upcoming} />
+            <HikeSection title="In progress" label="Hikes in progress" icon="map" hikes={hikes.ongoing} />
             <HikeSection title="Past" label="Past hikes" icon="clock" hikes={hikes.past} />
           </>
         )}
