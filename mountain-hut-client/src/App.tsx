@@ -4,8 +4,8 @@ import { AuthProvider, RequireRole, LoginPage, RegisterPage, ForgotPasswordPage,
 import { BookingPage, EmployeeReservationPage, MyBookingsPage } from "./booking/index.ts";
 import { EmployeeSlotsPage } from "./slots/index.ts";
 import { ManageMenusPage } from "./menus/index.ts";
-import { RegisterHikePage, MyHikesPage } from "./hikes/index.ts";
 import { MealsPage } from "./meals/index.ts";
+import { RegisterHikePage, MyHikesPage, StaffHikesPage } from "./hikes/index.ts";
 const STAFF = ["EMPLOYEE", "MANAGER"];
 
 function App() {
@@ -37,6 +37,7 @@ function App() {
               <Route path="employee/slots" element={<EmployeeSlotsPage />} />
               <Route path="employee/menus" element={<ManageMenusPage />} />
               <Route path="employee/reservations" element={<EmployeeReservationPage />} />
+              <Route path="employee/hikes" element={<StaffHikesPage />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />
