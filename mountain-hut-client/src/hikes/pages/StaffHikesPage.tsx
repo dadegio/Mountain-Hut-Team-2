@@ -70,7 +70,7 @@ function StaffHikeCard({ hike, group }: { hike: StaffHike; group: Group }) {
           <dt className="w-28 shrink-0 text-stone-500">Route</dt>
           <dd className="whitespace-pre-line text-stone-800">{hike.routeDescription}</dd>
         </div>
-        {hike.intermediatePoints.length > 0 && (
+        {(hike.intermediatePoints ?? []).length > 0 && (
           <div className="flex gap-2">
             <dt className="w-28 shrink-0 text-stone-500">Passage points</dt>
             <dd className="text-stone-800">{hike.intermediatePoints.join(" → ")}</dd>
