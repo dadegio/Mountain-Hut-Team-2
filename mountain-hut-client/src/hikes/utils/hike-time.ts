@@ -74,12 +74,12 @@ export function formatHikeRange(departure: string, expectedReturn: string): stri
 export type HikePhase = "upcoming" | "ongoing" | "past";
 
 export function hikePhase(
-  hike: { departureAt: string; expectedReturnAt: string },
+  hike: { departureAt: string; expectedReturnAt: string; completedAt?: string | null},
   nowMs: number,
 ): HikePhase {
+  if (hike.completedAt) return "past";
   if (nowMs < Date.parse(hike.departureAt)) return "upcoming";
-  if (nowMs < Date.parse(hike.expectedReturnAt)) return "ongoing";
-  return "past";
+  return "ongoing";
 }
 
 export interface HikeFormValues {

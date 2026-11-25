@@ -9,6 +9,7 @@ export interface Hike {
   intermediatePoints: string[];
   emergencyContactPhone: string | null;
   createdAt: string;
+  completedAt?: string | null;
 }
 
 export interface RegisterHikeRequest {

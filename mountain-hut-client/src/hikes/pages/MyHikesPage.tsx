@@ -31,8 +31,31 @@ interface LoadedHikes {
   error: string | null;
 }
 
-function HikeCard({ hike, index }: { hike: ListedHike; index: number }) {
+function HikeCard({
+  hike,
+  index,
+  onComplete,
+}: {
+  hike: ListedHike;
+  index: number;
+  onComplete?: (id: number) => void;
+}) {
   const durationMs = Date.parse(hike.expectedReturnAt) - Date.parse(hike.departureAt);
+  const [submitting, setSubmitting] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
+
+  async function handleCompleteClick() {
+    setSubmitting(true);
+    setCompleteError(null);
+    try {
+      // TODO: quando ci sarà il backend -> await completeHike(hike.id);
+      onComplete?.(hike.id);
+    } catch (err) {
+      setCompleteError(err instanceof Error ? err.message : "Could not confirm safe arrival");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   const cardClass = {
     ongoing: "border-amber-300 bg-amber-50/60 shadow-xs",
@@ -48,9 +71,8 @@ function HikeCard({ hike, index }: { hike: ListedHike; index: number }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4 min-w-0">
           <span
-            className={`flex items-center justify-center w-11 h-11 shrink-0 rounded-xl ${
-              hike.phase === "ongoing" ? "bg-amber-100 text-amber-700" : "bg-green-50 text-green-700"
-            }`}
+            className={`flex items-center justify-center w-11 h-11 shrink-0 rounded-xl ${hike.phase === "ongoing" ? "bg-amber-100 text-amber-700" : "bg-green-50 text-green-700"
+              }`}
           >
             <Icon name="pin" className="w-6 h-6" />
           </span>
@@ -106,23 +128,23 @@ function HikeCard({ hike, index }: { hike: ListedHike; index: number }) {
         )}
 
         {hike.phase === "ongoing" && (
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 active:bg-violet-700 transition-colors cursor-pointer shadow-xs"
-              onClick={() => {
-                // TODO: for Alice, insert here the onClick action that updates the status of an hike
-                // I was thinking that an hike should not go inside the "Past" box before the hiker
-                // presses on the "Hike Completed" button. There is some rework of the logic that has to
-                // be done but if i don't have the backend i can't do it
-                alert(`Hike #${hike.id} marked as completed! (Test mock)`);
-              }}
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 active:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-xs"
+              onClick={handleCompleteClick} //For Alice: this is the confermation button
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
-              Hike completed
+              {submitting ? "Saving..." : "Hike completed"}
             </button>
+            {completeError && (
+              <p role="alert" className="text-sm text-red-600">
+                {completeError}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -142,7 +164,7 @@ function ChevronDown({ className }: { className?: string }) {
   );
 }
 
-function HikeSection({ title, label, icon, hikes }: { title: string; label: string; icon: IconName; hikes: ListedHike[] }) {
+function HikeSection({ title, label, icon, hikes, onComplete }: { title: string; label: string; icon: IconName; hikes: ListedHike[]; onComplete?: (id: number) => void }) {
   const [open, setOpen] = useState(false);
   if (hikes.length === 0) return null;
 
@@ -170,7 +192,7 @@ function HikeSection({ title, label, icon, hikes }: { title: string; label: stri
           style={{ maxHeight: `${maxHeight}px` }}
         >
           {hikes.map((hike, index) => (
-            <HikeCard key={hike.id} hike={hike} index={index} />
+            <HikeCard key={hike.id} hike={hike} index={index} onComplete={onComplete} />
           ))}
         </ul>
       )}
@@ -180,6 +202,31 @@ function HikeSection({ title, label, icon, hikes }: { title: string; label: stri
 
 export default function MyHikesPage() {
   const [hikes, setHikes] = useState<LoadedHikes | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  function handleHikeCompleted(hikeId: number) {
+    const completedTarget = hikes?.ongoing.find((h) => h.id === hikeId);
+    setHikes((prev) => {
+      if (!prev) return prev;
+      const target = prev.ongoing.find((h) => h.id === hikeId);
+      if (!target) return prev;
+
+      const updated: ListedHike = {
+        ...target,
+        completedAt: new Date().toISOString(),
+        phase: "past",
+      };
+
+      return {
+        ...prev,
+        ongoing: prev.ongoing.filter((h) => h.id !== hikeId),
+        past: [updated, ...prev.past], // la inserisce in cima a "Past"
+      };
+    });
+    if (completedTarget) {
+      setFeedback(`Safe arrival confirmed for "${completedTarget.destination}".`);
+    }
+  }
 
   useEffect(() => {
     let ignore = false;
@@ -235,6 +282,25 @@ export default function MyHikesPage() {
           </Link>
         </div>
 
+        {feedback && (
+          <div
+            role="status"
+            className="flex items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50 px-3.5 py-2.5 text-sm text-green-800"
+          >
+            <span className="flex items-center gap-2">
+              <Icon name="check" className="w-5 h-5 text-green-600" />
+              {feedback}
+            </span>
+            <button
+              type="button"
+              onClick={() => setFeedback(null)}
+              className="text-green-700 hover:text-green-900 font-medium text-xs cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {hikes === null && (
           <div className="space-y-4" aria-label="Loading hikes">
             {[0, 1, 2].map((i) => (
@@ -265,7 +331,7 @@ export default function MyHikesPage() {
         {hikes && !hikes.error && (
           <>
             <HikeSection title="Upcoming" label="Upcoming hikes" icon="calendar" hikes={hikes.upcoming} />
-            <HikeSection title="In progress" label="Hikes in progress" icon="map" hikes={hikes.ongoing} />
+            <HikeSection title="In progress" label="Hikes in progress" icon="map" hikes={hikes.ongoing} onComplete={handleHikeCompleted} />
             <HikeSection title="Past" label="Past hikes" icon="clock" hikes={hikes.past} />
           </>
         )}
