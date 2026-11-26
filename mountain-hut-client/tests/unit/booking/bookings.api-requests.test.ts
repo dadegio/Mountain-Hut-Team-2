@@ -152,7 +152,7 @@ describe('bookings API', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        fakeResponse(409, { error: 'Booking change window has expired (48 hours after creation)' }),
+        fakeResponse(409, { error: 'Changes require at least 48 hours before the original slot' }),
       ),
     )
 

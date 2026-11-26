@@ -16,8 +16,8 @@ vi.mock('../../../src/slots/api/slots-api.ts', () => ({
   getTables: vi.fn(),
 }))
 
-function createBooking(overrides: Partial<MyBooking> = {}): MyBooking {
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+function createBooking(overrides: Partial<MyBooking> = {}, daysAhead = 4): MyBooking {
+  const tomorrow = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000)
   const yyyy = tomorrow.getFullYear()
   const mm = String(tomorrow.getMonth() + 1).padStart(2, '0')
   const dd = String(tomorrow.getDate()).padStart(2, '0')
@@ -119,11 +119,11 @@ describe('MyBookingsPage — Delete / Cancel booking (MH-107)', () => {
   })
 
   it('renders Delete button even when the 48-hour change window has expired', async () => {
-    // Created 3 days ago, but slot is tomorrow: change is blocked, cancel is allowed
+    // Slot is tomorrow: change is blocked, cancel is allowed regardless of creation time
     const expiredChangeBooking = createBooking({
       id: 77,
       createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-    })
+    }, 1)
     vi.mocked(getMyBookings).mockResolvedValue([expiredChangeBooking])
 
     render(
@@ -133,7 +133,7 @@ describe('MyBookingsPage — Delete / Cancel booking (MH-107)', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText(/Changes closed: more than 48 hours since you booked/i)).toBeInTheDocument()
+      expect(screen.getByText(/Changes closed: less than 48 hours before your slot/i)).toBeInTheDocument()
     })
 
     // Change button must be hidden, but Delete button must be available
@@ -146,11 +146,14 @@ describe('MyBookingsPage — Delete / Cancel booking (MH-107)', () => {
     const now = new Date()
     const inOneHour = new Date(now.getTime() + 60 * 60 * 1000)
     const inTwoHours = new Date(now.getTime() + 2 * 60 * 60 * 1000)
-    const yyyy = inOneHour.getFullYear()
-    const mm = String(inOneHour.getMonth() + 1).padStart(2, '0')
-    const dd = String(inOneHour.getDate()).padStart(2, '0')
-    const from = `${String(inOneHour.getHours()).padStart(2, '0')}:${String(inOneHour.getMinutes()).padStart(2, '0')}`
-    const to = `${String(inTwoHours.getHours()).padStart(2, '0')}:${String(inTwoHours.getMinutes()).padStart(2, '0')}`
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(inOneHour)
+    const part = (type: string) => parts.find(p => p.type === type)!.value
+    const yyyy = part('year'), mm = part('month'), dd = part('day')
+    const from = `${part('hour')}:${part('minute')}`
+    const to = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(inTwoHours)
 
     const tooCloseBooking = createBooking({
       id: 88,
@@ -168,7 +171,7 @@ describe('MyBookingsPage — Delete / Cancel booking (MH-107)', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText(/Changes closed: less than 2 hours before your slot/i)).toBeInTheDocument()
+      expect(screen.getByText(/Changes closed: less than 48 hours before your slot/i)).toBeInTheDocument()
     })
 
     expect(screen.queryByRole('button', { name: 'Change' })).not.toBeInTheDocument()

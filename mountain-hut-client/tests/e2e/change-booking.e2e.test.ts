@@ -7,10 +7,10 @@ function toDateString(d: Date): string {
   return `${d.getFullYear()}-${mm}-${dd}`
 }
 
-function getTomorrowDate(): Date {
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  return tomorrow
+function getEditableDate(): Date {
+  const editable = new Date()
+  editable.setDate(editable.getDate() + 4)
+  return editable
 }
 
 /** Registers a new hiker via API and logs in through the UI */
@@ -38,13 +38,13 @@ async function registerAndLoginHiker(page: Page, testName: string) {
   await expect(page).toHaveURL(/\/booking/)
 }
 
-/** Books a table for tomorrow through the booking page */
+/** Books a table four days ahead through the booking page */
 async function bookTable(page: Page, slotRegex: RegExp, partySize: number) {
-  const tomorrow = getTomorrowDate()
-  if (tomorrow.getDate() === 1) {
+  const editable = getEditableDate()
+  if (editable.getMonth() !== new Date().getMonth()) {
     await page.getByRole('button', { name: /next month/i }).click()
   }
-  await page.locator(`[data-day="${toDateString(tomorrow)}"] button`).click()
+  await page.locator(`[data-day="${toDateString(editable)}"] button`).click()
 
   await page.getByRole('spinbutton', { name: 'Party size' }).fill(String(partySize))
   await page.getByRole('button', { name: slotRegex }).click()
