@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { registerHike, listMyHikes, listRegisteredHikes } from "./hikes.ts";
+import { registerHike, listMyHikes, listRegisteredHikes, listActiveHikes } from "./hikes.ts";
 import { registerHikeSchema, validateHikeChronology } from "./hike-validation.ts";
 
 function requireRole(
@@ -44,6 +44,16 @@ export async function hikeRoutes(app: FastifyInstance) {
     if (!requireRole(request, reply, ["HIKER"])) return;
     try {
       return reply.status(200).send(await listMyHikes(request.user!.id));
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/hikes/active", async (request, reply) => {
+    if (!requireRole(request, reply, ["EMPLOYEE", "MANAGER"])) return;
+    try {
+      return reply.status(200).send(await listActiveHikes());
     } catch (error) {
       request.log.error(error);
       return reply.status(500).send({ error: "Internal server error" });

@@ -743,6 +743,30 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /api/v1/hikes/active:
+    get:
+      tags: [Hikes]
+      summary: List currently active hikes for hut staff
+      description: 'Roles: `EMPLOYEE`, `MANAGER`. Includes started hikes not confirmed complete, even if overdue. Ordered by expected return time, then hike ID.'
+      operationId: listActiveHikes
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Active hikes sorted by expected return time
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffHike"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          description: Internal server error
+
   /api/v1/hikes/mine:
     get:
       tags: [Hikes]
@@ -1178,7 +1202,7 @@ components:
 
     Hike:
       type: object
-      required: [id, userId, departureAt, expectedReturnAt, destination, routeDescription, intermediatePoints, emergencyContactPhone, createdAt]
+      required: [id, userId, departureAt, expectedReturnAt, destination, routeDescription, intermediatePoints, emergencyContactPhone, createdAt, completedAt]
       properties:
         id:
           type: integer
@@ -1201,6 +1225,11 @@ components:
         emergencyContactPhone:
           type: string
           nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Actual confirmed return time, or null until confirmed.
         createdAt:
           type: string
           description: SQLite creation timestamp (UTC)
