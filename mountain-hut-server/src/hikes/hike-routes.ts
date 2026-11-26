@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { registerHike, listMyHikes, listRegisteredHikes } from "./hikes.ts";
 import { registerHikeSchema, validateHikeChronology } from "./hike-validation.ts";
+import { hikeIdParamsSchema, hikePartySchema } from "./party-validation.ts";
+import { listHikeParty, replaceHikeParty } from "./party-members.ts";
 
 function requireRole(
   request: FastifyRequest,
@@ -44,6 +46,39 @@ export async function hikeRoutes(app: FastifyInstance) {
     if (!requireRole(request, reply, ["HIKER"])) return;
     try {
       return reply.status(200).send(await listMyHikes(request.user!.id));
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/hikes/:id/party-members", async (request, reply) => {
+    if (!requireRole(request, reply, ["HIKER", "EMPLOYEE", "MANAGER"])) return;
+    const params = hikeIdParamsSchema.safeParse(request.params);
+    if (!params.success) return reply.status(400).send({ error: "Invalid hike id" });
+    try {
+      const ownerId = request.user!.type === "HIKER" ? request.user!.id : undefined;
+      const party = await listHikeParty(params.data.id, ownerId);
+      if (!party) return reply.status(404).send({ error: "Hike not found" });
+      return reply.status(200).send(party);
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  });
+
+  app.put("/hikes/:id/party-members", async (request, reply) => {
+    if (!requireRole(request, reply, ["HIKER"])) return;
+    const params = hikeIdParamsSchema.safeParse(request.params);
+    if (!params.success) return reply.status(400).send({ error: "Invalid hike id" });
+    const parsed = hikePartySchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({
+      error: "Invalid request body", details: parsed.error.issues,
+    });
+    try {
+      const party = await replaceHikeParty(params.data.id, request.user!.id, parsed.data);
+      if (!party) return reply.status(404).send({ error: "Hike not found" });
+      return reply.status(200).send(party);
     } catch (error) {
       request.log.error(error);
       return reply.status(500).send({ error: "Internal server error" });

@@ -765,6 +765,73 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /api/v1/hikes/{id}/party-members:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      tags: [Hikes]
+      summary: Read hike party members
+      description: 'HIKER: own hike only. EMPLOYEE and MANAGER: any hike.'
+      operationId: listHikeParty
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Party including the leader in partySize
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HikeParty"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Hike missing or not owned by the hiker
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [Hikes]
+      summary: Replace party members for my hike
+      description: 'HIKER only. Replaces the complete list; partySize includes the leader.'
+      operationId: replaceHikeParty
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HikePartyRequest"
+      responses:
+        "200":
+          description: Updated party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HikeParty"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Hike missing or not owned by the hiker
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/v1/allergens:
     get:
       tags: [Allergens]
@@ -1175,6 +1242,69 @@ components:
           type: string
           minLength: 3
           maxLength: 40
+        party:
+          $ref: "#/components/schemas/HikePartyRequest"
+
+    HikePartyMemberRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        surname:
+          type: string
+          minLength: 1
+          maxLength: 200
+        phoneNumber:
+          type: string
+          minLength: 3
+          maxLength: 40
+
+    HikePartyRequest:
+      type: object
+      additionalProperties: false
+      required: [partySize, members]
+      properties:
+        partySize:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Total people including the hike owner
+        members:
+          type: array
+          maxItems: 999
+          description: Exactly partySize minus one additional members
+          items:
+            $ref: "#/components/schemas/HikePartyMemberRequest"
+
+    HikeParty:
+      type: object
+      required: [partySize, members]
+      properties:
+        partySize:
+          type: integer
+          minimum: 1
+        members:
+          type: array
+          items:
+            type: object
+            required: [id, hikeId, name, surname, phoneNumber]
+            properties:
+              id:
+                type: integer
+              hikeId:
+                type: integer
+              name:
+                type: string
+              surname:
+                type: string
+                nullable: true
+              phoneNumber:
+                type: string
+                nullable: true
 
     Hike:
       type: object

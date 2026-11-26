@@ -1,20 +1,27 @@
 import { asc, desc, eq } from "drizzle-orm";
 import { db } from "../db/database.ts";
-import { hikesTable, usersTable } from "../db/schema.ts";
+import { hikesTable, usersTable, hikePartyMembersTable } from "../db/schema.ts";
 import type { RegisterHikeInput } from "./hike-validation.ts";
 
 /** Only the authenticated user's id may be used; never trust a client userId. */
 export async function registerHike(userId: number, input: RegisterHikeInput) {
-  const [hike] = await db.insert(hikesTable).values({
-    userId,
-    departureAt: new Date(input.departureAt).toISOString(),
-    expectedReturnAt: new Date(input.expectedReturnAt).toISOString(),
-    destination: input.destination,
-    routeDescription: input.routeDescription,
-    intermediatePoints: input.intermediatePoints ?? [],
-    emergencyContactPhone: input.emergencyContactPhone ?? null,
-  }).returning();
-  return hike;
+  return db.transaction(async (tx) => {
+    const [hike] = await tx.insert(hikesTable).values({
+      userId,
+      departureAt: new Date(input.departureAt).toISOString(),
+      expectedReturnAt: new Date(input.expectedReturnAt).toISOString(),
+      destination: input.destination,
+      routeDescription: input.routeDescription,
+      intermediatePoints: input.intermediatePoints ?? [],
+      emergencyContactPhone: input.emergencyContactPhone ?? null,
+    }).returning();
+    if (input.party?.members.length) {
+      await tx.insert(hikePartyMembersTable).values(
+        input.party.members.map((member) => ({ ...member, hikeId: hike.id })),
+      );
+    }
+    return hike;
+  });
 }
 
 export async function listMyHikes(userId: number) {
