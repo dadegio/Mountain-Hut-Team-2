@@ -99,6 +99,7 @@ async function main() {
 
   const tomorrow = dayFromToday(1);
   const dayAfter = dayFromToday(2);
+  const editableDay = dayFromToday(4);
   const insertedSlots = await db
     .insert(schema.timeSlotTable)
     .values([
@@ -106,6 +107,8 @@ async function main() {
       { date: tomorrow, from: "13:00", to: "14:00" },
       { date: tomorrow, from: "19:00", to: "21:00" },
       { date: dayAfter, from: "12:00", to: "14:00" },
+      { date: editableDay, from: "12:00", to: "13:00" },
+      { date: editableDay, from: "13:00", to: "14:00" },
     ])
     .returning();
 
@@ -115,6 +118,8 @@ async function main() {
     ["T3", "T4", "T5"],
     ["T1", "T2", "T3", "T4", "T5", "T6"],
     ["T3", "T4", "T6"],
+    ["T1", "T2", "T3", "T4", "T5", "T6"],
+    ["T3", "T4", "T5"],
   ];
   await db.insert(schema.tableAvailabilityTable).values(
     insertedSlots.flatMap((slot, i) =>

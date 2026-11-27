@@ -9,7 +9,6 @@ import {
 } from "../../db/schema.ts";
 import { allocateTables, type FreeTable } from "../rules/allocation.ts";
 import { BookingError } from "./booking.ts";
-import { isSlotBookable } from "../rules/booking-rules.ts";
 import { isBookingChangeAllowed } from "../rules/change-rules.ts";
 
 export interface ChangeBookingInput {
@@ -28,7 +27,7 @@ export interface ChangeBookingInput {
  * one booking even when the group occupies multiple tables.
  *
  * The original reservation ID remains valid; the original creation timestamp
- * is also preserved, so changes cannot reset the 48-hour MH-06 clock.
+ * is also preserved for booking history. The change deadline depends on the slot.
  */
 export async function changeBooking(input: ChangeBookingInput) {
   const { bookingId, userId } = input;
@@ -61,8 +60,12 @@ export async function changeBooking(input: ChangeBookingInput) {
     const originalCreatedAt = originalRows
       .map((row) => row.createdAt)
       .sort()[0];
-    if (!isBookingChangeAllowed(originalCreatedAt)) {
-      throw new BookingError(409, "Booking change window has expired (48 hours after creation)");
+    const now = new Date();
+    const [originalSlot] = await tx.select().from(timeSlotTable)
+      .where(eq(timeSlotTable.id, selected.slotId)).limit(1);
+    if (!originalSlot) throw new BookingError(404, "Original time slot not found");
+    if (!isBookingChangeAllowed(originalSlot.date, originalSlot.from, now)) {
+      throw new BookingError(409, "Changes require at least 48 hours before the original slot");
     }
 
     const slotId = input.slotId ?? selected.slotId;
@@ -73,8 +76,8 @@ export async function changeBooking(input: ChangeBookingInput) {
     const [slot] = await tx.select().from(timeSlotTable)
       .where(eq(timeSlotTable.id, slotId)).limit(1);
     if (!slot) throw new BookingError(404, "Time slot not found");
-    if (!isSlotBookable(slot.date, slot.from)) {
-      throw new BookingError(409, "Booking deadline has passed (2 hours before the slot)");
+    if (!isBookingChangeAllowed(slot.date, slot.from, now)) {
+      throw new BookingError(409, "Changes require at least 48 hours before the new slot");
     }
 
     // A hiker must still have at most one active booking for the target slot.

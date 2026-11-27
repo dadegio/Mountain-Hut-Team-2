@@ -5,12 +5,9 @@ import { getTables } from "../../slots/api/slots-api.ts";
 import AuthShell from "../../shared/components/AuthShell.tsx";
 import Icon, { type IconName } from "../../shared/components/Icon.tsx";
 import ChangeBookingPanel from "../components/ChangeBookingPanel.tsx";
-import { changeBlockReason, createdAtMs, isPast, slotStartMs } from "../rules/booking-rules.ts";
+import { CHANGE_WINDOW_MS, changeBlockReason, isPast, slotStartMs } from "../rules/booking-rules.ts";
 import type { MyBooking } from "../types/booking.ts";
 import type { Table } from "../../slots/types/slot.ts";
-
-const CHANGE_WINDOW_MS = 48 * 60 * 60 * 1000;
-const SLOT_CUTOFF_MS = 2 * 60 * 60 * 1000;
 
 const STATUS_STYLE: Record<MyBooking["status"], { label: string; className: string; icon: IconName; accent: string }> = {
   PLACED: { label: "Confirmed", className: "bg-green-100 text-green-800 border-green-200", icon: "check", accent: "before:bg-green-500" },
@@ -38,6 +35,7 @@ function formatLongDate(s: string): string {
 
 function formatDeadline(ms: number): string {
   return new Date(ms).toLocaleString("en-GB", {
+    timeZone: "Europe/Rome",
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -50,17 +48,11 @@ function formatDeadline(ms: number): string {
 function changeInfo(b: MyBooking): { text: string; open: boolean } | null {
   switch (changeBlockReason(b)) {
     case null: {
-      // whichever comes first: 48h after booking, or 2h before the slot
-      const deadline = Math.min(
-        createdAtMs(b.createdAt) + CHANGE_WINDOW_MS,
-        slotStartMs(b.date, b.from) - SLOT_CUTOFF_MS,
-      );
+      const deadline = slotStartMs(b.date, b.from) - CHANGE_WINDOW_MS;
       return { open: true, text: `You can change this booking until ${formatDeadline(deadline)}.` };
     }
     case "window-expired":
-      return { open: false, text: "Changes closed: more than 48 hours since you booked." };
-    case "too-close":
-      return { open: false, text: "Changes closed: less than 2 hours before your slot." };
+      return { open: false, text: "Changes closed: less than 48 hours before your slot." };
     default:
       return null; // fulfilled or cancelled: nothing to say
   }

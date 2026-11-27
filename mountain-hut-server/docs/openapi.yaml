@@ -549,8 +549,8 @@ paths:
       summary: Change my booking
       description: |
         Roles: `HIKER`. Moves a booking to another slot, changes the party size,
-        or both. It is allowed within 48 hours of creating the booking, and the
-        new slot must still start at least 2 hours later.
+        or both. Both the original and the requested slot must start at least
+        48 hours after the change request (inclusive deadline).
       operationId: changeBooking
       security:
         - sessionCookie: []

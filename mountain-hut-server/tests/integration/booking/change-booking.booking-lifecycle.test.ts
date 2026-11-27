@@ -159,7 +159,7 @@ describe("MH-77: Integration tests — Change Booking lifecycle", () => {
       ).toBe(11);
     });
 
-    it("preserves logical booking identity, updates party size, and maintains the 48h clock", async () => {
+    it("preserves logical booking identity and original creation timestamp when updating party size", async () => {
       // 1. Create booking for 2 hikers
       const createRes = await postBooking(1, 1, 2);
       expect(createRes.statusCode).toBe(201);
@@ -195,7 +195,7 @@ describe("MH-77: Integration tests — Change Booking lifecycle", () => {
       expect(updatedList[0].id).toBe(bookingId);
       expect(updatedList[0].partySize).toBe(4);
       expect(updatedList[0].slotId).toBe(1);
-      expect(updatedList[0].createdAt).toBe(originalCreatedAt); // Clock must NOT restart!
+      expect(updatedList[0].createdAt).toBe(originalCreatedAt); // Keep the original creation timestamp.
 
       // 5. Verify availability reflects 4 seats taken out of 12 (8 remaining)
       const availRes = await getAvailability(futureDate1, 1);
@@ -473,15 +473,10 @@ describe("MH-77: Integration tests — Change Booking lifecycle", () => {
       const res = await postBooking(1, 1, 2);
       const bookingId = res.json().reservations[0].reservationId;
 
-      // Age the booking's createdAt by 49 hours
-      const fortyNineHoursAgo = new Date(Date.now() - 49 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " ");
-
-      await testDb.update(reservationsTable)
-        .set({ createdAt: fortyNineHoursAgo })
-        .where(eq(reservationsTable.id, bookingId));
+      // Move the original slot into the 48-hour restricted interval.
+      await testDb.update(timeSlotTable)
+        .set({ date: romeDate(1) })
+        .where(eq(timeSlotTable.id, 1));
 
       const patchRes = await patchBooking(bookingId, { partySize: 4 }, 1);
       expect(patchRes.statusCode).toBe(409);
@@ -492,14 +487,14 @@ describe("MH-77: Integration tests — Change Booking lifecycle", () => {
       expect(mine.json()[0].partySize).toBe(2);
     });
 
-    it("rejects changes to a slot that has passed the 2-hour cutoff", async () => {
+    it("rejects changes to a slot that has passed the 48-hour cutoff", async () => {
       const res = await postBooking(1, 1, 2);
       const bookingId = res.json().reservations[0].reservationId;
 
       // Slot 5 is in the past
       const patchRes = await patchBooking(bookingId, { slotId: 5 }, 1);
       expect(patchRes.statusCode).toBe(409);
-      expect(patchRes.json().error).toContain("2 hours");
+      expect(patchRes.json().error).toContain("48 hours");
     });
 
     it("rejects changes to completed (FULFILLED) or CANCELED reservations", async () => {

@@ -22,17 +22,20 @@ describe('booking rules', () => {
     expect(createdAtMs('2026-11-04 14:00:00')).toBe(Date.UTC(2026, 10, 4, 14, 0, 0))
   })
 
-  it('allows a change within 48h of booking and well before the slot', () => {
-    expect(changeBlockReason(booking(), at('2026-11-05T10:00:00Z'))).toBeNull()
+  it('allows a change more than 48 hours before the slot even if booked days ago', () => {
+    expect(changeBlockReason(booking(), at('2026-11-07T18:00:00Z'))).toBeNull()
   })
 
-  it('blocks a change more than 48h after booking', () => {
-    expect(changeBlockReason(booking(), at('2026-11-06T14:00:01Z'))).toBe('window-expired')
+  it('allows a change exactly 48 hours before the slot in Rome', () => {
+    expect(changeBlockReason(booking(), at('2026-11-08T18:00:00Z'))).toBeNull()
   })
 
-  it('blocks a change less than 2h before the slot', () => {
-    const b = booking({ date: '2026-11-05', from: '19:00' })
-    expect(changeBlockReason(b, new Date('2026-11-05T18:00:00').getTime())).toBe('too-close')
+  it('blocks a change one millisecond inside the 48-hour window', () => {
+    expect(changeBlockReason(booking(), at('2026-11-08T18:00:00.001Z'))).toBe('window-expired')
+  })
+
+  it('blocks a change less than 2 hours before the slot too', () => {
+    expect(changeBlockReason(booking(), at('2026-11-10T17:00:00Z'))).toBe('window-expired')
   })
 
   it('blocks a cancelled booking', () => {
@@ -45,7 +48,7 @@ describe('booking rules', () => {
 
   it('detects past bookings', () => {
     const b = booking({ date: '2026-11-05', from: '19:00' })
-    expect(isPast(b, new Date('2026-11-05T20:00:00').getTime())).toBe(true)
-    expect(isPast(b, new Date('2026-11-05T12:00:00').getTime())).toBe(false)
+    expect(isPast(b, at('2026-11-05T19:00:00Z'))).toBe(true)
+    expect(isPast(b, at('2026-11-05T11:00:00Z'))).toBe(false)
   })
 })

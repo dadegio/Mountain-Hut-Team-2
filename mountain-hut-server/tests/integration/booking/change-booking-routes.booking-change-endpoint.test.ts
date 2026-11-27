@@ -161,7 +161,7 @@ describe("MH-46: PATCH /api/v1/bookings/:bookingId", () => {
     expect(after).toMatchObject({ slotId: 2, partySize: 5, createdAt: before.createdAt });
   });
 
-  it("200: increases a booking across two tables without restarting the 48h clock", async () => {
+  it("200: increases a booking across two tables while preserving the creation timestamp", async () => {
     const created = await postBooking(1, 1, 5);
     const id = created.json().reservations[0].reservationId;
     const initialTimestamp = (await reservations())[0].createdAt;
@@ -209,20 +209,40 @@ describe("MH-46: PATCH /api/v1/bookings/:bookingId", () => {
     expect(await reservations()).toEqual(before);
   });
 
-  it("409: rejects changes after 48 hours even if the meal is in the future", async () => {
+  it("200: old bookings may still change when the slot is more than 48 hours away", async () => {
     const created = await postBooking(1, 1, 2);
     const id = created.json().reservations[0].reservationId;
     await testDb.update(reservationsTable)
       .set({ createdAt: new Date(Date.now() - 49 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ") })
       .where(eq(reservationsTable.id, id));
+    expect((await patchBooking(id, { partySize: 3 })).statusCode).toBe(200);
+  });
+
+  it("409: rejects changes when the original slot is tomorrow, even to a later slot", async () => {
+    const created = await postBooking(1, 1, 2);
+    const id = created.json().reservations[0].reservationId;
+    await testDb.update(timeSlotTable).set({ date: romeDate(1) }).where(eq(timeSlotTable.id, 1));
     const before = await reservations();
-    const changed = await patchBooking(id, { partySize: 3 });
+    for (const body of [{ partySize: 3 }, { slotId: 2 }, { description: "New requirements" }]) {
+      const changed = await patchBooking(id, body);
+      expect(changed.statusCode).toBe(409);
+      expect(changed.json().error).toMatch(/48 hours/);
+    }
+    expect(await reservations()).toEqual(before);
+  });
+
+  it("409: rejects moving to a slot tomorrow even when the original slot is far away", async () => {
+    const created = await postBooking(1, 1, 2);
+    const id = created.json().reservations[0].reservationId;
+    await testDb.update(timeSlotTable).set({ date: romeDate(1) }).where(eq(timeSlotTable.id, 2));
+    const before = await reservations();
+    const changed = await patchBooking(id, { slotId: 2 });
     expect(changed.statusCode).toBe(409);
     expect(changed.json().error).toMatch(/48 hours/);
     expect(await reservations()).toEqual(before);
   });
 
-  it("409: rejects a slot that has passed the MH-01 cutoff", async () => {
+  it("409: rejects a target slot in the past", async () => {
     const created = await postBooking(1, 1, 2);
     const id = created.json().reservations[0].reservationId;
     expect((await patchBooking(id, { slotId: 4 })).statusCode).toBe(409);

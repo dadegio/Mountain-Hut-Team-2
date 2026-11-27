@@ -4,14 +4,13 @@ import "react-day-picker/style.css";
 import { getAvailability } from "../api/availability-api.ts";
 import { changeBooking } from "../api/bookings-api.ts";
 import { ApiError } from "../../shared/api/client.ts";
-import { slotStartMs } from "../rules/booking-rules.ts";
+import { isSlotChangeAllowed } from "../rules/booking-rules.ts";
 import RequirementsFields from "./RequirementsFields";
 import Icon from "../../shared/components/Icon.tsx";
 import type { SlotAvailability } from "../types/availability.ts";
 import type { ChangeBookingRequest, MyBooking } from "../types/booking.ts";
 
 const MAX_PARTY_SIZE = 20; // same limit as the booking page
-const SLOT_CUTOFF_MS = 2 * 60 * 60 * 1000;
 
 const sectionLabel = "mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-green-700";
 
@@ -82,8 +81,8 @@ export default function ChangeBookingPanel({ booking, onCancel, onChanged }: Cha
         // availability counts our own seats as taken, the PATCH does not
          const usable = data.slots.filter(
             (s) =>
-            s.slotId === booking.slotId ||
-            (s.available && slotStartMs(date, s.from) - now >= SLOT_CUTOFF_MS),
+            isSlotChangeAllowed(date, s.from, now) &&
+            (s.slotId === booking.slotId || s.available),
         );
         setLoaded({ key: requestKey, slots: usable, error: null });
         })
@@ -101,7 +100,7 @@ export default function ChangeBookingPanel({ booking, onCancel, onChanged }: Cha
 
   const slots = [...(current?.slots ?? [])];
 
-  if (date === booking.date && !slots.some((s) => s.slotId === booking.slotId)) {
+  if (date === booking.date && isSlotChangeAllowed(booking.date, booking.from) && !slots.some((s) => s.slotId === booking.slotId)) {
     slots.unshift({
       slotId: booking.slotId,
       from: booking.from,
@@ -128,6 +127,14 @@ export default function ChangeBookingPanel({ booking, onCancel, onChanged }: Cha
   async function handleSave() {
     if (!validParty) return setError(`Party size must be between 1 and ${MAX_PARTY_SIZE}.`);
     if (!slotId) return setError("Please choose a time slot.");
+
+    const target = slots.find((s) => s.slotId === slotId);
+    if (!isSlotChangeAllowed(booking.date, booking.from)) {
+      return setError("Changes require at least 48 hours before the original slot.");
+    }
+    if (!target || !isSlotChangeAllowed(date, target.from)) {
+      return setError("Choose a slot at least 48 hours in the future.");
+    }
 
     // send only what actually changed
     const changes: ChangeBookingRequest = {};
