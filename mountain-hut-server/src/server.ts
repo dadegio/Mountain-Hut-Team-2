@@ -65,7 +65,7 @@ export function buildApp(opts: FastifyServerOptions = {}) {
   server.register(staffBookingRoutes, { prefix: BASE_URL });
   server.register(cancelBookingRoutes, { prefix: BASE_URL });
 
-  server.register(hikeRoutes, { prefix: BASE_URL });
+  server.register(hikeRoutes, { prefix: `${BASE_URL}/hikes` });
 
   server.register(authRoutes, { prefix: `${BASE_URL}/auth` });
   server.register(userRoutes, { prefix: `${BASE_URL}/users` });
