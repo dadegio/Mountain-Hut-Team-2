@@ -27,7 +27,6 @@ export const swaggerPlugin = fp(async (app: FastifyInstance): Promise<void> => {
           url: "https://eupl.eu/1.2/en/",
         },
       },
-      servers: [{ url: "/", description: "The server showing this page" }],
     },
     transform: jsonSchemaTransform,
   });
