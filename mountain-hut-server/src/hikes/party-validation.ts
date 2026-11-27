@@ -9,9 +9,9 @@ export const partyMemberSchema = z.object({
 export const hikePartySchema = z.object({
   partySize: z.number().int().min(1).max(1000),
   members: z.array(partyMemberSchema).max(999),
-}).strict().refine(({ partySize, members }) => members.length === partySize - 1, {
+}).strict().refine(({ partySize, members }) => members.length <= partySize - 1, {
   path: ["members"],
-  message: "Provide details for every additional party member (partySize - 1)",
+  message: "At most partySize - 1 additional members",
 });
 
 export const hikeIdParamsSchema = z.object({
