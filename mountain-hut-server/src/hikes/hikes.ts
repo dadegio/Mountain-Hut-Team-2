@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, lte, type SQL } from "drizzle-orm";
 import { db } from "../db/database.ts";
 import { hikesTable, usersTable } from "../db/schema.ts";
 import type { RegisterHikeInput } from "./hike-validation.ts";
@@ -24,7 +24,7 @@ export async function listMyHikes(userId: number) {
 }
 
 /** Staff-only: priority by expected return time, so overdue hikes appear first. */
-export async function listRegisteredHikes() {
+async function listStaffHikes(filter?: SQL) {
   const rows = await db.select({
     id: hikesTable.id,
     userId: hikesTable.userId,
@@ -35,11 +35,13 @@ export async function listRegisteredHikes() {
     intermediatePoints: hikesTable.intermediatePoints,
     emergencyContactPhone: hikesTable.emergencyContactPhone,
     createdAt: hikesTable.createdAt,
+    completedAt: hikesTable.completedAt,
     hikerName: usersTable.name,
     hikerSurname: usersTable.surname,
     hikerPhoneNumber: usersTable.phoneNumber,
   }).from(hikesTable)
     .innerJoin(usersTable, eq(hikesTable.userId, usersTable.id))
+    .where(filter)
     .orderBy(asc(hikesTable.expectedReturnAt), asc(hikesTable.id));
 
   return rows.map(({ hikerName, hikerSurname, hikerPhoneNumber, ...hike }) => ({
@@ -50,4 +52,17 @@ export async function listRegisteredHikes() {
       phoneNumber: hikerPhoneNumber,
     },
   }));
+}
+
+/** All registered hikes, including upcoming and completed ones. */
+export async function listRegisteredHikes() {
+  return listStaffHikes();
+}
+
+/** Started but not confirmed complete; overdue hikes remain active. */
+export async function listActiveHikes(now: Date = new Date()) {
+  return listStaffHikes(and(
+    lte(hikesTable.departureAt, now.toISOString()),
+    isNull(hikesTable.completedAt),
+  ));
 }
