@@ -1,10 +1,11 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 
 import { SlotError, createSlot, getSlot, listSlots } from "./slots.ts";
 import { copyWeeklySchedule } from "./copy-week.ts";
 import { createTable, listTables } from "./tables.ts";
 import { requireStaff } from "#src/shared/hooks/require-role";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 
 const time = z.iso.time({ precision: -1 }); // "HH:MM"
 // MH-89: keep in sync with MAX_TABLE_SEATS in the client's AddTableForm
@@ -61,43 +62,106 @@ function sendError(
   return reply.status(500).send({ error: "Internal server error" });
 }
 
-export async function slotRoutes(app: FastifyInstance) {
-  app.get("/tables", async () => listTables());
+export const slotRoutes: FastifyPluginAsync = async (server) => {
+  const typed = server.withTypeProvider<ZodTypeProvider>();
 
-  app.post("/tables", { preHandler: requireStaff }, async (request, reply) => {
-    const parsed = createTableSchema.safeParse(request.body);
+  typed.get(
+    "/tables",
+    {
+      schema: {
+        tags: ["Tables"],
+        summary: "List all tables",
+        // response: {
+        //   [StatusCodes.OK]: z.array(tableSchema),
+        // },
+      },
+    },
+    async () => listTables(),
+  );
 
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: "Invalid request body",
-        details: parsed.error.issues,
-      });
-    }
+  typed.post(
+    "/tables",
+    {
+      preHandler: requireStaff,
+      schema: {
+        tags: ["Tables"],
+        summary: "Create a table",
+        description: "Roles: `EMPLOYEE`, `MANAGER`.",
+        // body: createTableSchema,
+        // response: {
+        //   [StatusCodes.CREATED]: tableSchema,
+        //   [StatusCodes.CONFLICT]: errorSchema,
+        // },
+      },
+    },
+    async (request, reply) => {
+      const parsed = createTableSchema.safeParse(request.body);
 
-    try {
-      const table = await createTable(parsed.data);
-      return reply.status(201).send(table);
-    } catch (error) {
-      return sendError(request, reply, error);
-    }
-  });
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Invalid request body",
+          details: parsed.error.issues,
+        });
+      }
 
-  app.get("/slots", async (request, reply) => {
-    const parsed = listSlotsQuerySchema.safeParse(request.query);
+      try {
+        const table = await createTable(parsed.data);
+        return reply.status(201).send(table);
+      } catch (error) {
+        return sendError(request, reply, error);
+      }
+    },
+  );
 
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: "Invalid query parameters",
-        details: parsed.error.issues,
-      });
-    }
+  typed.get(
+    "/slots",
+    {
+      schema: {
+        tags: ["Slots"],
+        summary: "List the slots of a day",
+        // querystring: listSlotsQuerySchema,
+      },
+    },
+    async (request, reply) => {
+      const parsed = listSlotsQuerySchema.safeParse(request.query);
 
-    return listSlots(parsed.data.date);
-  });
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Invalid query parameters",
+          details: parsed.error.issues,
+        });
+      }
 
-  app.post(
+      return listSlots(parsed.data.date);
+    },
+  );
+
+  typed.post(
     "/slots/copy-week",
-    { preHandler: requireStaff },
+    {
+      preHandler: requireStaff,
+      schema: {
+        tags: ["Slots"],
+        summary: "Repeat a week's slots and table allocations",
+        description: `Roles: \`EMPLOYEE\`, \`MANAGER\`.
+
+Copies slot times and existing table associations from a Monday-Sunday source week into one or more consecutive destination weeks.
+
+- It does not copy table records, reservations or menus.
+- Existing destination slots (overlapping or not) are replaced only when none has active bookings.
+- Canceled bookings in replaced slots are deleted.
+- If any destination week has active bookings, no destination week is modified (409).
+- Both start dates must be Mondays; the first destination Monday must not be in the past.
+- The source and destination periods cannot overlap.`,
+        operationId: "copyWeeklySchedule",
+        // body: copyWeekSchema,
+        // response: {
+        //   [StatusCodes.CREATED]: copyWeekResponseSchema,
+        //   [StatusCodes.NOT_FOUND]: errorSchema,
+        //   [StatusCodes.CONFLICT]: errorSchema,
+        // },
+      },
+    },
     async (request, reply) => {
       const parsed = copyWeekSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -114,38 +178,71 @@ export async function slotRoutes(app: FastifyInstance) {
     },
   );
 
-  app.get("/slots/:id", async (request, reply) => {
-    const parsed = slotParamsSchema.safeParse(request.params);
+  typed.get(
+    "/slots/:id",
+    {
+      schema: {
+        tags: ["Slots"],
+        summary: "Get a slot",
+        operationId: "getSlot",
+        // params: slotParamsSchema,
+        // response: {
+        //   [StatusCodes.OK]: slotSchema,
+        //   [StatusCodes.NOT_FOUND]: errorSchema,
+        // },
+      },
+    },
+    async (request, reply) => {
+      const parsed = slotParamsSchema.safeParse(request.params);
 
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: "Invalid path parameters",
-        details: parsed.error.issues,
-      });
-    }
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Invalid path parameters",
+          details: parsed.error.issues,
+        });
+      }
 
-    try {
-      return await getSlot(parsed.data.id);
-    } catch (error) {
-      return sendError(request, reply, error);
-    }
-  });
+      try {
+        return await getSlot(parsed.data.id);
+      } catch (error) {
+        return sendError(request, reply, error);
+      }
+    },
+  );
 
-  app.post("/slots", { preHandler: requireStaff }, async (request, reply) => {
-    const parsed = createSlotSchema.safeParse(request.body);
+  typed.post(
+    "/slots",
+    {
+      preHandler: requireStaff,
+      schema: {
+        tags: ["Slots"],
+        summary: "Create a slot",
+        description: "Roles: `EMPLOYEE`, `MANAGER`.",
+        operationId: "createSlot",
+        // body: createSlotSchema,
+        // response: {
+        //   [StatusCodes.CREATED]: slotSchema,
+        //   [StatusCodes.NOT_FOUND]: errorSchema,
+        //   [StatusCodes.CONFLICT]: errorSchema,
+        // },
+      },
+    },
+    async (request, reply) => {
+      const parsed = createSlotSchema.safeParse(request.body);
 
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: "Invalid request body",
-        details: parsed.error.issues,
-      });
-    }
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Invalid request body",
+          details: parsed.error.issues,
+        });
+      }
 
-    try {
-      const slot = await createSlot(parsed.data);
-      return reply.status(201).send(slot);
-    } catch (error) {
-      return sendError(request, reply, error);
-    }
-  });
-}
+      try {
+        const slot = await createSlot(parsed.data);
+        return reply.status(201).send(slot);
+      } catch (error) {
+        return sendError(request, reply, error);
+      }
+    },
+  );
+};
