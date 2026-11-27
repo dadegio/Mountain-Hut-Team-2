@@ -92,10 +92,16 @@ describe("MH-140 hike time helpers", () => {
       ["2030-06-15T05:59:00.000Z", "upcoming"],
       ["2030-06-15T06:00:00.000Z", "ongoing"],
       ["2030-06-15T10:00:00.000Z", "ongoing"],
-      ["2030-06-15T15:00:00.000Z", "past"],
-      ["2030-06-16T00:00:00.000Z", "past"],
-    ])("at %s the hike is %s", (now, phase) => {
+      ["2030-06-15T15:00:00.000Z", "ongoing"],
+      ["2030-06-16T00:00:00.000Z", "ongoing"],
+    ])("at %s an uncompleted hike is %s", (now, phase) => {
       expect(hikePhase(hike, at(now))).toBe(phase);
+    });
+
+    it("is past once completedAt is set, regardless of expectedReturnAt", () => {
+      expect(
+        hikePhase({ ...hike, completedAt: "2030-06-15T12:00:00.000Z" }, at("2030-06-15T12:30:00.000Z")),
+      ).toBe("past");
     });
   });
 

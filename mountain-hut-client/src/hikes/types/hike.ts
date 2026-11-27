@@ -1,4 +1,6 @@
-// MH-139 hike API contract
+// MH-139 / MH-22 hike API contract
+export type HikeOutcome = "COMPLETED" | "CANCELLED";
+
 export interface Hike {
   id: number;
   userId: number;
@@ -9,6 +11,8 @@ export interface Hike {
   intermediatePoints: string[];
   emergencyContactPhone: string | null;
   createdAt: string;
+  completedAt?: string | null;
+  outcome?: HikeOutcome | null;
 }
 
 export interface RegisterHikeRequest {
