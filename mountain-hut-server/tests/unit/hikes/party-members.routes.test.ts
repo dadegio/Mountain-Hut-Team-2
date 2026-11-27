@@ -2,7 +2,7 @@ import Fastify, { type FastifyRequest } from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../src/hikes/hikes.ts", () => ({
-  registerHike: vi.fn(), listMyHikes: vi.fn(), listRegisteredHikes: vi.fn(),
+  registerHike: vi.fn(), listMyHikes: vi.fn(), listRegisteredHikes: vi.fn(), listActiveHikes: vi.fn(),
 }));
 vi.mock("../../../src/hikes/party-members.ts", () => ({
   listHikeParty: vi.fn(), replaceHikeParty: vi.fn(),
@@ -19,7 +19,7 @@ let app: ReturnType<typeof Fastify>;
 beforeEach(async () => {
   vi.resetAllMocks();
   app = Fastify();
-  app.addHook("preHandler", async (request) => {
+  app.addHook("preHandler", async (request: FastifyRequest) => {
     const role = request.headers["x-test-role"];
     if (typeof role === "string") request.user = { id: 7, type: role } as FastifyRequest["user"];
   });
@@ -62,11 +62,22 @@ describe("MH-221 party member routes", () => {
     expect((await app.inject({ method: "GET", url, headers: headers("HIKER") })).statusCode).toBe(404);
     expect((await app.inject({ method: "PUT", url, headers: headers("HIKER"), payload: input })).statusCode).toBe(404);
   });
-  it("rejects invalid ids and mismatched counts before calling services", async () => {
+  it("rejects invalid ids and too many members before calling services", async () => {
     expect((await app.inject({ method: "GET", url: "/hikes/0/party-members", headers: headers("HIKER") })).statusCode).toBe(400);
-    expect((await app.inject({ method: "PUT", url, headers: headers("HIKER"), payload: { partySize: 3, members: [] } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "PUT", url, headers: headers("HIKER"), payload: { partySize: 1, members: [{ name: "Anna" }] } })).statusCode).toBe(400);
     expect(listHikeParty).not.toHaveBeenCalled();
     expect(replaceHikeParty).not.toHaveBeenCalled();
+  });
+  it.each([{ members: [] }, { members: [{ name: "Anna" }] }])("accepts optional details (%j)", async ({ members }) => {
+    const payload = { partySize: 4, members };
+    const result = { partySize: 4, members: members.map((member, index) => ({
+      id: index + 1, hikeId: 12, name: member.name, surname: null, phoneNumber: null,
+    })) };
+    vi.mocked(replaceHikeParty).mockResolvedValue(result);
+    const response = await app.inject({ method: "PUT", url, headers: headers("HIKER"), payload });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual(result);
+    expect(replaceHikeParty).toHaveBeenCalledWith(12, 7, payload);
   });
   it("handles service errors", async () => {
     vi.mocked(listHikeParty).mockRejectedValue(new Error("DB error"));

@@ -15,7 +15,7 @@ const { db, __client: client, __cleanup: cleanup } =
     __cleanup: () => void;
   };
 const { listHikeParty, replaceHikeParty } = await import("../../../src/hikes/party-members.ts");
-const { registerHike } = await import("../../../src/hikes/hikes.ts");
+const { registerHike, listRegisteredHikes } = await import("../../../src/hikes/hikes.ts");
 let ownerId: number, otherId: number, hikeId: number;
 const planned = {
   departureAt: "2030-07-01T08:00:00Z", expectedReturnAt: "2030-07-01T16:00:00Z",
@@ -56,6 +56,27 @@ describe("MH-221 party member persistence", () => {
     expect(await listHikeParty(hikeId, otherId)).toBeNull();
     expect(await replaceHikeParty(hikeId, otherId, { partySize: 2, members: [{ name: "Anna" }] })).toBeNull();
     expect(await listHikeParty(hikeId, ownerId)).toEqual({ partySize: 1, members: [] });
+  });
+  it("preserves the total size when updating with partial or no member details", async () => {
+    const partial = await replaceHikeParty(hikeId, ownerId, { partySize: 4, members: [{ name: "Anna" }] });
+    expect(partial).toMatchObject({ partySize: 4, members: [{ name: "Anna" }] });
+    expect(await listHikeParty(hikeId, ownerId)).toEqual(partial);
+    expect(await listHikeParty(hikeId)).toEqual(partial);
+    expect(await replaceHikeParty(hikeId, ownerId, { partySize: 5, members: [] })).toEqual({ partySize: 5, members: [] });
+    expect(await listHikeParty(hikeId, ownerId)).toEqual({ partySize: 5, members: [] });
+  });
+  it("stores the total size at registration and exposes it in staff lists", async () => {
+    const partial = await registerHike(ownerId, { ...planned, party: { partySize: 4, members: [{ name: "Anna" }] } });
+    const unnamed = await registerHike(ownerId, { ...planned, party: { partySize: 3, members: [] } });
+    const solo = await registerHike(ownerId, planned);
+    expect(partial.partySize).toBe(4);
+    expect(await listHikeParty(partial.id, ownerId)).toMatchObject({ partySize: 4, members: [{ name: "Anna" }] });
+    expect(await listHikeParty(unnamed.id, ownerId)).toEqual({ partySize: 3, members: [] });
+    expect(await listHikeParty(solo.id, ownerId)).toEqual({ partySize: 1, members: [] });
+    expect(await listRegisteredHikes()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: partial.id, partySize: 4 }),
+      expect.objectContaining({ id: unnamed.id, partySize: 3 }),
+    ]));
   });
   it("returns null for a missing hike", async () => {
     expect(await listHikeParty(999999)).toBeNull();
