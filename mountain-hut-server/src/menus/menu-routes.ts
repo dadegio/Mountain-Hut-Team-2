@@ -19,6 +19,7 @@ export const menuRoutes: FastifyPluginAsync = async (server) => {
     "/",
     {
       schema: {
+        tags: ["Menus"],
         summary: "Get all menus, with the respective dishes.",
         querystring: getMenuQuerySchema,
         response: {
@@ -38,6 +39,7 @@ export const menuRoutes: FastifyPluginAsync = async (server) => {
     {
       preHandler: requireStaff,
       schema: {
+        tags: ["Menus"],
         summary: "Creates a new menu.",
         body: createMenuSchema,
         response: {
@@ -59,6 +61,7 @@ export const menuRoutes: FastifyPluginAsync = async (server) => {
     {
       preHandler: requireStaff,
       schema: {
+        tags: ["Menus"],
         summary: "Deletes a menu.",
         description:
           "This is a soft delete: the menu isn't completely deleted from the database, just its type is set as CANCELED.",
