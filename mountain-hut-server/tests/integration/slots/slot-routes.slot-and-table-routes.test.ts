@@ -636,12 +636,7 @@ describe("who can create tables and slots", () => {
   });
 
   describe.each([
-    [
-      "a hiker",
-      () => hikerCookie,
-      403,
-      "Only employees and managers can create tables and slots",
-    ],
+    ["a hiker", () => hikerCookie, 403, "Insufficient permissions"],
     ["someone not logged in", () => "", 401, "Authentication required"],
     [
       "someone with an invalid session",

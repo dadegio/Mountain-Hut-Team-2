@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import argon2 from "argon2";
 import { StatusCodes } from "http-status-codes";
@@ -19,17 +19,6 @@ import {
   renderPasswordChangedConfirmationEmail,
 } from "../notifications/utils.ts";
 import { emailSender } from "../notifications/sender.ts";
-
-export async function requireAuthenticatedUser(
-  request: FastifyRequest,
-  reply: FastifyReply,
-) {
-  if (!request.user) {
-    return reply
-      .code(StatusCodes.UNAUTHORIZED)
-      .send({ error: "Not authenticated" });
-  }
-}
 
 export const authRoutes: FastifyPluginAsync = async (server) => {
   const typed = server.withTypeProvider<ZodTypeProvider>();
@@ -156,7 +145,6 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
   typed.get(
     "/me",
     {
-      preHandler: requireAuthenticatedUser,
       schema: {
         tags: ["Auth"],
         summary: "Get the signed-in user",
@@ -170,6 +158,12 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
       },
     },
     async (request, reply) => {
+      if (!request.user) {
+        return reply
+          .code(StatusCodes.UNAUTHORIZED)
+          .send({ error: "Not authenticated" });
+      }
+
       return reply
         .code(StatusCodes.OK)
         .send(userResponseSchema.parse(request.user));

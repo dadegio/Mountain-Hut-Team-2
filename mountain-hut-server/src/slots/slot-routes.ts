@@ -1,8 +1,10 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
+
 import { SlotError, createSlot, getSlot, listSlots } from "./slots.ts";
 import { copyWeeklySchedule } from "./copy-week.ts";
 import { createTable, listTables } from "./tables.ts";
+import { requireStaff } from "#src/shared/hooks/require-role";
 
 const time = z.iso.time({ precision: -1 }); // "HH:MM"
 // MH-89: keep in sync with MAX_TABLE_SEATS in the client's AddTableForm
@@ -57,20 +59,6 @@ function sendError(
 
   request.log.error(error);
   return reply.status(500).send({ error: "Internal server error" });
-}
-
-// Creating tables and slots is for EMPLOYEE and MANAGER only, reading is open
-async function requireStaff(request: FastifyRequest, reply: FastifyReply) {
-  if (!request.user) {
-    return reply.status(401).send({ error: "Authentication required" });
-  }
-  if (request.user.type !== "EMPLOYEE" && request.user.type !== "MANAGER") {
-    return reply
-      .status(403)
-      .send({
-        error: "Only employees and managers can create tables and slots",
-      });
-  }
 }
 
 export async function slotRoutes(app: FastifyInstance) {
