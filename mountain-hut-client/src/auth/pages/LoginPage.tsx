@@ -58,7 +58,9 @@ export default function LoginPage() {
           </Link>
           <button
             type="button"
-            onClick={() => logout()}
+            onClick={() => {
+              void logout().catch((error: unknown) => console.error('Logout failed:', error))
+            }}
             className="w-full text-sm text-stone-600 hover:text-green-700 underline cursor-pointer"
           >
             Log out
