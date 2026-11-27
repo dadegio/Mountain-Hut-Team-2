@@ -1,9 +1,6 @@
 import Fastify, { type FastifyServerOptions } from "fastify";
 import secureSession from "@fastify/secure-session";
-import swagger from "@fastify/swagger";
-import swaggerUi from "@fastify/swagger-ui";
 import fastifyJwt from "@fastify/jwt";
-import { fileURLToPath } from "node:url";
 import {
   serializerCompiler,
   validatorCompiler,
