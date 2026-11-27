@@ -21,7 +21,7 @@ export default function ManageMenusPage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getMenus(), getDishes()])
+    void Promise.all([getMenus(), getDishes()])
       .then(([loadedMenus, loadedDishes]) => {
         if (!active) return;
         setMenus(loadedMenus);

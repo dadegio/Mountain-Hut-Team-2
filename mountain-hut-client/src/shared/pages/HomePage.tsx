@@ -113,14 +113,16 @@ export default function HomePage() {
       }
     }
 
-    const interval = setInterval(checkStatus, 3000);
+    const interval = setInterval(() => {
+      void checkStatus();
+    }, 3000);
 
     const onFocus = () => {
-      checkStatus();
+      void checkStatus();
     };
     const onStorage = (e: StorageEvent) => {
       if (e.key === "mountain_hut_auth_password_reset" || e.key === "mountain_hut_auth_changed") {
-        checkStatus();
+        void checkStatus();
       }
     };
 
@@ -240,7 +242,9 @@ export default function HomePage() {
 
               <button
                 type="button"
-                onClick={() => logout()}
+                onClick={() => {
+                  void logout().catch((error: unknown) => console.error("Logout failed:", error));
+                }}
                 className="w-full text-sm text-stone-500 hover:text-stone-800 underline cursor-pointer"
               >
                 Log out
