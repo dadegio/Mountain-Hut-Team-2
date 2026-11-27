@@ -977,13 +977,6 @@ describe("MH-78: allergens integration (MH-05)", () => {
   });
 
   describe("authentication and availability integration edge cases", () => {
-    it("serves the health endpoint", async () => {
-      const response = await app.inject({ method: "GET", url: "/" });
-
-      expect(response.statusCode).toBe(200);
-      expect(response.json()).toEqual({ hello: "world" });
-    });
-
     it("registers a new hiker and rejects an existing email", async () => {
       const body = {
         email: "new-hiker@example.com",

@@ -59,8 +59,6 @@ export function buildApp(opts: FastifyServerOptions = {}) {
 
   server.register(swaggerPlugin);
 
-  server.get("/", async () => ({ hello: "world" }));
-
   const BASE_URL = "/api/v1";
 
   server.register(slotRoutes, { prefix: BASE_URL });
