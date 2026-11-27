@@ -145,7 +145,7 @@ describe("Account creation API: standard, temporary, and throwaway accounts", ()
 
         expect(res.statusCode).toBe(StatusCodes.CONFLICT);
         expect(res.json()).toEqual({
-          message: "An account with this email already exists",
+          error: "An account with this email already exists",
         });
         expect(UserRepository.saveUser).not.toHaveBeenCalled();
       } finally {

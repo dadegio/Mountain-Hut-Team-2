@@ -166,12 +166,12 @@ describe("MH-106: DELETE /api/v1/bookings/:bookingId — Cancel a booking API", 
       const employeeCookie = await loginAs(3);
       const resEmployee = await deleteBooking(1, employeeCookie);
       expect(resEmployee.statusCode).toBe(403);
-      expect(resEmployee.json().error).toMatch(/only hikers/i);
+      expect(resEmployee.json().error).toMatch("Insufficient permissions");
 
       const managerCookie = await loginAs(4);
       const resManager = await deleteBooking(1, managerCookie);
       expect(resManager.statusCode).toBe(403);
-      expect(resManager.json().error).toMatch(/only hikers/i);
+      expect(resManager.json().error).toMatch("Insufficient permissions");
     });
   });
 

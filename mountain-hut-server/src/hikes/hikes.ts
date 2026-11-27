@@ -1,53 +1,65 @@
 import { asc, desc, eq } from "drizzle-orm";
-import { db } from "../db/database.ts";
-import { hikesTable, usersTable } from "../db/schema.ts";
-import type { RegisterHikeInput } from "./hike-validation.ts";
 
-/** Only the authenticated user's id may be used; never trust a client userId. */
-export async function registerHike(userId: number, input: RegisterHikeInput) {
-  const [hike] = await db.insert(hikesTable).values({
-    userId,
-    departureAt: new Date(input.departureAt).toISOString(),
-    expectedReturnAt: new Date(input.expectedReturnAt).toISOString(),
-    destination: input.destination,
-    routeDescription: input.routeDescription,
-    intermediatePoints: input.intermediatePoints ?? [],
-    emergencyContactPhone: input.emergencyContactPhone ?? null,
-  }).returning();
-  return hike;
-}
+import { db } from "#src/db/database";
+import { hikesTable, usersTable } from "#src/db/schema";
+import type { RegisterHikeInput } from "#src/hikes/hike-schema";
 
-export async function listMyHikes(userId: number) {
-  return db.select().from(hikesTable)
-    .where(eq(hikesTable.userId, userId))
-    .orderBy(desc(hikesTable.departureAt), desc(hikesTable.id));
-}
+export class HikesRepository {
+  /** Only the authenticated user's id may be used; never trust a client userId. */
+  static async registerHike(userId: number, input: RegisterHikeInput) {
+    const [hike] = await db
+      .insert(hikesTable)
+      .values({
+        userId,
+        departureAt: new Date(input.departureAt).toISOString(),
+        expectedReturnAt: new Date(input.expectedReturnAt).toISOString(),
+        destination: input.destination,
+        routeDescription: input.routeDescription,
+        intermediatePoints: input.intermediatePoints ?? [],
+        emergencyContactPhone: input.emergencyContactPhone ?? null,
+      })
+      .returning();
+    return hike;
+  }
 
-/** Staff-only: priority by expected return time, so overdue hikes appear first. */
-export async function listRegisteredHikes() {
-  const rows = await db.select({
-    id: hikesTable.id,
-    userId: hikesTable.userId,
-    departureAt: hikesTable.departureAt,
-    expectedReturnAt: hikesTable.expectedReturnAt,
-    destination: hikesTable.destination,
-    routeDescription: hikesTable.routeDescription,
-    intermediatePoints: hikesTable.intermediatePoints,
-    emergencyContactPhone: hikesTable.emergencyContactPhone,
-    createdAt: hikesTable.createdAt,
-    hikerName: usersTable.name,
-    hikerSurname: usersTable.surname,
-    hikerPhoneNumber: usersTable.phoneNumber,
-  }).from(hikesTable)
-    .innerJoin(usersTable, eq(hikesTable.userId, usersTable.id))
-    .orderBy(asc(hikesTable.expectedReturnAt), asc(hikesTable.id));
+  static async listMyHikes(userId: number) {
+    return db
+      .select()
+      .from(hikesTable)
+      .where(eq(hikesTable.userId, userId))
+      .orderBy(desc(hikesTable.departureAt), desc(hikesTable.id));
+  }
 
-  return rows.map(({ hikerName, hikerSurname, hikerPhoneNumber, ...hike }) => ({
-    ...hike,
-    hiker: {
-      name: hikerName,
-      surname: hikerSurname,
-      phoneNumber: hikerPhoneNumber,
-    },
-  }));
+  /** Staff-only: priority by expected return time, so overdue hikes appear first. */
+  static async listRegisteredHikes() {
+    const rows = await db
+      .select({
+        id: hikesTable.id,
+        userId: hikesTable.userId,
+        departureAt: hikesTable.departureAt,
+        expectedReturnAt: hikesTable.expectedReturnAt,
+        destination: hikesTable.destination,
+        routeDescription: hikesTable.routeDescription,
+        intermediatePoints: hikesTable.intermediatePoints,
+        emergencyContactPhone: hikesTable.emergencyContactPhone,
+        createdAt: hikesTable.createdAt,
+        hikerName: usersTable.name,
+        hikerSurname: usersTable.surname,
+        hikerPhoneNumber: usersTable.phoneNumber,
+      })
+      .from(hikesTable)
+      .innerJoin(usersTable, eq(hikesTable.userId, usersTable.id))
+      .orderBy(asc(hikesTable.expectedReturnAt), asc(hikesTable.id));
+
+    return rows.map(
+      ({ hikerName, hikerSurname, hikerPhoneNumber, ...hike }) => ({
+        ...hike,
+        hiker: {
+          name: hikerName,
+          surname: hikerSurname,
+          phoneNumber: hikerPhoneNumber,
+        },
+      }),
+    );
+  }
 }

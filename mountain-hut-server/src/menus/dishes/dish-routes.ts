@@ -20,7 +20,14 @@ export const dishRoutes: FastifyPluginAsync = async (server) => {
     "/",
     {
       schema: {
-        response: { [StatusCodes.OK]: z.array(dishSchema) },
+        tags: ["Dishes"],
+        summary: "Get all dishes",
+        operationId: "getDishes",
+        response: {
+          [StatusCodes.OK]: z
+            .array(dishSchema)
+            .describe("A list of all dishes"),
+        },
       },
     },
     async (_request, reply) => {

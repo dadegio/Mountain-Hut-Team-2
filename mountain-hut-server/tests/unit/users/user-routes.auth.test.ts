@@ -40,7 +40,7 @@ describe("userRoutes authentication and authorization", () => {
       });
 
       expect(response.statusCode).toBe(StatusCodes.UNAUTHORIZED);
-      expect(response.json()).toEqual({ message: "Authentication required" });
+      expect(response.json()).toEqual({ error: "Authentication required" });
     } finally {
       await app.close();
     }
@@ -63,7 +63,7 @@ describe("userRoutes authentication and authorization", () => {
 
       expect(response.statusCode).toBe(StatusCodes.FORBIDDEN);
       expect(response.json()).toEqual({
-        message: "Forbidden: insufficient permissions",
+        error: "Insufficient permissions",
       });
     } finally {
       await app.close();

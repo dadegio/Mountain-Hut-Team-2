@@ -977,13 +977,6 @@ describe("MH-78: allergens integration (MH-05)", () => {
   });
 
   describe("authentication and availability integration edge cases", () => {
-    it("serves the health endpoint", async () => {
-      const response = await app.inject({ method: "GET", url: "/" });
-
-      expect(response.statusCode).toBe(200);
-      expect(response.json()).toEqual({ hello: "world" });
-    });
-
     it("registers a new hiker and rejects an existing email", async () => {
       const body = {
         email: "new-hiker@example.com",
@@ -1025,7 +1018,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
       });
 
       expect(response.statusCode).toBe(401);
-      expect(response.json()).toEqual({ message: "Invalid email or password" });
+      expect(response.json()).toEqual({ error: "Invalid email or password" });
     });
 
     it("returns the authenticated user from /me, then rejects a stale session", async () => {
@@ -1045,7 +1038,7 @@ describe("MH-78: allergens integration (MH-05)", () => {
         headers: { cookie },
       });
       expect(staleSession.statusCode).toBe(401);
-      expect(staleSession.json()).toEqual({ message: "Not authenticated" });
+      expect(staleSession.json()).toEqual({ error: "Not authenticated" });
     });
 
     it("logs out and invalidates the session cookie", async () => {

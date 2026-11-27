@@ -1,7 +1,15 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { Client } from "@libsql/client";
 import argon2 from "argon2";
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   usersTable,
   timeSlotTable,
@@ -14,7 +22,11 @@ import { resetTestDatabase } from "../../test-database.ts";
 vi.mock("../../../src/db/database.ts", async () => {
   const { createIsolatedTestDatabase } = await import("../../test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
-  return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
+  return {
+    db,
+    __integrationTestClient: client,
+    __integrationTestCleanup: cleanup,
+  };
 });
 
 const { db: testDb } = await import("../../../src/db/database.ts");
@@ -34,7 +46,8 @@ function romeDate(daysFromToday: number): string {
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(date);
-  const part = (type: string) => parts.find((item) => item.type === type)!.value;
+  const part = (type: string) =>
+    parts.find((item) => item.type === type)!.value;
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
@@ -66,7 +79,8 @@ async function sessionCookie(userId: number): Promise<string> {
 }
 
 async function searchUsers(query: string, actingUserId: number | null = 4) {
-  const cookie = actingUserId === null ? null : await sessionCookie(actingUserId);
+  const cookie =
+    actingUserId === null ? null : await sessionCookie(actingUserId);
   return app.inject({
     method: "GET",
     url: `/api/v1/users${query}`,
@@ -126,15 +140,13 @@ async function resetFixture() {
 
   // Setup sample slot and table for the end-to-end staff reservation flow
   const futureDate = romeDate(3);
-  await testDb.insert(tablesTable).values([
-    { id: 1, code: "T1", seats: 4 },
-  ]);
-  await testDb.insert(timeSlotTable).values([
-    { id: 1, date: futureDate, from: "12:00", to: "14:00" },
-  ]);
-  await testDb.insert(tableAvailabilityTable).values([
-    { slotId: 1, tableId: 1 },
-  ]);
+  await testDb.insert(tablesTable).values([{ id: 1, code: "T1", seats: 4 }]);
+  await testDb
+    .insert(timeSlotTable)
+    .values([{ id: 1, date: futureDate, from: "12:00", to: "14:00" }]);
+  await testDb
+    .insert(tableAvailabilityTable)
+    .values([{ slotId: 1, tableId: 1 }]);
 }
 
 beforeAll(async () => {
@@ -155,13 +167,13 @@ describe("MH-75: GET /api/v1/users — Registered Users API Integration", () => 
     it("401: rejects unauthenticated requests", async () => {
       const res = await searchUsers("?name=Mario", null);
       expect(res.statusCode).toBe(401);
-      expect(res.json().message).toMatch(/Authentication required/i);
+      expect(res.json().error).toMatch(/Authentication required/i);
     });
 
     it("403: rejects requests made by a regular HIKER", async () => {
       const res = await searchUsers("?name=Mario", 1); // Mario (HIKER)
       expect(res.statusCode).toBe(403);
-      expect(res.json().message).toMatch(/Forbidden: insufficient permissions/i);
+      expect(res.json().error).toMatch("Insufficient permissions");
     });
 
     it("200: allows access by an EMPLOYEE", async () => {
@@ -179,7 +191,9 @@ describe("MH-75: GET /api/v1/users — Registered Users API Integration", () => 
 
   describe("Query by Email", () => {
     it("200: finds a registered hiker by exact email address", async () => {
-      const res = await searchUsers(`?email=${encodeURIComponent("giulia.bianchi@example.test")}`);
+      const res = await searchUsers(
+        `?email=${encodeURIComponent("giulia.bianchi@example.test")}`,
+      );
       expect(res.statusCode).toBe(200);
       const data = res.json();
       expect(data).toHaveLength(1);
@@ -196,13 +210,15 @@ describe("MH-75: GET /api/v1/users — Registered Users API Integration", () => 
     it("404: returns User Not Found when email does not exist", async () => {
       const res = await searchUsers("?email=unknown.user@example.test");
       expect(res.statusCode).toBe(404);
-      expect(res.json().message).toBe("User Not Found");
+      expect(res.json().error).toBe("User Not Found");
     });
   });
 
   describe("Query by Phone Number", () => {
     it("200: finds a registered hiker by phone number", async () => {
-      const res = await searchUsers(`?phoneNumber=${encodeURIComponent("+39333111222")}`);
+      const res = await searchUsers(
+        `?phoneNumber=${encodeURIComponent("+39333111222")}`,
+      );
       expect(res.statusCode).toBe(200);
       const data = res.json();
       expect(data).toHaveLength(1);
@@ -217,9 +233,11 @@ describe("MH-75: GET /api/v1/users — Registered Users API Integration", () => 
     });
 
     it("404: returns User Not Found when phone number does not exist", async () => {
-      const res = await searchUsers(`?phoneNumber=${encodeURIComponent("+39999999999")}`);
+      const res = await searchUsers(
+        `?phoneNumber=${encodeURIComponent("+39999999999")}`,
+      );
       expect(res.statusCode).toBe(404);
-      expect(res.json().message).toBe("User Not Found");
+      expect(res.json().error).toBe("User Not Found");
     });
   });
 
@@ -273,13 +291,13 @@ describe("MH-75: GET /api/v1/users — Registered Users API Integration", () => 
     it("404: returns User Not Found when name/surname combination does not match", async () => {
       const res = await searchUsers("?name=Mario&surname=Nonexistent");
       expect(res.statusCode).toBe(404);
-      expect(res.json().message).toBe("User Not Found");
+      expect(res.json().error).toBe("User Not Found");
     });
 
     it("404: returns User Not Found when empty search query parameters are passed", async () => {
       const res = await searchUsers("");
       expect(res.statusCode).toBe(404);
-      expect(res.json().message).toBe("User Not Found");
+      expect(res.json().error).toBe("User Not Found");
     });
   });
 

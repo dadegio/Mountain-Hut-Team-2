@@ -28,8 +28,8 @@ const { __integrationTestClient: client, __integrationTestCleanup: cleanup } =
     __integrationTestCleanup: () => void;
   };
 const { buildApp } = await import("../../../src/server.ts");
-const { listAllergens } =
-  await import("../../../src/menus/allergens/allergens.ts");
+const { AllergenRepository } =
+  await import("#src/menus/allergens/allergen-repository");
 
 const app = buildApp({ logger: false });
 
@@ -59,21 +59,21 @@ beforeEach(async () => {
 
 afterAll(async () => {
   await app.close();
-  await client.close();
+  client.close();
   cleanup();
 });
 
 describe("Allergens API & Service", () => {
   describe("listAllergens", () => {
     it("returns all allergens ordered by id", async () => {
-      const result = await listAllergens();
+      const result = await AllergenRepository.listAllergens();
       expect(result).toHaveLength(8);
       expect(result).toEqual(SEED_ALLERGENS);
     });
 
     it("returns an empty list when no allergens exist", async () => {
       await resetTestDatabase(client);
-      const result = await listAllergens();
+      const result = await AllergenRepository.listAllergens();
       expect(result).toEqual([]);
     });
   });
