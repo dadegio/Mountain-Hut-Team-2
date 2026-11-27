@@ -1,3 +1,5 @@
+import { z } from "zod";
+import { completeHike, withOutcome } from "./hike-completion.ts";
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { registerHike, listMyHikes, listRegisteredHikes } from "./hikes.ts";
 import { registerHikeSchema, validateHikeChronology } from "./hike-validation.ts";
@@ -18,6 +20,8 @@ function requireRole(
   return true;
 }
 
+const hikeIdSchema = z.object({ id: z.coerce.number().int().positive() });
+
 export async function hikeRoutes(app: FastifyInstance) {
   app.post("/hikes", async (request, reply) => {
     if (!requireRole(request, reply, ["HIKER"])) return;
@@ -33,7 +37,8 @@ export async function hikeRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: chronologyError });
     }
     try {
-      return reply.status(201).send(await registerHike(request.user!.id, parsed.data));
+      const hike = await registerHike(request.user!.id, parsed.data);
+      return reply.status(201).send(withOutcome(hike));
     } catch (error) {
       request.log.error(error);
       return reply.status(500).send({ error: "Internal server error" });
@@ -43,7 +48,8 @@ export async function hikeRoutes(app: FastifyInstance) {
   app.get("/hikes/mine", async (request, reply) => {
     if (!requireRole(request, reply, ["HIKER"])) return;
     try {
-      return reply.status(200).send(await listMyHikes(request.user!.id));
+      const hikes = await listMyHikes(request.user!.id);
+      return reply.status(200).send(hikes.map(withOutcome));
     } catch (error) {
       request.log.error(error);
       return reply.status(500).send({ error: "Internal server error" });
@@ -54,6 +60,29 @@ export async function hikeRoutes(app: FastifyInstance) {
     if (!requireRole(request, reply, ["EMPLOYEE", "MANAGER"])) return;
     try {
       return reply.status(200).send(await listRegisteredHikes());
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  });
+
+  // MH-22: before the departure this cancels the hike
+  app.patch("/hikes/:id/complete", async (request, reply) => {
+    if (!requireRole(request, reply, ["HIKER"])) return;
+    const params = hikeIdSchema.safeParse(request.params);
+    if (!params.success) {
+      return reply.status(400).send({ error: "Invalid hike id" });
+    }
+    try {
+      const result = await completeHike(params.data.id, request.user!.id);
+      switch (result.status) {
+        case "not-found":
+          return reply.status(404).send({ error: "Hike not found" });
+        case "already-completed":
+          return reply.status(409).send({ error: "Hike already completed or cancelled" });
+        case "completed":
+          return reply.status(200).send(result.hike);
+      }
     } catch (error) {
       request.log.error(error);
       return reply.status(500).send({ error: "Internal server error" });
