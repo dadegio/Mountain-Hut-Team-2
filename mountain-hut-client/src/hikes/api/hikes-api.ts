@@ -12,10 +12,11 @@ export function getMyHikes(): Promise<Hike[]> {
   return apiFetch<Hike[]>("/hikes/mine");
 }
 
-// TODO: for Alice, use this as a starting point for the API,
-// when the backend will run I'll align endpoint path, HTTP method, and response type with backend
+// MH-191: mark a hike as completed (or cancelled if before departure)
 export function completeHike(id: number): Promise<Hike> {
   return apiFetch<Hike>(`/hikes/${id}/complete`, {
     method: "PATCH",
+    // Override default Content-Type: application/json since there is no body (Fastify rejects empty JSON bodies with 400)
+    headers: {},
   });
 }

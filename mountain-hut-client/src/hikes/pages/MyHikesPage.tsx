@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import AuthShell from "../../shared/components/AuthShell.tsx";
 import Icon, { type IconName } from "../../shared/components/Icon.tsx";
-import { getMyHikes } from "../api/hikes-api.ts";
+import { completeHike, getMyHikes } from "../api/hikes-api.ts";
 import type { Hike } from "../types/hike.ts";
 import {
   formatDuration,
@@ -38,7 +38,7 @@ function HikeCard({
 }: {
   hike: ListedHike;
   index: number;
-  onComplete?: (id: number) => void;
+  onComplete?: (updatedHike: Hike) => void;
 }) {
   const durationMs = Date.parse(hike.expectedReturnAt) - Date.parse(hike.departureAt);
   const [submitting, setSubmitting] = useState(false);
@@ -48,8 +48,8 @@ function HikeCard({
     setSubmitting(true);
     setCompleteError(null);
     try {
-      // TODO: quando ci sarà il backend -> await completeHike(hike.id);
-      onComplete?.(hike.id);
+      const updatedHike = await completeHike(hike.id);
+      onComplete?.(updatedHike);
     } catch (err) {
       setCompleteError(err instanceof Error ? err.message : "Could not confirm safe arrival");
     } finally {
@@ -127,13 +127,22 @@ function HikeCard({
           </p>
         )}
 
+        {hike.phase === "past" && hike.completedAt && (
+          <p className="flex items-center gap-2 text-sm font-medium text-green-700">
+            <Icon name="check" className="w-4 h-4" />
+            {hike.outcome === "CANCELLED"
+              ? `Cancelled · ${formatHikeTime(hike.completedAt)}`
+              : `Safe arrival confirmed · ${formatHikeTime(hike.completedAt)}`}
+          </p>
+        )}
+
         {hike.phase === "ongoing" && (
           <div className="pt-2 space-y-2">
             <button
               type="button"
               disabled={submitting}
               className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 active:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-xs"
-              onClick={handleCompleteClick} //For Alice: this is the confermation button
+              onClick={handleCompleteClick}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6L9 17l-5-5" />
@@ -152,80 +161,36 @@ function HikeCard({
   );
 }
 
-// Approximate height of ~3 cards (each ~180px) + gaps
-const CARD_APPROX_HEIGHT = 196; // px per card
+const CARD_APPROX_HEIGHT = 206;
 const MAX_VISIBLE = 2;
+const LIST_MAX_HEIGHT = MAX_VISIBLE * CARD_APPROX_HEIGHT + (MAX_VISIBLE - 1) * 16;
 
-function ChevronDown({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-function HikeSection({ title, label, icon, hikes, onComplete }: { title: string; label: string; icon: IconName; hikes: ListedHike[]; onComplete?: (id: number) => void }) {
-  const [open, setOpen] = useState(false);
-  if (hikes.length === 0) return null;
-
-  const maxHeight = MAX_VISIBLE * CARD_APPROX_HEIGHT + (MAX_VISIBLE - 1) * 16; // 16px = gap-4
-
-  return (
-    <section aria-label={label}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="mb-3 flex w-full items-center gap-2 text-left text-sm font-semibold uppercase tracking-wider text-green-700 hover:text-green-600 transition-colors"
-        aria-expanded={open}
-      >
-        <ChevronDown
-          className={`w-4 h-4 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-        />
-        <span className="text-stone-400">({hikes.length})</span>
-        <Icon name={icon} className="w-5 h-5" />
-        {title}
-      </button>
-
-      {open && (
-        <ul
-          className="space-y-4 overflow-y-auto pr-1"
-          style={{ maxHeight: `${maxHeight}px` }}
-        >
-          {hikes.map((hike, index) => (
-            <HikeCard key={hike.id} hike={hike} index={index} onComplete={onComplete} />
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
+const TABS: { phase: HikePhase; title: string; label: string; icon: IconName; emptyText: string }[] = [
+  { phase: "upcoming", title: "Upcoming", label: "Upcoming hikes", icon: "calendar", emptyText: "No upcoming hikes." },
+  { phase: "ongoing", title: "In progress", label: "Hikes in progress", icon: "map", emptyText: "No hikes in progress." },
+  { phase: "past", title: "Past", label: "Past hikes", icon: "clock", emptyText: "No past hikes." },
+];
 
 export default function MyHikesPage() {
   const [hikes, setHikes] = useState<LoadedHikes | null>(null);
+  const [activeTab, setActiveTab] = useState<HikePhase>("upcoming");
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  function handleHikeCompleted(hikeId: number) {
-    const completedTarget = hikes?.ongoing.find((h) => h.id === hikeId);
+  function handleHikeCompleted(updatedHike: Hike) {
     setHikes((prev) => {
       if (!prev) return prev;
-      const target = prev.ongoing.find((h) => h.id === hikeId);
-      if (!target) return prev;
-
       const updated: ListedHike = {
-        ...target,
-        completedAt: new Date().toISOString(),
+        ...updatedHike,
         phase: "past",
       };
 
       return {
         ...prev,
-        ongoing: prev.ongoing.filter((h) => h.id !== hikeId),
+        ongoing: prev.ongoing.filter((h) => h.id !== updatedHike.id),
         past: [updated, ...prev.past], // la inserisce in cima a "Past"
       };
     });
-    if (completedTarget) {
-      setFeedback(`Safe arrival confirmed for "${completedTarget.destination}".`);
-    }
+    setFeedback(`Safe arrival confirmed for "${updatedHike.destination}".`);
   }
 
   useEffect(() => {
@@ -236,14 +201,22 @@ export default function MyHikesPage() {
         const now = Date.now();
         // The API returns the latest departure first
         const listed = list.map((hike) => ({ ...hike, phase: hikePhase(hike, now) }));
+        const ongoing = listed
+          .filter((hike) => hike.phase === "ongoing")
+          .sort((a, b) => Date.parse(a.expectedReturnAt) - Date.parse(b.expectedReturnAt));
+        const upcoming = listed.filter((hike) => hike.phase === "upcoming").reverse();
+        const past = listed.filter((hike) => hike.phase === "past");
+
         setHikes({
-          ongoing: listed
-            .filter((hike) => hike.phase === "ongoing")
-            .sort((a, b) => Date.parse(a.expectedReturnAt) - Date.parse(b.expectedReturnAt)),
-          upcoming: listed.filter((hike) => hike.phase === "upcoming").reverse(),
-          past: listed.filter((hike) => hike.phase === "past"),
+          ongoing,
+          upcoming,
+          past,
           error: null,
         });
+
+        if (ongoing.length > 0) setActiveTab("ongoing");
+        else if (upcoming.length > 0) setActiveTab("upcoming");
+        else if (past.length > 0) setActiveTab("past");
       })
       .catch((err) => {
         if (ignore) return;
@@ -328,12 +301,71 @@ export default function MyHikesPage() {
           </div>
         )}
 
-        {hikes && !hikes.error && (
-          <>
-            <HikeSection title="Upcoming" label="Upcoming hikes" icon="calendar" hikes={hikes.upcoming} />
-            <HikeSection title="In progress" label="Hikes in progress" icon="map" hikes={hikes.ongoing} onComplete={handleHikeCompleted} />
-            <HikeSection title="Past" label="Past hikes" icon="clock" hikes={hikes.past} />
-          </>
+        {hikes && !hikes.error && !isEmpty && (
+          <div className="space-y-5">
+            <div
+              role="tablist"
+              aria-label="Hike categories"
+              className="grid grid-cols-3 gap-1.5 rounded-2xl border border-stone-200 bg-stone-100/80 p-1.5"
+            >
+              {TABS.map((tab) => {
+                const count = hikes[tab.phase].length;
+                const selected = activeTab === tab.phase;
+                return (
+                  <button
+                    key={tab.phase}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => setActiveTab(tab.phase)}
+                    className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all cursor-pointer ${
+                      selected
+                        ? "bg-white text-green-700 shadow-xs border border-stone-200/80"
+                        : "text-stone-600 hover:text-stone-900 hover:bg-white/50"
+                    }`}
+                  >
+                    <Icon name={tab.icon} className="w-4 h-4 shrink-0" />
+                    <span>{tab.title}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${
+                        selected ? "bg-green-100 text-green-800" : "bg-stone-200/80 text-stone-600"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {(() => {
+              const currentTab = TABS.find((t) => t.phase === activeTab)!;
+              const currentHikes = hikes[activeTab];
+              return (
+                <section role="tabpanel" aria-label={currentTab.label}>
+                  {currentHikes.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/60 px-4 py-8 text-center text-sm text-stone-500">
+                      {currentTab.emptyText}
+                    </div>
+                  ) : (
+                    <ul
+                      className="space-y-4 overflow-y-auto pr-1"
+                      style={{ maxHeight: `${LIST_MAX_HEIGHT}px` }}
+                    >
+                      {currentHikes.map((hike, index) => (
+                        <HikeCard
+                          key={hike.id}
+                          hike={hike}
+                          index={index}
+                          onComplete={activeTab === "ongoing" ? handleHikeCompleted : undefined}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              );
+            })()}
+          </div>
         )}
       </div>
     </AuthShell>
