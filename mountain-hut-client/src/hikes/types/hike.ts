@@ -3,11 +3,12 @@ export interface Hike {
   id: number;
   userId: number;
   departureAt: string;
-  expectedReturnAt: string; 
+  expectedReturnAt: string;
   destination: string;
   routeDescription: string;
   intermediatePoints: string[];
   emergencyContactPhone: string | null;
+  completedAt: string | null;
   createdAt: string;
 }
 
