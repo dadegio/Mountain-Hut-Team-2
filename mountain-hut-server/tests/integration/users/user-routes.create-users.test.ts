@@ -26,12 +26,15 @@ vi.mock("../../../src/db/database.ts", async () => {
 
 vi.spyOn(emailSender, "send").mockResolvedValue(undefined);
 
-const { db: testDb, __userTestClient: client, __userTestCleanup: cleanup } =
-  (await import("../../../src/db/database.ts")) as unknown as {
-    db: typeof import("../../../src/db/database.ts")["db"];
-    __userTestClient: Client;
-    __userTestCleanup: () => void;
-  };
+const {
+  db: testDb,
+  __userTestClient: client,
+  __userTestCleanup: cleanup,
+} = (await import("../../../src/db/database.ts")) as unknown as {
+  db: (typeof import("../../../src/db/database.ts"))["db"];
+  __userTestClient: Client;
+  __userTestCleanup: () => void;
+};
 
 const { buildApp } = await import("../../../src/server.ts");
 const app = buildApp({ logger: false });
@@ -133,7 +136,7 @@ describe("POST /api/v1/users integration tests (create users)", () => {
 
       expect(res.statusCode).toBe(StatusCodes.FORBIDDEN);
       expect(res.json()).toEqual({
-        message: "Forbidden: insufficient permissions",
+        message: "Insufficient permissions",
       });
     });
   });

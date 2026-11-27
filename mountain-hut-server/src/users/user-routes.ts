@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import argon2 from "argon2";
+import { randomInt } from "node:crypto";
 
 import { UserRepository, type User } from "./user-repository.ts";
 import {
@@ -10,12 +11,11 @@ import {
   userResponseSchema,
   userCreationSchema,
 } from "./user-schema.ts";
-import { requireStaff } from "#src/middlewares/require-staff";
-import { randomInt } from "node:crypto";
 import { PasswordResetRepository } from "../auth/auth-repository.ts";
 import { renderTemporaryAccountEmail } from "../notifications/utils.ts";
 import { emailSender } from "../notifications/sender.ts";
 import { env } from "../config.ts";
+import { requireStaff } from "#src/shared/hooks/require-role";
 
 export const userRoutes: FastifyPluginAsync = async (server) => {
   const typed = server.withTypeProvider<ZodTypeProvider>();

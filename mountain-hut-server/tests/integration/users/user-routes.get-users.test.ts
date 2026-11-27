@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { Client } from "@libsql/client";
 import argon2 from "argon2";
 import { usersTable } from "../../../src/db/schema.ts";
@@ -10,12 +18,15 @@ vi.mock("../../../src/db/database.ts", async () => {
   return { db, __userTestClient: client, __userTestCleanup: cleanup };
 });
 
-const { db: testDb, __userTestClient: client, __userTestCleanup: cleanup } =
-  (await import("../../../src/db/database.ts")) as unknown as {
-    db: typeof import("../../../src/db/database.ts")["db"];
-    __userTestClient: Client;
-    __userTestCleanup: () => void;
-  };
+const {
+  db: testDb,
+  __userTestClient: client,
+  __userTestCleanup: cleanup,
+} = (await import("../../../src/db/database.ts")) as unknown as {
+  db: (typeof import("../../../src/db/database.ts"))["db"];
+  __userTestClient: Client;
+  __userTestCleanup: () => void;
+};
 const { buildApp } = await import("../../../src/server.ts");
 
 const app = buildApp({ logger: false });
@@ -113,7 +124,7 @@ describe("GET /api/v1/users integration tests", () => {
       });
 
       expect(res.statusCode).toBe(403);
-      expect(res.json()).toEqual({ message: "Forbidden: insufficient permissions" });
+      expect(res.json()).toEqual({ message: "Insufficient permissions" });
     });
   });
 
