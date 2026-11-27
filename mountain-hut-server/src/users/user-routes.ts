@@ -25,6 +25,10 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
     {
       preHandler: requireStaff,
       schema: {
+        tags: ["Users"],
+        summary: "Search users",
+        description:
+          "Roles: `EMPLOYEE`, `MANAGER`. Searches users by name/surname, email, or phone number.",
         querystring: getUserQuerySchema,
         response: {
           [StatusCodes.OK]: z.array(userResponseSchema),
@@ -65,6 +69,10 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
     {
       preHandler: requireStaff,
       schema: {
+        tags: ["Users"],
+        summary: "Create a new user account",
+        description:
+          "Roles: `EMPLOYEE`, `MANAGER`. Creates a new user account.",
         body: userCreationSchema,
         response: {
           [StatusCodes.CREATED]: userResponseSchema,
