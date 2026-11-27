@@ -1,13 +1,12 @@
-# Stage 1: Build stage (installs native tools and compiles argon2)
+# Stage 1: Build stage (installs the dependencies)
 FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Install native compilation dependencies in build stage only
-RUN apk add --no-cache python3 make g++
-
 COPY package*.json ./
-RUN npm ci
+# No install scripts (SonarQube): argon2 ships a prebuilt binary for Alpine (musl),
+# so nothing needs to be compiled
+RUN npm ci --ignore-scripts
 
 # Stage 2: Minimal runtime image
 FROM node:24-alpine AS runner

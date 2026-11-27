@@ -12,7 +12,8 @@
     "test:unit": "vitest run tests/unit",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test tests/e2e"
+    "test:e2e": "playwright test tests/e2e",
+    "e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

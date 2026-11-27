@@ -25,7 +25,7 @@ jobs:
       # ---- backend ----
       - name: Install server dependencies
         working-directory: mountain-hut-server
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Create and seed database
         working-directory: mountain-hut-server
@@ -36,7 +36,7 @@ jobs:
 
       - name: Start server in background
         working-directory: mountain-hut-server
-        run: npx tsx src/server.ts > server.log 2>&1 &
+        run: npm run start:tsx > server.log 2>&1 &
 
       - name: Wait for server
         run: |
@@ -51,15 +51,15 @@ jobs:
       # ---- frontend + Playwright ----
       - name: Install client dependencies
         working-directory: mountain-hut-client
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Install Playwright browser
         working-directory: mountain-hut-client
-        run: npx playwright install --with-deps chromium
+        run: npm run e2e:install
 
       - name: Run E2E tests
         working-directory: mountain-hut-client
-        run: npx playwright test
+        run: npm run test:e2e
 
       # ---- debugging help when something fails ----
       - name: Upload Playwright report

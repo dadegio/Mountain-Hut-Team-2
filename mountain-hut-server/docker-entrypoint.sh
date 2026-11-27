@@ -2,7 +2,7 @@
 set -e
 
 echo "Applying database schema migrations..."
-npx drizzle-kit push
+npm run db:init
 
 # Optionally seed the database if DB_SEED is set to true
 if [ "$DB_SEED" = "true" ]; then

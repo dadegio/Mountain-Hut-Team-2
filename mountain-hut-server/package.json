@@ -11,9 +11,11 @@
   },
   "scripts": {
     "start": "node src/server.ts",
+    "start:tsx": "tsx src/server.ts",
     "dev": "nodemon",
+    "typecheck": "tsc --noEmit",
     "db:seed": "tsx src/db/seed.ts",
-    "db:init": "npx drizzle-kit push",
+    "db:init": "drizzle-kit push",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
