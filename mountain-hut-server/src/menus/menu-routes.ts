@@ -3,7 +3,7 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 
-import { requireStaff } from "#src/middlewares/requireStaff";
+import { requireStaff } from "#src/middlewares/require-staff";
 import { MenuRepository } from "#src/menus/menu-repository";
 import {
   createMenuSchema,

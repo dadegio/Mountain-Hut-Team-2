@@ -10,7 +10,7 @@ import {
   userResponseSchema,
   userCreationSchema,
 } from "./user-schema.ts";
-import { requireStaff } from "#src/middlewares/requireStaff";
+import { requireStaff } from "#src/middlewares/require-staff";
 import { randomInt } from "node:crypto";
 import { PasswordResetRepository } from "../auth/auth-repository.ts";
 import { renderTemporaryAccountEmail } from "../notifications/utils.ts";
