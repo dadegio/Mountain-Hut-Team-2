@@ -16,7 +16,29 @@ const staffBookingSchema = z
 export async function staffBookingRoutes(app: FastifyInstance) {
   app.post(
     "/staff/bookings",
-    { preHandler: requireStaff },
+    {
+      preHandler: requireStaff,
+      schema: {
+        tags: ["Bookings"],
+        summary: "Book a slot for a hiker",
+        description: `Roles: \`EMPLOYEE\`, \`MANAGER\`. Books for an existing hiker. Unlike hikers,
+staff can book until the slot starts. No confirmation email is sent.`,
+        operationId: "createStaffBooking",
+        // body: staffBookingSchema,
+        // response: {
+        //   201: createdBookingSchema.describe("Booking placed"),
+        //   400: errorSchema,
+        //   401: errorSchema.describe("Nobody is signed in"),
+        //   403: errorSchema.describe(
+        //     "The signed-in user is not staff, or `hikerId` is not a hiker",
+        //   ),
+        //   404: errorSchema.describe("The hiker or the slot does not exist"),
+        //   409: errorSchema.describe(
+        //     "The slot has ended, the hiker already has a booking in it, or there are not enough seats.",
+        //   ),
+        // },
+      },
+    },
     async (request, reply) => {
       const parsed = staffBookingSchema.safeParse(request.body);
       if (!parsed.success) {

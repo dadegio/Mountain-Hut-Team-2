@@ -32,7 +32,25 @@ export async function bookingRoutes(
 
   app.get(
     "/bookings/mine",
-    { preHandler: requireHiker },
+    {
+      preHandler: requireHiker,
+      schema: {
+        tags: ["Bookings"],
+        summary: "List my bookings",
+        description:
+          "Roles: `HIKER`. Newest slot first, including past and canceled bookings.",
+        operationId: "listMyBookings",
+        // response: {
+        //   200: z
+        //     .array(myBookingSchema)
+        //     .describe("The bookings of the signed-in hiker"),
+        //   401: errorSchema.describe("Nobody is signed in"),
+        //   403: errorSchema.describe(
+        //     "The signed-in user does not have the right role",
+        //   ),
+        // },
+      },
+    },
     async (request, reply) => {
       try {
         return reply
@@ -47,7 +65,34 @@ export async function bookingRoutes(
 
   app.post(
     "/bookings",
-    { preHandler: requireHiker },
+    {
+      preHandler: requireHiker,
+      schema: {
+        tags: ["Bookings"],
+        summary: "Book a slot",
+        description: `Roles: \`HIKER\`. The booking is for the signed-in hiker, who then gets a
+confirmation email.
+
+A booking must be made at least 2 hours before the slot starts, and a
+hiker can have one active booking per slot.`,
+        operationId: "createBooking",
+        // body: bookingSchema,
+        // response: {
+        //   201: createdBookingSchema.describe("Booking placed"),
+        //   400: errorSchema.describe(
+        //     "Invalid body, or an allergen does not exist",
+        //   ),
+        //   401: errorSchema.describe("Nobody is signed in"),
+        //   403: errorSchema.describe(
+        //     "The signed-in user does not have the right role",
+        //   ),
+        //   404: errorSchema.describe("The slot does not exist"),
+        //   409: errorSchema.describe(
+        //     "The 2-hour limit has passed, the hiker already has a booking in this slot, or there are not enough seats.",
+        //   ),
+        // },
+      },
+    },
     async (request, reply) => {
       const parsed = bookingSchema.safeParse(request.body);
 

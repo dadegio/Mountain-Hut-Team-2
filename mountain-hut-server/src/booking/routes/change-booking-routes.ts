@@ -25,7 +25,33 @@ const changeSchema = z
 export async function changeBookingRoutes(app: FastifyInstance) {
   app.patch(
     "/bookings/:bookingId",
-    { preHandler: requireHiker },
+    {
+      preHandler: requireHiker,
+      schema: {
+        tags: ["Bookings"],
+        summary: "Change my booking",
+        description: `Roles: \`HIKER\`. Moves a booking to another slot, changes the party size,
+or both. It is allowed within 48 hours of creating the booking, and the
+new slot must still start at least 2 hours later.`,
+        operationId: "changeBooking",
+        // params: bookingParamSchema,
+        // body: changeSchema,
+        // response: {
+        //   200: changedBookingSchema.describe("Booking changed"),
+        //   400: errorSchema.describe("Invalid booking id or body"),
+        //   401: errorSchema.describe("Nobody is signed in"),
+        //   403: errorSchema.describe(
+        //     "The signed-in user does not have the right role",
+        //   ),
+        //   404: errorSchema.describe(
+        //     "The slot does not exist, or the booking does not exist or belongs to someone else",
+        //   ),
+        //   409: errorSchema.describe(
+        //     "The booking is not `PLACED`, the 48 hours are over, the 2-hour limit has passed, the hiker already has a booking in that slot, or there are not enough seats.",
+        //   ),
+        // },
+      },
+    },
     async (request, reply) => {
       const rawId = (request.params as { bookingId: string }).bookingId;
       const bookingId = Number(rawId);
