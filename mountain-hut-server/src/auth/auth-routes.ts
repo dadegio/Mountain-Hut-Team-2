@@ -38,6 +38,10 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
     "/register",
     {
       schema: {
+        tags: ["Auth"],
+        summary: "Create a hiker account",
+        description:
+          "The new account is always a `HIKER`. It does not sign the user in.",
         body: registerSchema,
         response: {
           [StatusCodes.CREATED]: userResponseSchema,
@@ -76,6 +80,9 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
     {
       schema: {
         body: loginSchema,
+        tags: ["Auth"],
+        summary: "Sign in",
+        description: "On success, the response sets the session cookie.",
         response: {
           [StatusCodes.OK]: userResponseSchema,
           [StatusCodes.UNAUTHORIZED]: z.object({ message: z.string() }),
@@ -127,17 +134,41 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
     },
   );
 
-  typed.post("/logout", async (request, reply) => {
-    // Clears the encrypted cookie
-    request.session.delete();
-    return reply
-      .code(StatusCodes.OK)
-      .send({ message: "Logged out successfully" });
-  });
+  typed.post(
+    "/logout",
+    {
+      schema: {
+        tags: ["Auth"],
+        summary: "Sign out",
+        description:
+          "Clears the session cookie. It also answers `200` when nobody is signed in.",
+      },
+    },
+    async (request, reply) => {
+      // Clears the encrypted cookie
+      request.session.delete();
+      return reply
+        .code(StatusCodes.OK)
+        .send({ message: "Logged out successfully" });
+    },
+  );
 
   typed.get(
     "/me",
-    { preHandler: requireAuthenticatedUser },
+    {
+      preHandler: requireAuthenticatedUser,
+      schema: {
+        tags: ["Auth"],
+        summary: "Get the signed-in user",
+        operationId: "getCurrentUser",
+        response: {
+          [StatusCodes.OK]: userResponseSchema.describe("The signed-in user"),
+          [StatusCodes.UNAUTHORIZED]: z
+            .object({ message: z.string() })
+            .describe("Nobody is signed in"),
+        },
+      },
+    },
     async (request, reply) => {
       return reply
         .code(StatusCodes.OK)
