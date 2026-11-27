@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hikePartySchema } from "./party-validation.ts";
 
 /**
  * API uses ISO 8601 instants (Z or explicit offset) to avoid ambiguous
@@ -11,6 +12,7 @@ export const registerHikeSchema = z.object({
   routeDescription: z.string().trim().min(1).max(2000),
   intermediatePoints: z.array(z.string().trim().min(1).max(200)).max(30).optional(),
   emergencyContactPhone: z.string().trim().min(3).max(40).optional(),
+  party: hikePartySchema.optional(),
 }).strict();
 
 export type RegisterHikeInput = z.infer<typeof registerHikeSchema>;

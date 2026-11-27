@@ -139,9 +139,19 @@ export const hikesTable = sqliteTable("hikes", {
     .notNull()
     .default(sql`'[]'`),
   emergencyContactPhone: text("emergency_contact_phone"),
+  partySize: int("party_size").notNull().default(1),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
+});
+
+// The hike owner is the party leader; only additional members are stored here.
+export const hikePartyMembersTable = sqliteTable("hike_party_members", {
+  id: int().primaryKey({ autoIncrement: true }),
+  hikeId: int("hike_id").notNull().references(() => hikesTable.id, { onDelete: "cascade" }),
+  name: text().notNull(),
+  surname: text(),
+  phoneNumber: text("phone_number"),
 });
 
 export const passwordResetTokensTable = sqliteTable("password_reset_tokens", {
