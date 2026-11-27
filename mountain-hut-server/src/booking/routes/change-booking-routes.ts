@@ -46,7 +46,7 @@ export async function changeBookingRoutes(app: FastifyInstance) {
         const result = await changeBooking({
           ...parsed.data,
           bookingId,
-          userId: request.user.id,
+          userId: request.user!.id,
         });
         return reply.status(200).send(result);
       } catch (error) {

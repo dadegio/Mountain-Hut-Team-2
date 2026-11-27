@@ -20,7 +20,7 @@ export async function cancelBookingRoutes(app: FastifyInstance) {
       try {
         const result = await cancelBooking({
           bookingId,
-          userId: request.user.id,
+          userId: request.user!.id,
         });
         return reply.status(200).send(result);
       } catch (error) {

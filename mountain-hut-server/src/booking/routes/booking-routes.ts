@@ -37,7 +37,7 @@ export async function bookingRoutes(
       try {
         return reply
           .status(200)
-          .send(await listBookingsForUser(request.user.id));
+          .send(await listBookingsForUser(request.user!.id));
       } catch (error) {
         request.log.error(error);
         return reply.status(500).send({ error: "Internal server error" });
@@ -65,7 +65,7 @@ export async function bookingRoutes(
             : parsed.data.requirements;
 
         const booking = await createBooking({
-          userId: request.user.id,
+          userId: request.user!.id,
           slotId: parsed.data.slotId,
           partySize: parsed.data.partySize,
           description: effectiveDescription,
@@ -80,7 +80,7 @@ export async function bookingRoutes(
           const slotEnd = new Date(hutSlotStartMs(booking.date, booking.to));
           const reference = `MH-${booking.reservations[0]?.reservationId ?? booking.slotId}`;
           const hikerName =
-            `${request.user.name} ${request.user.surname}`.trim();
+            `${request.user!.name} ${request.user!.surname}`.trim();
 
           let emailRequirements: string | undefined = undefined;
           const allergenNames = booking.allergens.map((a) => a.name);
@@ -92,7 +92,10 @@ export async function bookingRoutes(
             emailRequirements = booking.description;
           }
 
-          sendBookingConfirmation(mailSender, request.user.email, {
+          // This is a bit hacky, but:
+          // 1. The `requireHiker` prehandler ensures that the user is a registered hiker
+          // 2. The database schema forces hikers to always have an email address
+          sendBookingConfirmation(mailSender, request.user!.email ?? "", {
             reference,
             hikerName,
             slotStart,
