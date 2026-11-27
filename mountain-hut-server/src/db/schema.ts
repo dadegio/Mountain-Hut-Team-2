@@ -139,6 +139,7 @@ export const hikesTable = sqliteTable("hikes", {
     .notNull()
     .default(sql`'[]'`),
   emergencyContactPhone: text("emergency_contact_phone"),
+  completedAt: text("completed_at"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),

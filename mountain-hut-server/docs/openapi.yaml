@@ -695,6 +695,50 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/v1/hikes/{id}/complete:
+    patch:
+      tags: [Hikes]
+      summary: Mark my hike as completed (MH-22)
+      description: |
+        Roles: `HIKER`. Sets `completedAt` to the current time. No request body.
+        Doing it before the planned departure means the hike is cancelled, and
+        `outcome` is `CANCELLED`; otherwise it is `COMPLETED`.
+      operationId: completeHike
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: The hike, now completed or cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyHike"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The hike does not exist or belongs to another hiker
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: The hike was already completed or cancelled; nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/v1/hikes:
     post:
       tags: [Hikes]
@@ -715,7 +759,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Hike"
+                $ref: "#/components/schemas/MyHike"
         "400":
           $ref: "#/components/responses/InvalidRequest"
         "401":
@@ -759,7 +803,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Hike"
+                  $ref: "#/components/schemas/MyHike"
         "401":
           $ref: "#/components/responses/AuthenticationRequired"
         "403":
@@ -1178,7 +1222,7 @@ components:
 
     Hike:
       type: object
-      required: [id, userId, departureAt, expectedReturnAt, destination, routeDescription, intermediatePoints, emergencyContactPhone, createdAt]
+      required: [id, userId, departureAt, expectedReturnAt, destination, routeDescription, intermediatePoints, emergencyContactPhone, createdAt, completedAt]
       properties:
         id:
           type: integer
@@ -1201,9 +1245,28 @@ components:
         emergencyContactPhone:
           type: string
           nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Actual confirmed return time, or null until confirmed.
         createdAt:
           type: string
           description: SQLite creation timestamp (UTC)
+
+    MyHike:
+      allOf:
+        - $ref: "#/components/schemas/Hike"
+        - type: object
+          required: [outcome]
+          properties:
+            outcome:
+              type: string
+              enum: [COMPLETED, CANCELLED]
+              nullable: true
+              description: |
+                null while the hike is not completed. CANCELLED when it was
+                completed before the planned departure (MH-22), COMPLETED otherwise.
 
     StaffHike:
       allOf:
