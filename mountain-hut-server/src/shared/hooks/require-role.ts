@@ -17,13 +17,13 @@ export function requireRole(
     if (!request.user) {
       return reply
         .code(StatusCodes.UNAUTHORIZED)
-        .send({ message: "Authentication required" });
+        .send({ error: "Authentication required" });
     }
 
     if (!allowed.includes(request.user.type as UserType)) {
       return reply
         .code(StatusCodes.FORBIDDEN)
-        .send({ message: "Insufficient permissions" });
+        .send({ error: "Insufficient permissions" });
     }
   };
 }

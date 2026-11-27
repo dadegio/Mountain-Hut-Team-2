@@ -32,9 +32,9 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
         querystring: getUserQuerySchema,
         response: {
           [StatusCodes.OK]: z.array(userResponseSchema),
-          [StatusCodes.UNAUTHORIZED]: z.object({ message: z.string() }),
-          [StatusCodes.FORBIDDEN]: z.object({ message: z.string() }),
-          [StatusCodes.NOT_FOUND]: z.object({ message: z.string() }),
+          [StatusCodes.UNAUTHORIZED]: z.object({ error: z.string() }),
+          [StatusCodes.FORBIDDEN]: z.object({ error: z.string() }),
+          [StatusCodes.NOT_FOUND]: z.object({ error: z.string() }),
         },
       },
     },
@@ -55,7 +55,7 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
       if (!users || users.length === 0) {
         return reply
           .code(StatusCodes.NOT_FOUND)
-          .send({ message: "User Not Found" });
+          .send({ error: "User Not Found" });
       }
 
       return reply
@@ -76,8 +76,8 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
         body: userCreationSchema,
         response: {
           [StatusCodes.CREATED]: userResponseSchema,
-          [StatusCodes.CONFLICT]: z.object({ message: z.string() }),
-          [StatusCodes.FORBIDDEN]: z.object({ message: z.string() }),
+          [StatusCodes.CONFLICT]: z.object({ error: z.string() }),
+          [StatusCodes.FORBIDDEN]: z.object({ error: z.string() }),
         },
       },
     },
@@ -91,7 +91,7 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
       ) {
         return reply
           .code(StatusCodes.FORBIDDEN)
-          .send({ message: "Employees cannot create new MANAGER accounts." });
+          .send({ error: "Employees cannot create new MANAGER accounts." });
       }
 
       if (body.type === "THROWAWAY") {
@@ -113,7 +113,7 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
       if (existingUser) {
         return reply
           .code(StatusCodes.CONFLICT)
-          .send({ message: "An account with this email already exists" });
+          .send({ error: "An account with this email already exists" });
       }
 
       const rawPassword =

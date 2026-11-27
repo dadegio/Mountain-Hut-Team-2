@@ -196,7 +196,7 @@ describe("API call to change user account information: POST /reset-password", ()
 
       expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
       expect(res.json()).toEqual({
-        message:
+        error:
           "For safety reasons, you cannot change the password to your old one.",
       });
       expect(UserRepository.updateUser).not.toHaveBeenCalled();
@@ -223,7 +223,7 @@ describe("API call to change user account information: POST /reset-password", ()
 
       expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
       expect(res.json()).toEqual({
-        message: "Invalid or expired reset token.",
+        error: "Invalid or expired reset token.",
       });
       expect(UserRepository.getUserById).not.toHaveBeenCalled();
       expect(UserRepository.updateUser).not.toHaveBeenCalled();
@@ -255,7 +255,7 @@ describe("API call to change user account information: POST /reset-password", ()
       });
 
       expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
-      expect(res.json()).toEqual({ message: "User not found." });
+      expect(res.json()).toEqual({ error: "User not found." });
       expect(UserRepository.updateUser).not.toHaveBeenCalled();
     } finally {
       await app.close();

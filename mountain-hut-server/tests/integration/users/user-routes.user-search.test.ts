@@ -167,13 +167,13 @@ describe("MH-75: GET /api/v1/users — Registered Users API Integration", () => 
     it("401: rejects unauthenticated requests", async () => {
       const res = await searchUsers("?name=Mario", null);
       expect(res.statusCode).toBe(401);
-      expect(res.json().message).toMatch(/Authentication required/i);
+      expect(res.json().error).toMatch(/Authentication required/i);
     });
 
     it("403: rejects requests made by a regular HIKER", async () => {
       const res = await searchUsers("?name=Mario", 1); // Mario (HIKER)
       expect(res.statusCode).toBe(403);
-      expect(res.json().message).toMatch("Insufficient permissions");
+      expect(res.json().error).toMatch("Insufficient permissions");
     });
 
     it("200: allows access by an EMPLOYEE", async () => {
@@ -210,7 +210,7 @@ describe("MH-75: GET /api/v1/users — Registered Users API Integration", () => 
     it("404: returns User Not Found when email does not exist", async () => {
       const res = await searchUsers("?email=unknown.user@example.test");
       expect(res.statusCode).toBe(404);
-      expect(res.json().message).toBe("User Not Found");
+      expect(res.json().error).toBe("User Not Found");
     });
   });
 
@@ -237,7 +237,7 @@ describe("MH-75: GET /api/v1/users — Registered Users API Integration", () => 
         `?phoneNumber=${encodeURIComponent("+39999999999")}`,
       );
       expect(res.statusCode).toBe(404);
-      expect(res.json().message).toBe("User Not Found");
+      expect(res.json().error).toBe("User Not Found");
     });
   });
 
@@ -291,13 +291,13 @@ describe("MH-75: GET /api/v1/users — Registered Users API Integration", () => 
     it("404: returns User Not Found when name/surname combination does not match", async () => {
       const res = await searchUsers("?name=Mario&surname=Nonexistent");
       expect(res.statusCode).toBe(404);
-      expect(res.json().message).toBe("User Not Found");
+      expect(res.json().error).toBe("User Not Found");
     });
 
     it("404: returns User Not Found when empty search query parameters are passed", async () => {
       const res = await searchUsers("");
       expect(res.statusCode).toBe(404);
-      expect(res.json().message).toBe("User Not Found");
+      expect(res.json().error).toBe("User Not Found");
     });
   });
 

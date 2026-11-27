@@ -170,7 +170,7 @@ describe("Password Reset Integration Flow", () => {
     });
 
     expect(resetRes.statusCode).toBe(400);
-    expect(JSON.parse(resetRes.body).message).toBe(
+    expect(JSON.parse(resetRes.body).error).toBe(
       "For safety reasons, you cannot change the password to your old one.",
     );
   });
@@ -186,7 +186,7 @@ describe("Password Reset Integration Flow", () => {
     });
 
     expect(res.statusCode).toBe(400);
-    expect(JSON.parse(res.body).message).toBe(
+    expect(JSON.parse(res.body).error).toBe(
       "Invalid or expired reset token.",
     );
   });

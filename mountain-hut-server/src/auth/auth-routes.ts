@@ -27,7 +27,7 @@ export async function requireAuthenticatedUser(
   if (!request.user) {
     return reply
       .code(StatusCodes.UNAUTHORIZED)
-      .send({ message: "Not authenticated" });
+      .send({ error: "Not authenticated" });
   }
 }
 
@@ -45,7 +45,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
         body: registerSchema,
         response: {
           [StatusCodes.CREATED]: userResponseSchema,
-          [StatusCodes.CONFLICT]: z.object({ message: z.string() }),
+          [StatusCodes.CONFLICT]: z.object({ error: z.string() }),
         },
       },
     },
@@ -56,7 +56,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
       if (existingUser) {
         return reply
           .code(StatusCodes.CONFLICT)
-          .send({ message: "An account with this email already exists" });
+          .send({ error: "An account with this email already exists" });
       }
 
       const passwordHash = await argon2.hash(request.body.password);
@@ -85,7 +85,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
         description: "On success, the response sets the session cookie.",
         response: {
           [StatusCodes.OK]: userResponseSchema,
-          [StatusCodes.UNAUTHORIZED]: z.object({ message: z.string() }),
+          [StatusCodes.UNAUTHORIZED]: z.object({ error: z.string() }),
         },
       },
     },
@@ -94,7 +94,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
       if (!user || !user.passwordHash) {
         return reply
           .code(StatusCodes.UNAUTHORIZED)
-          .send({ message: "Invalid email or password" });
+          .send({ error: "Invalid email or password" });
       }
 
       const isPasswordValid = await argon2.verify(
@@ -104,7 +104,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
       if (!isPasswordValid) {
         return reply
           .code(StatusCodes.UNAUTHORIZED)
-          .send({ message: "Invalid email or password" });
+          .send({ error: "Invalid email or password" });
       }
 
       // save user ID directly into the encrypted cookie
@@ -164,7 +164,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
         response: {
           [StatusCodes.OK]: userResponseSchema.describe("The signed-in user"),
           [StatusCodes.UNAUTHORIZED]: z
-            .object({ message: z.string() })
+            .object({ error: z.string() })
             .describe("Nobody is signed in"),
         },
       },
@@ -230,7 +230,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
         body: resetPasswordSchema,
         response: {
           [StatusCodes.OK]: z.object({ message: z.string() }),
-          [StatusCodes.BAD_REQUEST]: z.object({ message: z.string() }),
+          [StatusCodes.BAD_REQUEST]: z.object({ error: z.string() }),
         },
       },
     },
@@ -240,7 +240,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
       const tokenRow = await PasswordResetRepository.findValidToken(token);
       if (!tokenRow) {
         return reply.code(StatusCodes.BAD_REQUEST).send({
-          message: "Invalid or expired reset token.",
+          error: "Invalid or expired reset token.",
         });
       }
 
@@ -248,7 +248,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
       if (!user || !user.passwordHash || !user.email) {
         // maybe we should be more explicit if the user doesn't have a password hash
         return reply.code(StatusCodes.BAD_REQUEST).send({
-          message: "User not found.",
+          error: "User not found.",
         });
       }
 
@@ -258,7 +258,7 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
       );
       if (isSamePassword) {
         return reply.code(StatusCodes.BAD_REQUEST).send({
-          message:
+          error:
             "For safety reasons, you cannot change the password to your old one.",
         });
       }

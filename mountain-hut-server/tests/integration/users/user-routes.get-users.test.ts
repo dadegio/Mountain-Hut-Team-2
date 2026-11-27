@@ -113,7 +113,7 @@ describe("GET /api/v1/users integration tests", () => {
       });
 
       expect(res.statusCode).toBe(401);
-      expect(res.json()).toEqual({ message: "Authentication required" });
+      expect(res.json()).toEqual({ error: "Authentication required" });
     });
 
     it("returns 403 Forbidden when requested by a HIKER", async () => {
@@ -124,7 +124,7 @@ describe("GET /api/v1/users integration tests", () => {
       });
 
       expect(res.statusCode).toBe(403);
-      expect(res.json()).toEqual({ message: "Insufficient permissions" });
+      expect(res.json()).toEqual({ error: "Insufficient permissions" });
     });
   });
 
@@ -235,7 +235,7 @@ describe("GET /api/v1/users integration tests", () => {
       });
 
       expect(res.statusCode).toBe(404);
-      expect(res.json()).toEqual({ message: "User Not Found" });
+      expect(res.json()).toEqual({ error: "User Not Found" });
     });
 
     it("returns 404 for empty / whitespace name (get-existing-user-empty-name.hurl)", async () => {
