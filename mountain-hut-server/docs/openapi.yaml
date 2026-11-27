@@ -1276,7 +1276,7 @@ components:
         members:
           type: array
           maxItems: 999
-          description: Exactly partySize minus one additional members
+          description: Details of zero or more additional members, up to partySize minus one
           items:
             $ref: "#/components/schemas/HikePartyMemberRequest"
 
@@ -1308,7 +1308,7 @@ components:
 
     Hike:
       type: object
-      required: [id, userId, departureAt, expectedReturnAt, destination, routeDescription, intermediatePoints, emergencyContactPhone, createdAt]
+      required: [id, userId, departureAt, expectedReturnAt, destination, routeDescription, intermediatePoints, emergencyContactPhone, createdAt, partySize]
       properties:
         id:
           type: integer
@@ -1331,6 +1331,11 @@ components:
         emergencyContactPhone:
           type: string
           nullable: true
+        partySize:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Total people including the hike owner, independent of listed members
         createdAt:
           type: string
           description: SQLite creation timestamp (UTC)

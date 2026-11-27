@@ -14,6 +14,7 @@ export async function registerHike(userId: number, input: RegisterHikeInput) {
       routeDescription: input.routeDescription,
       intermediatePoints: input.intermediatePoints ?? [],
       emergencyContactPhone: input.emergencyContactPhone ?? null,
+      partySize: input.party?.partySize ?? 1,
     }).returning();
     if (input.party?.members.length) {
       await tx.insert(hikePartyMembersTable).values(
@@ -41,6 +42,7 @@ export async function listRegisteredHikes() {
     routeDescription: hikesTable.routeDescription,
     intermediatePoints: hikesTable.intermediatePoints,
     emergencyContactPhone: hikesTable.emergencyContactPhone,
+    partySize: hikesTable.partySize,
     createdAt: hikesTable.createdAt,
     hikerName: usersTable.name,
     hikerSurname: usersTable.surname,
