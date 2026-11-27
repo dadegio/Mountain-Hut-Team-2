@@ -25,7 +25,7 @@ import { slotRoutes } from "#src/slots/slot-routes";
 import { staffBookingRoutes } from "#src/booking/routes/staff-booking-routes";
 import { userResponseSchema } from "#src/users/user-schema";
 import { userRoutes } from "#src/users/user-routes";
-
+import { swaggerPlugin } from "./shared/plugins/swagger.ts";
 
 export function buildApp(opts: FastifyServerOptions = {}) {
   const server = Fastify({
@@ -57,15 +57,7 @@ export function buildApp(opts: FastifyServerOptions = {}) {
     }
   });
 
-  // The routes have no schemas yet, so the docs come from a handwritten file
-  server.register(swagger, {
-    mode: "static",
-    specification: {
-      path: fileURLToPath(new URL("../docs/openapi.yaml", import.meta.url)),
-      baseDir: fileURLToPath(new URL("../docs", import.meta.url)),
-    },
-  });
-  server.register(swaggerUi, { routePrefix: "/docs" });
+  server.register(swaggerPlugin);
 
   server.get("/", async () => ({ hello: "world" }));
 
