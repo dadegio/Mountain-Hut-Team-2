@@ -34,6 +34,21 @@ describe("MH-139 hike registration rules", () => {
     ).toBe(true);
   });
 
+  it("accepts a hike of exactly 24 hours", () => {
+    expect(
+      validateHikeChronology({ ...valid, expectedReturnAt: "2026-12-04T08:00:00+01:00" }, now),
+    ).toBeNull();
+  });
+
+  it("rejects a hike longer than 24 hours", () => {
+    expect(
+      validateHikeChronology({ ...valid, expectedReturnAt: "2026-12-04T08:01:00+01:00" }, now),
+    ).toBe("A hike can last at most 24 hours");
+    expect(
+      validateHikeChronology({ ...valid, expectedReturnAt: "2027-12-03T17:00:00+01:00" }, now),
+    ).toBe("A hike can last at most 24 hours");
+  });
+
   it.each(["+39 333 123 4567", "3331234567", "+39 (011) 123-456"])(
     "accepts the emergency phone %s",
     (phone) => {
