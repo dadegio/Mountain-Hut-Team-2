@@ -365,6 +365,8 @@ export default function BookingPage() {
                   max={MAX_PARTY_SIZE}
                   value={partySize === 0 ? "" : partySize}
                   onChange={(e) => handlePartySizeChange(Number(e.target.value))}
+                  aria-invalid={!validParty}
+                  aria-describedby={!validParty ? "partySize-error" : undefined}
                   className="w-full h-full py-2.5 pl-12 pr-3 text-xl font-semibold text-stone-900 bg-transparent focus:outline-hidden [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
               </div>
@@ -378,6 +380,18 @@ export default function BookingPage() {
                 +
               </button>
             </div>
+                        {!validParty && (
+              <p
+                id="partySize-error"
+                role="alert"
+                className="mt-2 flex items-center gap-2 text-sm text-red-600"
+              >
+                <Icon name="warning" className="w-4 h-4" />
+                {partySize < 1
+                  ? "Enter a party size of at least 1."
+                  : `Party size can be at most ${MAX_PARTY_SIZE}. For larger groups, please contact the hut.`}
+              </p>
+            )}
           </div>
 
           <div>
@@ -406,7 +420,7 @@ export default function BookingPage() {
               </div>
             )}
 
-            {date && !slotsLoading && !slotsError && bookableSlots.length === 0 && (
+            {date && validParty && !slotsLoading && !slotsError && bookableSlots.length === 0 && (
               <div className={emptyBox}>
                 <Icon name="clock" className="w-8 h-8 text-stone-400" />
                 <p>No available slots for this date and party size.</p>

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
 import { SUGGESTED_ROUTES } from '../../src/hikes/utils/suggested-routes.ts'
+import { uniquePhone } from './test-data.ts'
 
 // From the backend seed, see the server README
 const EMPLOYEE = { email: 'test.employee@example.com', password: 'Password123!' }
@@ -25,7 +26,7 @@ const unique = (name: string) => `${name} ${randomUUID().slice(0, 8)}`
 async function newHiker(request: APIRequestContext) {
   const email = `e2e.hiker.${randomUUID()}@example.com`
   const res = await request.post('/api/v1/auth/register', {
-    data: { email, password: PASSWORD, name: 'E2E', surname: 'Hiker', phoneNumber: '+393330000000' },
+    data: { email, password: PASSWORD, name: 'E2E', surname: 'Hiker', phoneNumber: uniquePhone() },
   })
   expect(res.status()).toBe(201)
   return email

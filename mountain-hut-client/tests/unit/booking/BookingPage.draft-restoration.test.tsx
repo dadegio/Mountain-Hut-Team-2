@@ -133,4 +133,55 @@ describe('BookingPage draft restoration & persistence (MH-96)', () => {
       expect(draft?.partySize).toBe(3)
     })
   })
+
+  describe('BookingPage party size limit (MH-183)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.clearAllMocks()
+    vi.mocked(availabilityApi.getAvailability).mockResolvedValue({
+      date: futureDateString(3),
+      partySize: 2,
+      slots: [],
+    })
+    // A date is chosen, so the page would normally load the slots
+    localStorage.setItem(
+      PENDING_BOOKING_KEY,
+      JSON.stringify({ date: futureDateString(3), partySize: 2 }),
+    )
+  })
+
+  it('shows an error as soon as the party size is above the limit', async () => {
+    renderBookingPage(null)
+    const partyInput = screen.getByLabelText(/^Party size/i)
+
+    fireEvent.change(partyInput, { target: { value: '25' } })
+
+    expect(screen.getByText(/Party size can be at most 20/)).toBeInTheDocument()
+    expect(partyInput).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.queryByText(/No available slots/)).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(availabilityApi.getAvailability).not.toHaveBeenCalledWith(expect.anything(), 25)
+    })
+  })
+
+  it('asks for at least one person when the field is emptied', () => {
+    renderBookingPage(null)
+    const partyInput = screen.getByLabelText(/^Party size/i)
+
+    fireEvent.change(partyInput, { target: { value: '' } })
+
+    expect(screen.getByText('Enter a party size of at least 1.')).toBeInTheDocument()
+  })
+
+  it('removes the error when the party size is valid again', () => {
+    renderBookingPage(null)
+    const partyInput = screen.getByLabelText(/^Party size/i)
+
+    fireEvent.change(partyInput, { target: { value: '25' } })
+    fireEvent.change(partyInput, { target: { value: '4' } })
+
+    expect(screen.queryByText(/Party size can be at most/)).not.toBeInTheDocument()
+    expect(partyInput).toHaveAttribute('aria-invalid', 'false')
+  })
+})
 })

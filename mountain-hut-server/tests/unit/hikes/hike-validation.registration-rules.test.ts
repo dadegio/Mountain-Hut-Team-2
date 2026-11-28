@@ -34,6 +34,30 @@ describe("MH-139 hike registration rules", () => {
     ).toBe(true);
   });
 
+  it("accepts a hike of exactly 24 hours", () => {
+    expect(
+      validateHikeChronology({ ...valid, expectedReturnAt: "2026-12-04T08:00:00+01:00" }, now),
+    ).toBeNull();
+  });
+
+  it("rejects a hike longer than 24 hours", () => {
+    expect(
+      validateHikeChronology({ ...valid, expectedReturnAt: "2026-12-04T08:01:00+01:00" }, now),
+    ).toBe("A hike can last at most 24 hours");
+    expect(
+      validateHikeChronology({ ...valid, expectedReturnAt: "2027-12-03T17:00:00+01:00" }, now),
+    ).toBe("A hike can last at most 24 hours");
+  });
+
+  it.each(["+39 333 123 4567", "3331234567", "+39 (011) 123-456"])(
+    "accepts the emergency phone %s",
+    (phone) => {
+      expect(
+        registerHikeSchema.safeParse({ ...valid, emergencyContactPhone: phone }).success,
+      ).toBe(true);
+    },
+  );
+
   it("rejects reversed or identical times", () => {
     const same = { ...valid, expectedReturnAt: valid.departureAt };
     expect(validateHikeChronology(same, now)).toBe(
@@ -83,6 +107,10 @@ describe("MH-139 hike registration rules", () => {
     [{ ...valid, routeDescription: "x".repeat(2001) }, "too-long route"],
     [{ ...valid, departureAt: "2026-12-03 08:00" }, "no explicit timezone"],
     [{ ...valid, emergencyContactPhone: "a" }, "short contact"],
+    [{ ...valid, emergencyContactPhone: "abc" }, "letters as contact phone"],
+    [{ ...valid, emergencyContactPhone: "+39 abc 123" }, "letters inside contact phone"],
+    [{ ...valid, emergencyContactPhone: "++39333" }, "double plus in contact phone"],
+    [{ ...valid, emergencyContactPhone: "12" }, "too-short contact phone"],
     [{ ...valid, userId: 777 }, "client-provided userId"],
   ])("rejects %s (%s)", (input, _reason) => {
     expect(registerHikeSchema.safeParse(input).success).toBe(false);

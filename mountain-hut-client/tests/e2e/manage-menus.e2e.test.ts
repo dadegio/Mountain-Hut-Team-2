@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { test, expect, type Page } from '@playwright/test'
-
+import { uniquePhone } from './test-data.ts'
 // From the backend seed, see the server README
 const EMPLOYEE = { email: 'test.employee@example.com', password: 'Password123!' }
 
@@ -54,7 +54,7 @@ test.describe('MH-10: Define menus — access control', () => {
     const email = `e2e.hiker.${randomUUID()}@example.com`
     const password = 'Password123!'
     const res = await page.request.post('/api/v1/auth/register', {
-      data: { email, password, name: 'E2E', surname: 'Hiker', phoneNumber: '+393330000000' },
+      data: { email, password, name: 'E2E', surname: 'Hiker', phoneNumber:  uniquePhone() },
     })
     expect(res.status()).toBe(201)
 

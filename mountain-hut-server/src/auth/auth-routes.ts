@@ -48,6 +48,16 @@ export const authRoutes: FastifyPluginAsync = async (server) => {
           .send({ error: "An account with this email already exists" });
       }
 
+      // MH-183: one account per phone number, so the staff phone search finds the right hiker
+      const phoneOwner = await UserRepository.getUserByPhoneNumber(
+        request.body.phoneNumber,
+      );
+      if (phoneOwner) {
+        return reply
+          .code(StatusCodes.CONFLICT)
+          .send({ error: "An account with this phone number already exists" });
+      }
+
       const passwordHash = await argon2.hash(request.body.password);
       const user = await UserRepository.saveUser({
         email: request.body.email,

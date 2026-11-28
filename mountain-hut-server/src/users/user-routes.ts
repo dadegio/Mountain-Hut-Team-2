@@ -17,6 +17,8 @@ import { emailSender } from "../notifications/sender.ts";
 import { env } from "../config.ts";
 import { requireStaff } from "#src/shared/hooks/require-role";
 
+const PHONE_TAKEN = { error: "An account with this phone number already exists" };
+
 export const userRoutes: FastifyPluginAsync = async (server) => {
   const typed = server.withTypeProvider<ZodTypeProvider>();
 
@@ -95,6 +97,14 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
       }
 
       if (body.type === "THROWAWAY") {
+        // MH-183: one account per phone number, so the staff phone search finds the right hiker
+        if (
+          body.phoneNumber &&
+          (await UserRepository.getUserByPhoneNumber(body.phoneNumber))
+        ) {
+          return reply.code(StatusCodes.CONFLICT).send(PHONE_TAKEN);
+        }
+
         const newUser = await UserRepository.saveUser({
           email: null,
           passwordHash: null,
@@ -109,11 +119,17 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
           .send(userResponseSchema.parse(newUser));
       }
 
+      // The email is checked first, so the usual conflict is reported as before
       const existingUser = await UserRepository.getUserByEmail(body.email);
       if (existingUser) {
         return reply
           .code(StatusCodes.CONFLICT)
           .send({ error: "An account with this email already exists" });
+      }
+
+      // MH-183: one account per phone number, so the staff phone search finds the right hiker
+      if (await UserRepository.getUserByPhoneNumber(body.phoneNumber)) {
+        return reply.code(StatusCodes.CONFLICT).send(PHONE_TAKEN);
       }
 
       const rawPassword =

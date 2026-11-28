@@ -67,6 +67,7 @@ const delay = (i: number): CSSProperties => ({ animationDelay: `${i * STAGGER_MS
 
 export default function MealsPage() {
   const [date, setDate] = useState(todayString);
+  const [dateError, setDateError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<LoadedMeals | null>(null);
   const [allergens, setAllergens] = useState<Allergen[] | null>(null);
   const [allergensError, setAllergensError] = useState(false);
@@ -110,6 +111,16 @@ export default function MealsPage() {
     setAvoid((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
+  function pickDate(value: string) {
+    if (!value) return;
+    if (value < todayString()) {
+      setDateError("Pick today or a later day");
+      return;
+    }
+    setDateError(null);
+    setDate(value);
+  }
+
   const today = todayString();
   const days = nextDays(today, DAYS_SHOWN);
   const current = loaded && loaded.date === date ? loaded : null;
@@ -134,7 +145,7 @@ export default function MealsPage() {
                   type="button"
                   aria-pressed={selected}
                   aria-label={dayChipLabel(day, today)}
-                  onClick={() => setDate(day)}
+                  onClick={() => { setDateError(null); setDate(day); } }
                   className={`w-16 rounded-xl px-2 py-2.5 text-center transition duration-200 cursor-pointer ${
                     selected
                       ? "bg-green-600 text-white shadow-md motion-safe:scale-105"
@@ -160,10 +171,16 @@ export default function MealsPage() {
               type="date"
               value={date}
               min={today}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
-              className="h-10 rounded-lg border border-stone-300 bg-white px-3 text-stone-900 shadow-xs cursor-pointer transition-colors hover:border-green-600 focus:outline-hidden focus:border-green-600 focus:ring-2 focus:ring-green-600/25"
+              onChange={(e) => pickDate(e.target.value)}
+              aria-invalid={dateError !== null}
+              className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-stone-900"
             />
           </label>
+          {dateError && (
+              <p role="alert" className="text-sm text-red-600">
+                {dateError}
+              </p>
+            )}
         </div>
 
         <AllergenFilter

@@ -15,6 +15,7 @@ import { emailSender } from "../../../src/notifications/sender.ts";
 vi.mock("../../../src/users/user-repository.ts", () => ({
   UserRepository: {
     getUserByEmail: vi.fn(),
+    getUserByPhoneNumber: vi.fn(),
     saveUser: vi.fn(),
     getUserById: vi.fn(),
     updateUser: vi.fn(),
@@ -138,7 +139,7 @@ describe("Account creation API: standard, temporary, and throwaway accounts", ()
             name: "New",
             surname: "User",
             email: "existing@example.com",
-            phoneNumber: "+39111",
+            phoneNumber: "+39333000222",
             password: "password123",
           },
         });
