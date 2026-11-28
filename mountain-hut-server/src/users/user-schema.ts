@@ -1,13 +1,19 @@
 import { z } from "zod";
+import { emailField, nameField, phoneField } from "../shared/fields.ts";
 
 //
 // QUERY
 //
+// Searches use the same normalization as stored values, so they always match
 export const getUserQuerySchema = z.object({
-  email: z.string().optional(),
-  name: z.string().optional(),
-  surname: z.string().optional(),
-  phoneNumber: z.string().optional(),
+  email: z.string().trim().toLowerCase().optional(),
+  name: z.string().trim().optional(),
+  surname: z.string().trim().optional(),
+  phoneNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/[\s()-]/g, ""))
+    .optional(),
 });
 
 export type GetUserQuery = z.infer<typeof getUserQuerySchema>;
@@ -16,10 +22,10 @@ export type GetUserQuery = z.infer<typeof getUserQuerySchema>;
 // CREATION
 //
 const contactFields = z.object({
-  email: z.email("Invalid email format").trim(),
-  name: z.string().min(1, "Name is required").trim(),
-  surname: z.string().min(1, "Surname is required").trim(),
-  phoneNumber: z.string().min(1, "Phone number is required").trim(),
+  email: emailField,
+  name: nameField("Name"),
+  surname: nameField("Surname"),
+  phoneNumber: phoneField,
 });
 
 export const standardUserCreationSchema = contactFields.extend({
@@ -32,8 +38,8 @@ export const temporaryUserCreationSchema = contactFields.extend({
 });
 
 export const throwawayUserCreationSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phoneNumber: z.string().min(1).nullable().optional(),
+  name: nameField("Name"),
+  phoneNumber: phoneField.nullable().optional(),
   type: z.literal("THROWAWAY"),
 });
 

@@ -1,14 +1,15 @@
 import { z } from "zod";
+import { emailField, nameField, phoneField } from "../shared/fields.ts";
 
 //
 // REGISTRATION
 //
 export const registerSchema = z.object({
-  email: z.email("Invalid email format"),
+  email: emailField,
   password: z.string().min(8, "Password must be at least 8 characters long"),
-  name: z.string().min(1, "Name is required"),
-  surname: z.string().min(1, "Surname is required"),
-  phoneNumber: z.string().min(1, "Phone number is required"),
+  name: nameField("Name"),
+  surname: nameField("Surname"),
+  phoneNumber: phoneField,
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -17,7 +18,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 // LOGIN
 //
 export const loginSchema = z.object({
-  email: z.email("Invalid email format"),
+  email: emailField,
   password: z.string().min(1, "Password is required"),
 });
 
@@ -32,7 +33,7 @@ export const changePasswordSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.email("Invalid email format"),
+  email: emailField,
 });
 
 export const resetPasswordSchema = z.object({
