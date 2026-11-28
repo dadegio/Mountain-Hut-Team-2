@@ -34,6 +34,15 @@ describe("MH-139 hike registration rules", () => {
     ).toBe(true);
   });
 
+  it.each(["+39 333 123 4567", "3331234567", "+39 (011) 123-456"])(
+    "accepts the emergency phone %s",
+    (phone) => {
+      expect(
+        registerHikeSchema.safeParse({ ...valid, emergencyContactPhone: phone }).success,
+      ).toBe(true);
+    },
+  );
+
   it("rejects reversed or identical times", () => {
     const same = { ...valid, expectedReturnAt: valid.departureAt };
     expect(validateHikeChronology(same, now)).toBe(
@@ -83,6 +92,10 @@ describe("MH-139 hike registration rules", () => {
     [{ ...valid, routeDescription: "x".repeat(2001) }, "too-long route"],
     [{ ...valid, departureAt: "2026-12-03 08:00" }, "no explicit timezone"],
     [{ ...valid, emergencyContactPhone: "a" }, "short contact"],
+    [{ ...valid, emergencyContactPhone: "abc" }, "letters as contact phone"],
+    [{ ...valid, emergencyContactPhone: "+39 abc 123" }, "letters inside contact phone"],
+    [{ ...valid, emergencyContactPhone: "++39333" }, "double plus in contact phone"],
+    [{ ...valid, emergencyContactPhone: "12" }, "too-short contact phone"],
     [{ ...valid, userId: 777 }, "client-provided userId"],
   ])("rejects %s (%s)", (input, _reason) => {
     expect(registerHikeSchema.safeParse(input).success).toBe(false);
