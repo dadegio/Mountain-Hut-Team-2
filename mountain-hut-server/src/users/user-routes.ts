@@ -94,6 +94,18 @@ export const userRoutes: FastifyPluginAsync = async (server) => {
           .send({ error: "Employees cannot create new MANAGER accounts." });
       }
 
+      // MH-183: one account per phone number, so the staff phone search finds the right hiker
+      if (body.phoneNumber) {
+        const phoneOwner = await UserRepository.getUserByPhoneNumber(
+          body.phoneNumber,
+        );
+        if (phoneOwner) {
+          return reply
+            .code(StatusCodes.CONFLICT)
+            .send({ error: "An account with this phone number already exists" });
+        }
+      }
+
       if (body.type === "THROWAWAY") {
         const newUser = await UserRepository.saveUser({
           email: null,
