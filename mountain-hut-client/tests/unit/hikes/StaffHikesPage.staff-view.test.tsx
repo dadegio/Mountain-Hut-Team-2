@@ -25,6 +25,7 @@ function hike(overrides: Partial<StaffHike> & { from: number; to: number }): Sta
     routeDescription: "Via the Chiaretto lake",
     intermediatePoints: ["Lago Chiaretto", "Viso Mozzo"],
     emergencyContactPhone: null,
+    completedAt: null,
     createdAt: at(-100),
     hiker: { name: "Giulia", surname: "Verdi", phoneNumber: "+39 333 987 6543" },
     ...rest,
@@ -53,7 +54,7 @@ describe("StaffHikesPage (MH-21 staff view)", () => {
     vi.mocked(getRegisteredHikes).mockResolvedValue([
       hike({ from: -1, to: 2, destination: "Out Lake" }),
       hike({ from: 2, to: 5, destination: "Later Summit" }),
-      hike({ from: -72, to: -66, destination: "Old Glacier" }),
+      hike({ from: -72, to: -66, completedAt: at(-66), destination: "Old Glacier" }),
     ]);
     renderPage();
 
@@ -67,6 +68,29 @@ describe("StaffHikesPage (MH-21 staff view)", () => {
     expect(screen.getByRole("heading", { name: "Past (1)" })).toBeInTheDocument();
   });
 
+  it("keeps overdue hikes on 'On a hike now' until they are completed", async () => {
+    vi.mocked(getRegisteredHikes).mockResolvedValue([
+      hike({ from: -8, to: -2, destination: "Overdue Pass" }),
+    ]);
+    renderPage();
+
+    expect(await screen.findByText("→ Overdue Pass")).toBeInTheDocument();
+    expect(within(panel("On a hike now")).getByText("→ Overdue Pass")).toBeInTheDocument();
+  });
+
+  it("moves a completed hike to Past, even if it was expected back later", async () => {
+    vi.mocked(getRegisteredHikes).mockResolvedValue([
+      hike({ from: -2, to: 3, completedAt: at(-1), destination: "Early Return" }),
+    ]);
+    renderPage();
+
+    expect(await screen.findByText("→ Early Return")).toBeInTheDocument();
+    const past = within(panel("Past"));
+    expect(past.getByText("→ Early Return")).toBeInTheDocument();
+    expect(past.getByText("Back")).toBeInTheDocument();
+    expect(within(panel("On a hike now")).queryByText("→ Early Return")).toBeNull();
+  });
+
   it("shows the hiker, destination, route and passage points of a hike", async () => {
     vi.mocked(getRegisteredHikes).mockResolvedValue([hike({ from: -1, to: 2 })]);
     renderPage();
@@ -78,6 +102,7 @@ describe("StaffHikesPage (MH-21 staff view)", () => {
     expect(active.getByText("Lago Chiaretto → Viso Mozzo")).toBeInTheDocument();
     expect(active.getByText("Left")).toBeInTheDocument();
     expect(active.getByText("Expected back")).toBeInTheDocument();
+    expect(active.queryByText("Back")).toBeNull();
   });
 
   it("hides the passage points row when there are none", async () => {
@@ -88,14 +113,14 @@ describe("StaffHikesPage (MH-21 staff view)", () => {
     expect(screen.queryByText("Passage points")).toBeNull();
   });
 
-  it("orders each panel: back soonest, leaving soonest, newest past first", async () => {
+  it("orders each panel: back soonest, leaving soonest, most recently back first", async () => {
     vi.mocked(getRegisteredHikes).mockResolvedValue([
       hike({ from: -2, to: 5, destination: "Active late" }),
       hike({ from: -1, to: 1, destination: "Active soon" }),
       hike({ from: 6, to: 9, destination: "Upcoming late" }),
       hike({ from: 2, to: 4, destination: "Upcoming soon" }),
-      hike({ from: -120, to: -115, destination: "Past old" }),
-      hike({ from: -72, to: -66, destination: "Past recent" }),
+      hike({ from: -120, to: -115, completedAt: at(-115), destination: "Past old" }),
+      hike({ from: -72, to: -66, completedAt: at(-66), destination: "Past recent" }),
     ]);
     renderPage();
     await screen.findByText("→ Active soon");

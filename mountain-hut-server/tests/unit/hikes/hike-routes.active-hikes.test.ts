@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { type FastifyRequest } from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../src/hikes/hikes.ts", () => ({
@@ -18,7 +18,7 @@ beforeEach(async () => {
   vi.resetAllMocks();
   app = Fastify({ logger: false });
   // Isolate route authorization from session/database infrastructure.
-  app.addHook("preHandler", async (request) => {
+  app.addHook("preHandler", async (request: FastifyRequest) => {
     const role = request.headers["x-test-role"];
     if (typeof role === "string") {
       request.user = { id: 1, type: role } as NonNullable<typeof request.user>;

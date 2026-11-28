@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getRegisteredHikes } from "../api/hikes-api.ts";
 import type { StaffHike } from "../types/hike.ts";
-import { formatHikeTime, staffHikeGroup } from "../utils/hike-time.ts";
+import { formatHikeTime } from "../utils/hike-time.ts";
 import PageHeader from "../../shared/components/PageHeader.tsx";
 import SectionTitle from "../../shared/components/SectionTitle.tsx";
 import Icon from "../../shared/components/Icon.tsx";
@@ -21,20 +21,22 @@ function emptyGroups(): Record<Group, StaffHike[]> {
   return { active: [], upcoming: [], past: [] };
 }
 
-function groupOf(hike: StaffHike, now: number): Group {
-  const group = staffHikeGroup(hike, now);
-  if (group === "out" || group === "overdue") return "active";
-  if (group === "upcoming") return "upcoming";
-  return "past";
-}
-
 const time = (iso: string) => Date.parse(iso);
 
-// On a hike: back soonest first · upcoming: leaving soonest first · past: newest first
+// Same rule as GET /hikes/active: started and not completed, even if overdue
+function groupOf(hike: StaffHike, now: number): Group {
+  if (hike.completedAt) return "past";
+  if (time(hike.departureAt) <= now) return "active";
+  return "upcoming";
+}
+
+// On a hike: back soonest first · upcoming: leaving soonest first · past: most recently back first
 function sortGroups(groups: Record<Group, StaffHike[]>) {
   groups.active.sort((a, b) => time(a.expectedReturnAt) - time(b.expectedReturnAt));
   groups.upcoming.sort((a, b) => time(a.departureAt) - time(b.departureAt));
-  groups.past.sort((a, b) => time(b.departureAt) - time(a.departureAt));
+  groups.past.sort(
+    (a, b) => time(b.completedAt ?? b.departureAt) - time(a.completedAt ?? a.departureAt),
+  );
 }
 
 function clock(ms: number): string {
@@ -66,6 +68,12 @@ function StaffHikeCard({ hike, group }: { hike: StaffHike; group: Group }) {
           <dt className="w-28 shrink-0 text-stone-500">Expected back</dt>
           <dd className="font-semibold text-stone-900">{formatHikeTime(hike.expectedReturnAt)}</dd>
         </div>
+        {hike.completedAt && (
+          <div className="flex gap-2">
+            <dt className="w-28 shrink-0 text-stone-500">Back</dt>
+            <dd className="text-stone-800">{formatHikeTime(hike.completedAt)}</dd>
+          </div>
+        )}
         <div className="flex gap-2">
           <dt className="w-28 shrink-0 text-stone-500">Route</dt>
           <dd className="whitespace-pre-line text-stone-800">{hike.routeDescription}</dd>
@@ -204,6 +212,7 @@ export default function StaffHikesPage() {
               <SectionTitle
                 icon="clock"
                 title={`On a hike now (${groups.active.length})`}
+                hint="Back soonest first"
               />
               <div className="flex items-center gap-3">
                 <span className="text-sm text-stone-400">Updated {loaded?.updatedAt}</span>
@@ -232,6 +241,7 @@ export default function StaffHikesPage() {
               <SectionTitle
                 icon="calendar"
                 title={`Upcoming (${groups.upcoming.length})`}
+                hint="Leaving soonest first"
               />
               <HikeList
                 hikes={groups.upcoming}
@@ -243,9 +253,7 @@ export default function StaffHikesPage() {
             </section>
             <div className="border-t border-stone-200" />
             <section aria-label="Past" className="space-y-4">
-              <SectionTitle icon="archive" 
-              title={`Past (${groups.past.length})`} 
-              />
+              <SectionTitle icon="archive" title={`Past (${groups.past.length})`} hint="Most recently back first" />
               <HikeList
                 hikes={groups.past}
                 group="past"
