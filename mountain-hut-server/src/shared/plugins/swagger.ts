@@ -14,7 +14,7 @@ const DESCRIPTION = `Backend API of the Mountain Hut booking system.
 
 **Errors:** any endpoint can also answer \`500\` with an \`Error\` body.`;
 
-export const swaggerPlugin = fp(async (app: FastifyInstance): Promise<void> => {
+export const swaggerPlugin = fp(async (app: FastifyInstance) => {
   await app.register(swagger, {
     openapi: {
       openapi: "3.0.3",

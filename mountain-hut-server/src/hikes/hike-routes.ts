@@ -40,13 +40,10 @@ Includes started hikes not confirmed complete, even if overdue.
 Ordered by expected return time, then hike ID.`,
       },
     },
-    async (request, reply) => {
-      try {
-        return reply.status(200).send(await HikeRepository.listActiveHikes());
-      } catch (error) {
-        request.log.error(error);
-        return reply.status(500).send({ error: "Internal server error" });
-      }
+    async (_request, reply) => {
+      return reply
+        .status(StatusCodes.OK)
+        .send(await HikeRepository.listActiveHikes());
     },
   );
 
@@ -63,7 +60,7 @@ Ordered by expected return time, then hike ID.`,
     },
     async (request, reply) => {
       return reply
-        .status(200)
+        .status(StatusCodes.OK)
         .send(await HikeRepository.listMyHikes(request.user!.id));
     },
   );
@@ -83,11 +80,13 @@ Ordered by expected return time, then hike ID.`,
     async (request, reply) => {
       const chronologyError = validateHikeChronology(request.body);
       if (chronologyError) {
-        return reply.status(400).send({ error: chronologyError });
+        return reply
+          .status(StatusCodes.BAD_REQUEST)
+          .send({ error: chronologyError });
       }
 
       return reply
-        .status(201)
+        .status(StatusCodes.CREATED)
         .send(
           await HikeRepository.registerHike(request.user!.id, request.body),
         );

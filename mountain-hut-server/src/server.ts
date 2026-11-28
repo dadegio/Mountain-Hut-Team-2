@@ -23,6 +23,7 @@ import { staffBookingRoutes } from "#src/booking/routes/staff-booking-routes";
 import { userResponseSchema } from "#src/users/user-schema";
 import { userRoutes } from "#src/users/user-routes";
 import { swaggerPlugin } from "./shared/plugins/swagger.ts";
+import { errorHandlerPlugin } from "./shared/plugins/error-handler.ts";
 
 export function buildApp(opts: FastifyServerOptions = {}) {
   const server = Fastify({
@@ -55,6 +56,8 @@ export function buildApp(opts: FastifyServerOptions = {}) {
   });
 
   server.register(swaggerPlugin);
+
+  server.register(errorHandlerPlugin);
 
   const BASE_URL = "/api/v1";
 

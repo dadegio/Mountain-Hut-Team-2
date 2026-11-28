@@ -13,6 +13,7 @@ vi.mock("#src/hikes/hike-repository", () => ({
 
 import { HikeRepository } from "#src/hikes/hike-repository";
 import { hikeRoutes } from "#src/hikes/hike-routes";
+import { errorHandlerPlugin } from "#src/shared/plugins/error-handler";
 
 let app: ReturnType<typeof Fastify>;
 const endpoint = "/hikes/active";
@@ -21,6 +22,7 @@ beforeEach(async () => {
   vi.resetAllMocks();
   app = Fastify({ logger: false });
   app.setValidatorCompiler(validatorCompiler);
+  app.register(errorHandlerPlugin);
   // Isolate route authorization from session/database infrastructure.
   app.addHook("preHandler", async (request: FastifyRequest) => {
     const role = request.headers["x-test-role"];
@@ -73,6 +75,6 @@ describe("MH-213 active hikes route", () => {
       headers: { "x-test-role": "EMPLOYEE" },
     });
     expect(response.statusCode).toBe(500);
-    expect(response.json()).toEqual({ error: "Internal server error" });
+    expect(response.json()).toEqual({ error: "Internal Server Error" });
   });
 });
