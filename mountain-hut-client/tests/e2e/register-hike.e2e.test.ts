@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
 import { SUGGESTED_ROUTES } from '../../src/hikes/utils/suggested-routes.ts'
-import { uniquePhone } from './test-data'
+import { uniquePhone } from './test-data.ts'
 
 // From the backend seed, see the server README
 const EMPLOYEE = { email: 'test.employee@example.com', password: 'Password123!' }
