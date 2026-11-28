@@ -5,7 +5,7 @@ import { StatusCodes } from "http-status-codes";
 import { requireHiker, requireStaff } from "#src/shared/hooks/require-role";
 import { validateHikeChronology } from "#src/hikes/hike-validation";
 import { registerHikeSchema } from "#src/hikes/hike-schema";
-import { HikesRepository } from "#src/hikes/hikes";
+import { HikeRepository } from "#src/hikes/hike-repository";
 
 export const hikeRoutes: FastifyPluginAsync = async (server) => {
   const typed = server.withTypeProvider<ZodTypeProvider>();
@@ -24,7 +24,7 @@ export const hikeRoutes: FastifyPluginAsync = async (server) => {
     async (_request, reply) => {
       return reply
         .status(StatusCodes.OK)
-        .send(await HikesRepository.listRegisteredHikes());
+        .send(await HikeRepository.listRegisteredHikes());
     },
   );
 
@@ -42,7 +42,7 @@ Ordered by expected return time, then hike ID.`,
     },
     async (request, reply) => {
       try {
-        return reply.status(200).send(await HikesRepository.listActiveHikes());
+        return reply.status(200).send(await HikeRepository.listActiveHikes());
       } catch (error) {
         request.log.error(error);
         return reply.status(500).send({ error: "Internal server error" });
@@ -64,7 +64,7 @@ Ordered by expected return time, then hike ID.`,
     async (request, reply) => {
       return reply
         .status(200)
-        .send(await HikesRepository.listMyHikes(request.user!.id));
+        .send(await HikeRepository.listMyHikes(request.user!.id));
     },
   );
 
@@ -89,7 +89,7 @@ Ordered by expected return time, then hike ID.`,
       return reply
         .status(201)
         .send(
-          await HikesRepository.registerHike(request.user!.id, request.body),
+          await HikeRepository.registerHike(request.user!.id, request.body),
         );
     },
   );

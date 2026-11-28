@@ -4,7 +4,7 @@ import { db } from "#src/db/database";
 import { hikesTable, usersTable } from "#src/db/schema";
 import type { RegisterHikeInput } from "#src/hikes/hike-schema";
 
-export class HikesRepository {
+export class HikeRepository {
   /** Only the authenticated user's id may be used; never trust a client userId. */
   static async registerHike(userId: number, input: RegisterHikeInput) {
     const [hike] = await db
@@ -67,12 +67,12 @@ export class HikesRepository {
 
   /** All registered hikes, including upcoming and completed ones. */
   static async listRegisteredHikes() {
-    return HikesRepository.listStaffHikes();
+    return HikeRepository.listStaffHikes();
   }
 
   /** Started but not confirmed complete; overdue hikes remain active. */
   static async listActiveHikes(now: Date = new Date()) {
-    return HikesRepository.listStaffHikes(
+    return HikeRepository.listStaffHikes(
       and(
         lte(hikesTable.departureAt, now.toISOString()),
         isNull(hikesTable.completedAt),

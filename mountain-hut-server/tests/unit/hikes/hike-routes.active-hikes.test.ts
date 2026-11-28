@@ -2,8 +2,8 @@ import Fastify, { type FastifyRequest } from "fastify";
 import { validatorCompiler } from "fastify-type-provider-zod";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("#src/hikes/hikes", () => ({
-  HikesRepository: {
+vi.mock("#src/hikes/hike-repository", () => ({
+  HikeRepository: {
     registerHike: vi.fn(),
     listMyHikes: vi.fn(),
     listRegisteredHikes: vi.fn(),
@@ -11,7 +11,7 @@ vi.mock("#src/hikes/hikes", () => ({
   },
 }));
 
-import { HikesRepository } from "#src/hikes/hikes";
+import { HikeRepository } from "#src/hikes/hike-repository";
 import { hikeRoutes } from "#src/hikes/hike-routes";
 
 let app: ReturnType<typeof Fastify>;
@@ -36,7 +36,7 @@ afterEach(async () => await app.close());
 
 describe("MH-213 active hikes route", () => {
   it.each(["EMPLOYEE", "MANAGER"])("allows %s", async (role) => {
-    vi.mocked(HikesRepository.listActiveHikes).mockResolvedValueOnce([]);
+    vi.mocked(HikeRepository.listActiveHikes).mockResolvedValueOnce([]);
     const response = await app.inject({
       method: "GET",
       url: endpoint,
@@ -44,13 +44,13 @@ describe("MH-213 active hikes route", () => {
     });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual([]);
-    expect(HikesRepository.listActiveHikes).toHaveBeenCalledOnce();
+    expect(HikeRepository.listActiveHikes).toHaveBeenCalledOnce();
   });
 
   it("rejects unauthenticated callers", async () => {
     const response = await app.inject({ method: "GET", url: endpoint });
     expect(response.statusCode).toBe(401);
-    expect(HikesRepository.listActiveHikes).not.toHaveBeenCalled();
+    expect(HikeRepository.listActiveHikes).not.toHaveBeenCalled();
   });
 
   it.each(["HIKER", "TEMPORARY", "THROWAWAY"])("rejects %s", async (role) => {
@@ -60,11 +60,11 @@ describe("MH-213 active hikes route", () => {
       headers: { "x-test-role": role },
     });
     expect(response.statusCode).toBe(403);
-    expect(HikesRepository.listActiveHikes).not.toHaveBeenCalled();
+    expect(HikeRepository.listActiveHikes).not.toHaveBeenCalled();
   });
 
   it("returns a generic server error when the query fails", async () => {
-    vi.mocked(HikesRepository.listActiveHikes).mockRejectedValueOnce(
+    vi.mocked(HikeRepository.listActiveHikes).mockRejectedValueOnce(
       new Error("database failed"),
     );
     const response = await app.inject({
