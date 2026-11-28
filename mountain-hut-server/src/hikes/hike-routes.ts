@@ -41,7 +41,7 @@ export const hikeRoutes: FastifyPluginAsync = async (server) => {
     },
     async (request, reply) => {
       return reply
-        .status(200)
+        .status(StatusCodes.OK)
         .send(await HikesRepository.listMyHikes(request.user!.id));
     },
   );
@@ -54,18 +54,33 @@ export const hikeRoutes: FastifyPluginAsync = async (server) => {
         tags: ["Hikes"],
         summary: "Register my planned hike",
         description:
-          "Roles: `HIKER`. Departure must be in the future, return after departure. Date-times must contain Z or an explicit UTC offset.",
+          "Roles: `HIKER`. Departure must be in the future, return after departure, and a hike lasts at most 24 hours. " +
+          "It cannot overlap another hike of the same hiker. Date-times must contain Z or an explicit UTC offset.",
         body: registerHikeSchema,
       },
     },
     async (request, reply) => {
       const chronologyError = validateHikeChronology(request.body);
       if (chronologyError) {
-        return reply.status(400).send({ error: chronologyError });
+        return reply
+          .status(StatusCodes.BAD_REQUEST)
+          .send({ error: chronologyError });
+      }
+
+      // MH-183: a hiker cannot be on two hikes at the same time
+      const overlapping = await HikesRepository.findOverlappingHike(
+        request.user!.id,
+        request.body.departureAt,
+        request.body.expectedReturnAt,
+      );
+      if (overlapping) {
+        return reply
+          .status(StatusCodes.CONFLICT)
+          .send({ error: "You already have a hike registered at this time" });
       }
 
       return reply
-        .status(201)
+        .status(StatusCodes.CREATED)
         .send(
           await HikesRepository.registerHike(request.user!.id, request.body),
         );
