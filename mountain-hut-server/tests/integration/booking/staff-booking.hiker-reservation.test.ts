@@ -1,7 +1,15 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { Client } from "@libsql/client";
 import argon2 from "argon2";
-import { asc, eq } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 import {
   reservationsTable,
   usersTable,
@@ -14,7 +22,11 @@ import { resetTestDatabase } from "../../test-database.ts";
 vi.mock("../../../src/db/database.ts", async () => {
   const { createIsolatedTestDatabase } = await import("../../test-database.ts");
   const { db, client, cleanup } = createIsolatedTestDatabase();
-  return { db, __integrationTestClient: client, __integrationTestCleanup: cleanup };
+  return {
+    db,
+    __integrationTestClient: client,
+    __integrationTestCleanup: cleanup,
+  };
 });
 
 const { db: testDb } = await import("../../../src/db/database.ts");
@@ -34,7 +46,8 @@ function romeDate(daysFromToday: number): string {
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(date);
-  const part = (type: string) => parts.find((item) => item.type === type)!.value;
+  const part = (type: string) =>
+    parts.find((item) => item.type === type)!.value;
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
@@ -73,7 +86,8 @@ async function postStaffBooking(
   body: Record<string, unknown>,
   actingUserId: number | null = 3, // default: employee (userId 3)
 ) {
-  const cookie = actingUserId === null ? null : await sessionCookie(actingUserId);
+  const cookie =
+    actingUserId === null ? null : await sessionCookie(actingUserId);
   return app.inject({
     method: "POST",
     url: "/api/v1/staff/bookings",
@@ -111,17 +125,55 @@ async function getAvailability(date: string, partySize: number = 1) {
 }
 
 async function reservationRows() {
-  return testDb.select().from(reservationsTable).orderBy(asc(reservationsTable.id));
+  return testDb
+    .select()
+    .from(reservationsTable)
+    .orderBy(asc(reservationsTable.id));
 }
 
 async function resetFixture() {
   await resetTestDatabase(client);
   await testDb.insert(usersTable).values([
-    { id: 1, email: emails[1], passwordHash, name: "Mario", surname: "Hiker", type: "HIKER" },
-    { id: 2, email: emails[2], passwordHash, name: "Giulia", surname: "Hiker", type: "HIKER" },
-    { id: 3, email: emails[3], passwordHash, name: "Luca", surname: "Employee", type: "EMPLOYEE" },
-    { id: 4, email: emails[4], passwordHash, name: "Anna", surname: "Manager", type: "MANAGER" },
-    { id: 5, email: emails[5], passwordHash, name: "Marco", surname: "Staff", type: "EMPLOYEE" },
+    {
+      id: 1,
+      email: emails[1],
+      passwordHash,
+      name: "Mario",
+      surname: "Hiker",
+      type: "HIKER",
+    },
+    {
+      id: 2,
+      email: emails[2],
+      passwordHash,
+      name: "Giulia",
+      surname: "Hiker",
+      type: "HIKER",
+    },
+    {
+      id: 3,
+      email: emails[3],
+      passwordHash,
+      name: "Luca",
+      surname: "Employee",
+      type: "EMPLOYEE",
+    },
+    {
+      id: 4,
+      email: emails[4],
+      passwordHash,
+      name: "Anna",
+      surname: "Manager",
+      type: "MANAGER",
+    },
+    {
+      id: 5,
+      email: emails[5],
+      passwordHash,
+      name: "Marco",
+      surname: "Staff",
+      type: "EMPLOYEE",
+    },
   ]);
   await testDb.insert(tablesTable).values([
     { id: 1, code: "T1", seats: 2 },
@@ -133,13 +185,17 @@ async function resetFixture() {
     { id: 2, date: futureDate1, from: "13:00", to: "14:00" }, // T2(4), T3(6) = 10 total seats
     { id: 3, date: futureDate1, from: "19:00", to: "20:00" }, // T1(2) = 2 total seats
     { id: 4, date: futureDate2, from: "12:00", to: "13:00" }, // T1(2), T2(4) = 6 total seats
-    { id: 5, date: pastDate, from: "12:00", to: "13:00" },    // Past slot
+    { id: 5, date: pastDate, from: "12:00", to: "13:00" }, // Past slot
   ]);
   await testDb.insert(tableAvailabilityTable).values([
-    { slotId: 1, tableId: 1 }, { slotId: 1, tableId: 2 }, { slotId: 1, tableId: 3 },
-    { slotId: 2, tableId: 2 }, { slotId: 2, tableId: 3 },
+    { slotId: 1, tableId: 1 },
+    { slotId: 1, tableId: 2 },
+    { slotId: 1, tableId: 3 },
+    { slotId: 2, tableId: 2 },
+    { slotId: 2, tableId: 3 },
     { slotId: 3, tableId: 1 },
-    { slotId: 4, tableId: 1 }, { slotId: 4, tableId: 2 },
+    { slotId: 4, tableId: 1 },
+    { slotId: 4, tableId: 2 },
     { slotId: 5, tableId: 1 },
   ]);
 }
@@ -163,7 +219,9 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
       // Check initial availability
       const beforeAvail = await getAvailability(futureDate1, 4);
       expect(beforeAvail.statusCode).toBe(200);
-      const slot1Before = beforeAvail.json().slots.find((s: { slotId: number }) => s.slotId === 1);
+      const slot1Before = beforeAvail
+        .json()
+        .slots.find((s: { slotId: number }) => s.slotId === 1);
       expect(slot1Before.availableSeats).toBe(12);
 
       // Staff (userId 3) reserves for Hiker (userId 1)
@@ -220,7 +278,9 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
       // Availability is decremented by 4 seats (12 -> 8)
       const afterAvail = await getAvailability(futureDate1, 4);
       expect(afterAvail.statusCode).toBe(200);
-      const slot1After = afterAvail.json().slots.find((s: { slotId: number }) => s.slotId === 1);
+      const slot1After = afterAvail
+        .json()
+        .slots.find((s: { slotId: number }) => s.slotId === 1);
       expect(slot1After.availableSeats).toBe(8);
     });
 
@@ -266,7 +326,9 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
 
       // Remaining seats in slot 2 are now 0
       const avail = await getAvailability(futureDate1, 1);
-      const slot2 = avail.json().slots.find((s: { slotId: number }) => s.slotId === 2);
+      const slot2 = avail
+        .json()
+        .slots.find((s: { slotId: number }) => s.slotId === 2);
       expect(slot2.availableSeats).toBe(0);
       expect(slot2.available).toBe(false);
     });
@@ -274,7 +336,8 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
 
   describe("Suite 2: Late-Booking Window & Cutoff Rules (Staff vs Hiker)", () => {
     it("within 2 hours of slot start: Hiker self-booking is rejected (409) while Staff booking succeeds (201)", async () => {
-      const { hutSlotStartMs } = await import("../../../src/booking/rules/booking-rules.ts");
+      const { hutSlotStartMs } =
+        await import("../../../src/booking/rules/booking-rules.ts");
       // Set system clock to 11:15 (45 minutes before slot 1 start at 12:00)
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date(hutSlotStartMs(futureDate1, "11:15")));
@@ -283,7 +346,9 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
         // Hiker tries to book directly: rejected by 2-hour cutoff rule
         const hikerAttempt = await postHikerBooking(2, 1, 2);
         expect(hikerAttempt.statusCode).toBe(409);
-        expect(hikerAttempt.json().error).toMatch(/Booking deadline has passed/i);
+        expect(hikerAttempt.json().error).toMatch(
+          /Booking deadline has passed/i,
+        );
 
         // Staff books on behalf of hiker: permitted
         const staffAttempt = await postStaffBooking({
@@ -299,7 +364,8 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
     });
 
     it("staff can reserve for a hiker up to 1 second before slot start", async () => {
-      const { hutSlotStartMs } = await import("../../../src/booking/rules/booking-rules.ts");
+      const { hutSlotStartMs } =
+        await import("../../../src/booking/rules/booking-rules.ts");
       // Slot 1 starts at 12:00
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date(hutSlotStartMs(futureDate1, "12:00") - 1000));
@@ -317,7 +383,8 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
     });
 
     it("staff CANNOT reserve for a slot that has already started (409)", async () => {
-      const { hutSlotStartMs } = await import("../../../src/booking/rules/booking-rules.ts");
+      const { hutSlotStartMs } =
+        await import("../../../src/booking/rules/booking-rules.ts");
       // Slot 1 starts at 12:00; test at 12:05
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date(hutSlotStartMs(futureDate1, "12:05")));
@@ -337,7 +404,8 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
     });
 
     it("staff CANNOT reserve for a slot at the exact start timestamp (409)", async () => {
-      const { hutSlotStartMs } = await import("../../../src/booking/rules/booking-rules.ts");
+      const { hutSlotStartMs } =
+        await import("../../../src/booking/rules/booking-rules.ts");
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date(hutSlotStartMs(futureDate1, "12:00")));
 
@@ -383,7 +451,7 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
         1, // acting user is Mario (HIKER)
       );
       expect(res.statusCode).toBe(403);
-      expect(res.json().error).toMatch(/Only employees and managers can book for hikers/i);
+      expect(res.json().error).toMatch("Insufficient permissions");
       expect(await reservationRows()).toHaveLength(0);
     });
 
@@ -433,8 +501,14 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
       ["missing slotId", { hikerId: 1, partySize: 2 }],
       ["zero partySize", { hikerId: 1, slotId: 1, partySize: 0 }],
       ["negative partySize", { hikerId: 1, slotId: 1, partySize: -4 }],
-      ["exceeds max party size 1000", { hikerId: 1, slotId: 1, partySize: 1001 }],
-      ["unexpected extra keys (strict schema)", { hikerId: 1, slotId: 1, partySize: 2, extra: true }],
+      [
+        "exceeds max party size 1000",
+        { hikerId: 1, slotId: 1, partySize: 1001 },
+      ],
+      [
+        "unexpected extra keys (strict schema)",
+        { hikerId: 1, slotId: 1, partySize: 2, extra: true },
+      ],
     ])("400: rejects invalid payload (%s)", async (_description, payload) => {
       const res = await postStaffBooking(payload);
       expect(res.statusCode).toBe(400);
@@ -445,10 +519,18 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
 
   describe("Suite 4: Capacity & Duplicate Protection", () => {
     it("409: prevents duplicate active bookings for the same hiker in the same slot", async () => {
-      const first = await postStaffBooking({ hikerId: 1, slotId: 1, partySize: 2 });
+      const first = await postStaffBooking({
+        hikerId: 1,
+        slotId: 1,
+        partySize: 2,
+      });
       expect(first.statusCode).toBe(201);
 
-      const duplicate = await postStaffBooking({ hikerId: 1, slotId: 1, partySize: 2 });
+      const duplicate = await postStaffBooking({
+        hikerId: 1,
+        slotId: 1,
+        partySize: 2,
+      });
       expect(duplicate.statusCode).toBe(409);
       expect(duplicate.json().error).toMatch(/already.*booking/i);
 
@@ -457,10 +539,18 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
     });
 
     it("allows the same hiker to have bookings in different slots", async () => {
-      const slot1Res = await postStaffBooking({ hikerId: 1, slotId: 1, partySize: 2 });
+      const slot1Res = await postStaffBooking({
+        hikerId: 1,
+        slotId: 1,
+        partySize: 2,
+      });
       expect(slot1Res.statusCode).toBe(201);
 
-      const slot2Res = await postStaffBooking({ hikerId: 1, slotId: 2, partySize: 2 });
+      const slot2Res = await postStaffBooking({
+        hikerId: 1,
+        slotId: 2,
+        partySize: 2,
+      });
       expect(slot2Res.statusCode).toBe(201);
 
       const rows = await reservationRows();
@@ -469,14 +559,20 @@ describe("MH-24: Integration tests — Reserve for a hiker (MH-07)", () => {
 
     it("409: rolls back atomically when party size exceeds available capacity", async () => {
       // Slot 3 only has T1(2 seats). Requesting 3 seats fails with no DB mutations
-      const res = await postStaffBooking({ hikerId: 1, slotId: 3, partySize: 3 });
+      const res = await postStaffBooking({
+        hikerId: 1,
+        slotId: 3,
+        partySize: 3,
+      });
       expect(res.statusCode).toBe(409);
 
       expect(await reservationRows()).toHaveLength(0);
 
       // Slot remains fully available for 2 seats
       const avail = await getAvailability(futureDate1, 2);
-      const slot3 = avail.json().slots.find((s: { slotId: number }) => s.slotId === 3);
+      const slot3 = avail
+        .json()
+        .slots.find((s: { slotId: number }) => s.slotId === 3);
       expect(slot3.availableSeats).toBe(2);
       expect(slot3.available).toBe(true);
     });

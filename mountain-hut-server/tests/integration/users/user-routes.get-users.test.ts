@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { Client } from "@libsql/client";
 import argon2 from "argon2";
 import { usersTable } from "../../../src/db/schema.ts";
@@ -10,12 +18,15 @@ vi.mock("../../../src/db/database.ts", async () => {
   return { db, __userTestClient: client, __userTestCleanup: cleanup };
 });
 
-const { db: testDb, __userTestClient: client, __userTestCleanup: cleanup } =
-  (await import("../../../src/db/database.ts")) as unknown as {
-    db: typeof import("../../../src/db/database.ts")["db"];
-    __userTestClient: Client;
-    __userTestCleanup: () => void;
-  };
+const {
+  db: testDb,
+  __userTestClient: client,
+  __userTestCleanup: cleanup,
+} = (await import("../../../src/db/database.ts")) as unknown as {
+  db: (typeof import("../../../src/db/database.ts"))["db"];
+  __userTestClient: Client;
+  __userTestCleanup: () => void;
+};
 const { buildApp } = await import("../../../src/server.ts");
 
 const app = buildApp({ logger: false });
@@ -102,7 +113,7 @@ describe("GET /api/v1/users integration tests", () => {
       });
 
       expect(res.statusCode).toBe(401);
-      expect(res.json()).toEqual({ message: "Authentication required" });
+      expect(res.json()).toEqual({ error: "Authentication required" });
     });
 
     it("returns 403 Forbidden when requested by a HIKER", async () => {
@@ -113,7 +124,7 @@ describe("GET /api/v1/users integration tests", () => {
       });
 
       expect(res.statusCode).toBe(403);
-      expect(res.json()).toEqual({ message: "Forbidden: insufficient permissions" });
+      expect(res.json()).toEqual({ error: "Insufficient permissions" });
     });
   });
 
@@ -224,7 +235,7 @@ describe("GET /api/v1/users integration tests", () => {
       });
 
       expect(res.statusCode).toBe(404);
-      expect(res.json()).toEqual({ message: "User Not Found" });
+      expect(res.json()).toEqual({ error: "User Not Found" });
     });
 
     it("returns 404 for empty / whitespace name (get-existing-user-empty-name.hurl)", async () => {

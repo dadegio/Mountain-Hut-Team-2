@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { registerHikeSchema, validateHikeChronology } from "../../../src/hikes/hike-validation.ts";
+
+import { validateHikeChronology } from "#src/hikes/hike-validation";
+import { registerHikeSchema } from "#src/hikes/hike-schema";
 
 const now = new Date("2026-12-01T10:00:00.000Z");
 const valid = {
@@ -23,34 +25,60 @@ describe("MH-139 hike registration rules", () => {
   });
 
   it("accepts Z timestamps and an optional emergency contact", () => {
-    expect(registerHikeSchema.safeParse({
-      ...valid,
-      departureAt: "2026-12-03T07:00:00Z",
-      emergencyContactPhone: "+393331234567",
-    }).success).toBe(true);
+    expect(
+      registerHikeSchema.safeParse({
+        ...valid,
+        departureAt: "2026-12-03T07:00:00Z",
+        emergencyContactPhone: "+393331234567",
+      }).success,
+    ).toBe(true);
   });
 
   it("rejects reversed or identical times", () => {
     const same = { ...valid, expectedReturnAt: valid.departureAt };
-    expect(validateHikeChronology(same, now)).toBe("Expected return must be after departure");
-    expect(validateHikeChronology({ ...valid, expectedReturnAt: "2026-12-03T06:00:00Z" }, now))
-      .toBe("Expected return must be after departure");
+    expect(validateHikeChronology(same, now)).toBe(
+      "Expected return must be after departure",
+    );
+    expect(
+      validateHikeChronology(
+        { ...valid, expectedReturnAt: "2026-12-03T06:00:00Z" },
+        now,
+      ),
+    ).toBe("Expected return must be after departure");
   });
 
   it("rejects departure in the past or at the current time", () => {
-    expect(validateHikeChronology({ ...valid, departureAt: now.toISOString() }, now))
-      .toBe("Departure must be in the future");
-    expect(validateHikeChronology({ ...valid, departureAt: "2026-11-30T09:00:00Z" }, now))
-      .toBe("Departure must be in the future");
+    expect(
+      validateHikeChronology({ ...valid, departureAt: now.toISOString() }, now),
+    ).toBe("Departure must be in the future");
+    expect(
+      validateHikeChronology(
+        { ...valid, departureAt: "2026-11-30T09:00:00Z" },
+        now,
+      ),
+    ).toBe("Departure must be in the future");
   });
 
   it.each([
     [{ ...valid, destination: " " }, "empty destination"],
-    [{ departureAt: valid.departureAt, expectedReturnAt: valid.expectedReturnAt, routeDescription: valid.routeDescription }, "missing destination"],
+    [
+      {
+        departureAt: valid.departureAt,
+        expectedReturnAt: valid.expectedReturnAt,
+        routeDescription: valid.routeDescription,
+      },
+      "missing destination",
+    ],
     [{ ...valid, destination: "x".repeat(201) }, "too-long destination"],
     [{ ...valid, intermediatePoints: [""] }, "empty passage point"],
-    [{ ...valid, intermediatePoints: ["x".repeat(201)] }, "too-long passage point"],
-    [{ ...valid, intermediatePoints: Array(31).fill("point") }, "too many passage points"],
+    [
+      { ...valid, intermediatePoints: ["x".repeat(201)] },
+      "too-long passage point",
+    ],
+    [
+      { ...valid, intermediatePoints: Array(31).fill("point") },
+      "too many passage points",
+    ],
     [{ ...valid, routeDescription: " " }, "empty route"],
     [{ ...valid, routeDescription: "x".repeat(2001) }, "too-long route"],
     [{ ...valid, departureAt: "2026-12-03 08:00" }, "no explicit timezone"],

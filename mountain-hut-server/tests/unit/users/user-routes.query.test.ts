@@ -164,7 +164,7 @@ describe("userRoutes: query registered users by name, surname, email, phone", ()
       });
 
       expect(res.statusCode).toBe(StatusCodes.NOT_FOUND);
-      expect(res.json()).toEqual({ message: "User Not Found" });
+      expect(res.json()).toEqual({ error: "User Not Found" });
     } finally {
       await app.close();
     }
@@ -181,7 +181,7 @@ describe("userRoutes: query registered users by name, surname, email, phone", ()
       });
 
       expect(res.statusCode).toBe(StatusCodes.NOT_FOUND);
-      expect(res.json()).toEqual({ message: "User Not Found" });
+      expect(res.json()).toEqual({ error: "User Not Found" });
     } finally {
       await app.close();
     }

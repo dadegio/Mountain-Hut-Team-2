@@ -10,7 +10,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   // on page load, ask the backend if the session cookie is still valid
   useEffect(() => {
     let ignore = false
-    getMe()
+    void getMe()
       .then((u) => {
         if (!ignore) setUser(u)
       })
@@ -40,7 +40,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     function onStorage(e: StorageEvent) {
       if (e.key === 'mountain_hut_auth_changed') {
-        refreshUser()
+        void refreshUser()
       }
     }
     window.addEventListener('storage', onStorage)

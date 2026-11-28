@@ -14,10 +14,18 @@ export const mealRoutes: FastifyPluginAsync = async (server) => {
     "/",
     {
       schema: {
-        summary: "Meal times of a day, with their menus, dishes and allergens.",
+        tags: ["Meals"],
+        summary: "Meal times of a day, with their menus, dishes and allergens",
+        description: `Open to every user, guests included (MH-11). Returns the time slots of
+the date ordered by start time, each with the menus specified for it;
+canceled menus are left out. Dishes are in serving order, each with its
+allergens, and each menu also lists all the allergens of its dishes.`,
+        operationId: "getMeals",
         querystring: mealQuerySchema,
         response: {
-          [StatusCodes.OK]: z.array(mealSlotSchema),
+          [StatusCodes.OK]: z
+            .array(mealSlotSchema)
+            .describe("The meal times of the day; empty if there are none"),
         },
       },
     },

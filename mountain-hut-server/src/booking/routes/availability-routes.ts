@@ -25,31 +25,53 @@ const querySchema = z.object({
 });
 
 export async function availabilityRoutes(app: FastifyInstance) {
-  app.get("/availability", async (request, reply) => {
-    const parsed = querySchema.safeParse(request.query);
+  app.get(
+    "/availability",
+    {
+      schema: {
+        tags: ["Availability"],
+        summary: "Check the free seats of a day",
+        description:
+          "A day with no slots answers `200` with an empty `slots` list.",
+        operationId: "getAvailability",
+        // querystring: querySchema,
+        // response: {
+        //   [StatusCodes.OK]: availabilityResponseSchema.describe(
+        //     "The slots of that day, by start time",
+        //   ),
+        //   [StatusCodes.BAD_REQUEST]: errorSchema,
+        //   [StatusCodes.NOT_FOUND]: errorSchema.describe(
+        //     "`slotId` is not a slot of that day",
+        //   ),
+        // },
+      },
+    },
+    async (request, reply) => {
+      const parsed = querySchema.safeParse(request.query);
 
-    if (!parsed.success) {
-      return reply.status(StatusCodes.BAD_REQUEST).send({
-        error: "Invalid query parameters",
-        details: parsed.error.issues,
-      });
-    }
+      if (!parsed.success) {
+        return reply.status(StatusCodes.BAD_REQUEST).send({
+          error: "Invalid query parameters",
+          details: parsed.error.issues,
+        });
+      }
 
-    const { date, partySize, slotId } = parsed.data;
-    const availability = await getAvailability(date, partySize);
+      const { date, partySize, slotId } = parsed.data;
+      const availability = await getAvailability(date, partySize);
 
-    if (slotId === undefined) {
-      return availability;
-    }
+      if (slotId === undefined) {
+        return availability;
+      }
 
-    const slot = availability.slots.find((item) => item.slotId === slotId);
+      const slot = availability.slots.find((item) => item.slotId === slotId);
 
-    if (!slot) {
-      return reply.status(StatusCodes.NOT_FOUND).send({
-        error: "Slot not configured for date",
-      });
-    }
+      if (!slot) {
+        return reply.status(StatusCodes.NOT_FOUND).send({
+          error: "Slot not configured for date",
+        });
+      }
 
-    return { date, partySize, slots: [slot] };
-  });
+      return { date, partySize, slots: [slot] };
+    },
+  );
 }
