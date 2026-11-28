@@ -333,7 +333,7 @@ test.describe('as an employee', () => {
     await pickHiker(page, hiker)
     await reserveButton(page).click()
 
-    await expect(page.getByText(/already have a booking/)).toBeVisible()
+    await expect(page.getByText(/already has a booking/)).toBeVisible()
     await expect(page.getByText('✓ Reservation confirmed')).toHaveCount(0)
     await expect(reserveButton(page)).toBeEnabled()
   })
