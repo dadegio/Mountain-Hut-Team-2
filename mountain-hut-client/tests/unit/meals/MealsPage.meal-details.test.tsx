@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -145,5 +145,15 @@ describe("MealsPage (MH-134)", () => {
 
     expect(await screen.findByText(/allergen list couldn't be loaded/)).toBeInTheDocument();
     expect(await lunch()).toBeInTheDocument();
+  });
+
+  it("rejects a typed past date and keeps the current day", async () => {
+    renderPage();
+    await waitFor(() => expect(getMeals).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText("Other day"), { target: { value: "2020-05-01" } });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Pick today or a later day");
+    expect(getMeals).not.toHaveBeenCalledWith("2020-05-01");
   });
 });
