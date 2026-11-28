@@ -368,6 +368,21 @@ describe('EmployeeReservationPage', () => {
       expect(screen.queryByText('✓ Reservation confirmed')).not.toBeInTheDocument()
     })
 
+    it('tells staff that the hiker already has a booking in this slot', async () => {
+      mockSlots(slot())
+      vi.mocked(createStaffBooking).mockRejectedValue(
+        new ApiError(409, 'You already have an active booking for this time slot'),
+      )
+      const user = renderPage()
+
+      await fillAndReserve(user)
+
+      expect(
+        await screen.findByText('This hiker already has a booking for this time slot'),
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/You already have/)).not.toBeInTheDocument()
+    })
+
     it.each([
       ['another option', 'Just a name'],
       ['another hiker', 'Change'],
@@ -543,21 +558,37 @@ describe('EmployeeReservationPage', () => {
     })
 
     it.each([
-      [409, 'An account with this email already exists: find the hiker under Existing hiker.'],
-      [400, 'Some details are not valid: check the email and the phone number.'],
-    ])('explains why the account was not created (%i), without reserving', async (status, message) => {
+      'An account with this email already exists',
+      'An account with this phone number already exists',
+    ])('says which detail is already used (%s), without reserving', async (backendMessage) => {
       mockSlots(slot())
-      vi.mocked(createHiker).mockRejectedValue(new ApiError(status, 'from the backend'))
+      vi.mocked(createHiker).mockRejectedValue(new ApiError(409, backendMessage))
       const user = renderPage()
       await fillAccount(user)
 
       await user.click(reserveButton())
 
-      expect(await screen.findByText(message)).toBeInTheDocument()
+      expect(
+        await screen.findByText(`${backendMessage}: find the hiker under Existing hiker.`),
+      ).toBeInTheDocument()
       expect(createStaffBooking).not.toHaveBeenCalled()
       // The details stay, so they can be corrected
       expect(screen.getByLabelText('Email')).toHaveValue('anna.bianchi@example.com')
       expect(reserveButton()).toBeEnabled()
+    })
+
+    it('explains invalid details (400), without reserving', async () => {
+      mockSlots(slot())
+      vi.mocked(createHiker).mockRejectedValue(new ApiError(400, 'from the backend'))
+      const user = renderPage()
+      await fillAccount(user)
+
+      await user.click(reserveButton())
+
+      expect(
+        await screen.findByText('Some details are not valid: check the email and the phone number.'),
+      ).toBeInTheDocument()
+      expect(createStaffBooking).not.toHaveBeenCalled()
     })
   })
 })

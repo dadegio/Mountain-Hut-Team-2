@@ -117,13 +117,24 @@ function TemporaryPassword({ password, email }: { password: string; email: strin
 // The backend's message for a hiker that could not be created
 function creationError(err: unknown): string {
   if (err instanceof ApiError && err.status === 409) {
-    return "An account with this email already exists: find the hiker under Existing hiker.";
+    // The backend says which field is taken: the email or the phone number
+    return `${err.message}: find the hiker under Existing hiker.`;
   }
   if (err instanceof ApiError && err.status === 400) {
     return "Some details are not valid: check the email and the phone number.";
   }
   return err instanceof Error ? err.message : String(err);
 }
+
+// The backend writes its duplicate-booking message for hikers ("You already have…");
+// staff book for someone else, so they need it in the third person
+function bookingError(err: unknown): string {
+  if (err instanceof ApiError && err.status === 409 && /already have/i.test(err.message)) {
+    return "This hiker already has a booking for this time slot";
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
 
 function ConfirmedReservation({ confirmed, onNew }: { confirmed: Confirmed; onNew: () => void }) {
   const { booking, date, slot, hiker, temporaryPassword } = confirmed;
@@ -328,7 +339,7 @@ export default function EmployeeReservationPage() {
         temporaryPassword: password,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(bookingError(err));
       // Someone else may have taken the seats in the meantime
       setReload((r) => r + 1);
     } finally {
@@ -547,7 +558,7 @@ export default function EmployeeReservationPage() {
           )}
 
           {error && (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
+            <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
               <Icon name="warning" className="w-5 h-5" />
               <p>{error}</p>
             </div>
